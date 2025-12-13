@@ -1,0 +1,34 @@
+{
+    "manifest_version": 3,
+    "name": "Facebook Post Downloader",
+    "version": "0.1.0",
+    "description": "Download Facebook posts, including text, images, and videos.",
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "extensions/facebook-fetch.js",
+                "extensions/post-table.js"
+            ],
+            "matches": [
+                "https://www.facebook.com/*",
+                "https://facebook.com/*",
+                "https://web.facebook.com/*",
+                "https://m.facebook.com/*"
+            ]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.facebook.com/*",
+                "https://facebook.com/*",
+                "https://web.facebook.com/*",
+                "https://m.facebook.com/*"
+            ],
+            "js": [
+                "extensions/content-script.js"
+            ],
+            "run_at": "document_start"
+        }
+    ]
+}
