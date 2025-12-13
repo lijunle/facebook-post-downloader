@@ -1,11 +1,6 @@
 // @ts-check
 
 (function () {
-    // Use the current page origin so redirects (facebook.com -> www.facebook.com)
-    // and alternate hosts (web.facebook.com, m.facebook.com) still match.
-    const GRAPHQL_URL = `${location.origin}/api/graphql/`;
-    const TARGET_API_NAME = "CometNewsFeedPaginationQuery";
-
     /**
      * Injects a script into the page context (not the isolated extension world)
      * so we can wrap the real `window.fetch` used by the page.
@@ -16,17 +11,11 @@
         const markerId = "fpdl-facebook-fetch";
         if (document.getElementById(markerId)) return;
 
-        const script = document.createElement("script");
-        script.id = markerId;
-        script.type = "text/javascript";
-
-        // Facebook CSP blocks inline scripts (`textContent`), but (per the console error)
-        // it allows scripts sourced from our extension origin. So we inject using `src`.
-
-        script.dataset.graphqlUrl = GRAPHQL_URL;
-        script.dataset.targetApiName = TARGET_API_NAME;
-
         try {
+            const script = document.createElement("script");
+            script.id = markerId;
+            script.type = "text/javascript";
+
             // @ts-ignore - `chrome` exists in extension content-script context.
             script.src = chrome.runtime.getURL("extensions/facebook-fetch.js");
             script.onload = () => {

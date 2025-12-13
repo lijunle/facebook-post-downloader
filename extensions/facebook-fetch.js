@@ -7,11 +7,17 @@
     // @ts-ignore
     window.__fpdlFacebookFetchInstalled = true;
 
-    const currentScript = /** @type {HTMLScriptElement | null} */ (document.currentScript);
-    const ds = currentScript ? currentScript.dataset : /** @type {any} */ ({});
+    // Use the current page origin so redirects (facebook.com -> www.facebook.com)
+    // and alternate hosts (web.facebook.com, m.facebook.com) still match.
+    const GRAPHQL_URL = `${location.origin}/api/graphql/`;
 
-    const GRAPHQL_URL = ds.graphqlUrl || `${location.origin}/api/graphql/`;
-    const TARGET_API_NAME = ds.targetApiName || "CometNewsFeedPaginationQuery";
+    // Facebook uses different GraphQL operation ("friendly") names depending on context.
+    // - Home feed: CometNewsFeedPaginationQuery
+    // - Group feed: GroupsCometFeedRegularStoriesPaginationQuery
+    const TARGET_API_NAMES = new Set([
+        "CometNewsFeedPaginationQuery",
+        "GroupsCometFeedRegularStoriesPaginationQuery",
+    ]);
 
     /**
      * Deduplicate stories across response chunks using story.id.
@@ -183,6 +189,17 @@
             }
         }
 
+        // Group feed query shape.
+        // Observed in group browsing HARs:
+        //   data.node.group_feed.edges[].node.comet_sections.content.story
+        const groupFeedEdges = obj?.data?.node?.group_feed?.edges;
+        if (Array.isArray(groupFeedEdges)) {
+            for (const edge of groupFeedEdges) {
+                const edgeStory = edge?.node?.comet_sections?.content?.story;
+                if (edgeStory) stories.push(edgeStory);
+            }
+        }
+
         return stories;
     }
 
@@ -262,7 +279,7 @@
                 const apiNameFromBody = extractApiNameFromBody(init && init.body);
                 const apiName = apiNameFromHeader || apiNameFromBody;
 
-                if (apiName !== TARGET_API_NAME) {
+                if (!apiName || !TARGET_API_NAMES.has(apiName)) {
                     // @ts-ignore
                     return originalFetch.apply(this, arguments);
                 }
@@ -327,7 +344,7 @@
                             const apiNameFromHeader = headers["x-fb-friendly-name"];
                             const apiNameFromBody = extractApiNameFromBody(self.__fpdl_body);
                             const apiName = apiNameFromHeader || apiNameFromBody;
-                            if (apiName !== TARGET_API_NAME) return;
+                            if (!apiName || !TARGET_API_NAMES.has(apiName)) return;
 
                             if (typeof self.responseText === "string") {
                                 logMatchingNewsFeedEntries(self.responseText);
