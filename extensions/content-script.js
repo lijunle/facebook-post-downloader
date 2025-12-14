@@ -65,4 +65,27 @@
 
     // Install the floating post table renderer.
     injectPostTable();
+
+    // Bridge download requests from page-world UI to the extension background.
+    window.addEventListener("message", (event) => {
+        try {
+            if (event.source !== window) return;
+            const data = event.data;
+            if (!data || typeof data !== "object") return;
+            if (data.__fpdl !== true) return;
+            if (data.type !== "FPDL_DOWNLOAD") return;
+
+            const url = data.url;
+            const filename = data.filename;
+            if (typeof url !== "string" || typeof filename !== "string") return;
+
+            // Forward to service worker.
+            // @ts-ignore
+            chrome.runtime.sendMessage({ type: "FPDL_DOWNLOAD", url, filename }, () => {
+                // Ignore response here; UI is best-effort.
+            });
+        } catch (err) {
+            console.warn("[fpdl] download bridge failed", err);
+        }
+    });
 })();

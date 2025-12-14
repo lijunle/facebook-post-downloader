@@ -103,6 +103,28 @@
         return root;
     }
 
+    /**
+     * @param {any[]} posts
+     */
+    function computeRenderSignature(posts) {
+        try {
+            const recent = posts.slice(-50);
+            return recent
+                .map((p) => {
+                    const postId = p?.post_id ?? "";
+                    const total = typeof p?.attachmentsTotalCount === "number" ? p.attachmentsTotalCount : 0;
+                    const loaded = Array.isArray(p?.attachments) ? p.attachments.length : 0;
+                    const updated = typeof p?.__fpdl_lastUpdated === "number" ? p.__fpdl_lastUpdated : 0;
+                    const retrieving = p?.__fpdl_retrieving ? 1 : 0;
+                    const downloading = p?.__fpdl_downloading ? 1 : 0;
+                    return `${postId}:${loaded}/${total}:${updated}:${retrieving}:${downloading}`;
+                })
+                .join("|");
+        } catch {
+            return String(posts.length);
+        }
+    }
+
     function render() {
         const root = ensureRoot();
         const tbody = /** @type {HTMLTableSectionElement | null} */ (
@@ -112,13 +134,13 @@
 
         const posts = getPosts();
 
-        // Cheap diff: if length unchanged, skip.
-        // (We can revisit later if you want editing/updating rows.)
+        // Cheap diff: rerender when recent rows changed.
         // @ts-ignore
-        const lastLen = root.__fpdl_lastLen || 0;
-        if (lastLen === posts.length) return;
+        const lastSig = root.__fpdl_lastSig || "";
+        const sig = computeRenderSignature(posts);
+        if (lastSig === sig) return;
         // @ts-ignore
-        root.__fpdl_lastLen = posts.length;
+        root.__fpdl_lastSig = sig;
 
         tbody.textContent = "";
 
@@ -155,7 +177,112 @@
             tdAttachments.style.whiteSpace = "nowrap";
             tdAttachments.style.textAlign = "right";
             tdAttachments.style.verticalAlign = "top";
-            tdAttachments.textContent = String(post.attachmentsTotalCount);
+
+            const total = typeof post?.attachmentsTotalCount === "number" ? post.attachmentsTotalCount : 0;
+            const loaded = Array.isArray(post?.attachments) ? post.attachments.length : 0;
+            tdAttachments.textContent = `${loaded}/${total}`;
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = post.__fpdl_downloading ? "Downloading…" : "Download";
+            btn.disabled = Boolean(post.__fpdl_retrieving || post.__fpdl_downloading);
+            btn.style.marginLeft = "6px";
+            btn.style.fontSize = "11px";
+            btn.style.padding = "2px 6px";
+            btn.style.borderRadius = "4px";
+            btn.style.border = "1px solid rgba(255,255,255,0.35)";
+            btn.style.background = "rgba(255,255,255,0.12)";
+            btn.style.color = "#fff";
+            btn.style.cursor = btn.disabled ? "not-allowed" : "pointer";
+
+            /**
+             * @param {string} url
+             */
+            function guessExt(url) {
+                try {
+                    if (/\.png(\?|$)/i.test(url)) return "png";
+                    const u = new URL(url);
+                    const fmt = u.searchParams.get("format");
+                    if (fmt && /^png$/i.test(fmt)) return "png";
+                    return "jpg";
+                } catch {
+                    return /\.png(\?|$)/i.test(url) ? "png" : "jpg";
+                }
+            }
+
+            btn.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+
+                try {
+                    post.__fpdl_retrieving = true;
+                    post.__fpdl_downloading = false;
+                    post.__fpdl_lastUpdated = Date.now();
+                    render();
+
+                    // 1) Retrieve attachments (best-effort)
+                    // @ts-ignore
+                    const fn = window.__fpdl_retrieveAttachments;
+                    if (typeof fn !== "function") {
+                        throw new Error("Missing window.__fpdl_retrieveAttachments");
+                    }
+                    await fn(post);
+
+                    // 2) Download photos
+                    post.__fpdl_retrieving = false;
+                    post.__fpdl_downloading = true;
+                    post.__fpdl_lastUpdated = Date.now();
+                    render();
+
+                    const postId = String(post?.post_id || post?.id || "unknown");
+                    const atts = Array.isArray(post?.attachments) ? post.attachments : [];
+
+                    /** @type {string[]} */
+                    const downloaded = [];
+                    for (const a of atts) {
+                        const media = a?.media ? a.media : a;
+                        if (!media) continue;
+
+                        // Skip videos for now.
+                        if (media.__isMedia === "Video") continue;
+
+                        const url =
+                            media?.viewer_image?.uri ||
+                            media?.image?.uri ||
+                            media?.photo_image?.uri ||
+                            media?.preferred_image?.uri ||
+                            null;
+
+                        const attachmentId = a?.id || a?.media?.id || media?.id || null;
+                        if (typeof attachmentId !== "string" || !attachmentId) continue;
+                        if (typeof url !== "string" || !url) continue;
+                        if (downloaded.includes(attachmentId)) continue;
+
+                        downloaded.push(attachmentId);
+                        const ext = guessExt(url);
+                        const filename = `${postId}/${attachmentId}.${ext}`;
+
+                        window.postMessage(
+                            {
+                                __fpdl: true,
+                                type: "FPDL_DOWNLOAD",
+                                url,
+                                filename,
+                            },
+                            "*",
+                        );
+                    }
+                } catch (err) {
+                    console.warn("[fpdl] download failed", err);
+                } finally {
+                    post.__fpdl_retrieving = false;
+                    post.__fpdl_downloading = false;
+                    post.__fpdl_lastUpdated = Date.now();
+                    render();
+                }
+            });
+
+            tdAttachments.appendChild(btn);
 
             tr.appendChild(tdIndex);
             tr.appendChild(tdPostId);
