@@ -239,12 +239,54 @@
 
                     /** @type {string[]} */
                     const downloaded = [];
+
+                    /**
+                     * @param {any} media
+                     * @returns {string | null}
+                     */
+                    function pickBestProgressiveUrl(media) {
+                        const list =
+                            media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
+                        if (!Array.isArray(list) || list.length === 0) return null;
+
+                        const hd = list.find(
+                            /** @param {any} x */
+                            (x) => x?.metadata?.quality === "HD" && typeof x?.progressive_url === "string" && x.progressive_url,
+                        );
+                        if (hd && typeof hd.progressive_url === "string") return hd.progressive_url;
+
+                        const first = list.find(
+                            /** @param {any} x */
+                            (x) => typeof x?.progressive_url === "string" && x.progressive_url,
+                        );
+                        return first ? String(first.progressive_url) : null;
+                    }
+
                     for (const a of atts) {
                         const media = a?.media ? a.media : a;
                         if (!media) continue;
 
-                        // Skip videos for now.
-                        if (media.__isMedia === "Video") continue;
+                        const attachmentId = a?.id || a?.media?.id || media?.id || null;
+                        if (typeof attachmentId !== "string" || !attachmentId) continue;
+                        if (downloaded.includes(attachmentId)) continue;
+
+                        // Video download: use progressive URLs (prefer HD).
+                        if (media.__isMedia === "Video" || media.__typename === "Video") {
+                            const videoUrl = pickBestProgressiveUrl(media);
+                            if (!videoUrl) continue;
+                            downloaded.push(attachmentId);
+                            const filename = `${postId}/${attachmentId}.mp4`;
+                            window.postMessage(
+                                {
+                                    __fpdl: true,
+                                    type: "FPDL_DOWNLOAD",
+                                    url: videoUrl,
+                                    filename,
+                                },
+                                "*",
+                            );
+                            continue;
+                        }
 
                         const url =
                             media?.viewer_image?.uri ||
@@ -253,11 +295,7 @@
                             media?.preferred_image?.uri ||
                             null;
 
-                        const attachmentId = a?.id || a?.media?.id || media?.id || null;
-                        if (typeof attachmentId !== "string" || !attachmentId) continue;
                         if (typeof url !== "string" || !url) continue;
-                        if (downloaded.includes(attachmentId)) continue;
-
                         downloaded.push(attachmentId);
                         const ext = guessExt(url);
                         const filename = `${postId}/${attachmentId}.${ext}`;
