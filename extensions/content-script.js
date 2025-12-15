@@ -16,7 +16,6 @@
             script.id = markerId;
             script.type = "text/javascript";
 
-            // @ts-ignore - `chrome` exists in extension content-script context.
             script.src = chrome.runtime.getURL("extensions/facebook-fetch.js");
             script.onload = () => {
                 // Keep the DOM tidy; the script has already executed.
@@ -46,7 +45,6 @@
         script.type = "text/javascript";
 
         try {
-            // @ts-ignore - `chrome` exists in extension content-script context.
             script.src = chrome.runtime.getURL("extensions/post-table.js");
             script.onload = () => {
                 script.remove();
@@ -80,7 +78,6 @@
             if (typeof url !== "string" || typeof filename !== "string") return;
 
             // Forward to service worker.
-            // @ts-ignore
             chrome.runtime.sendMessage({ type: "FPDL_DOWNLOAD", url, filename }, () => {
                 // Ignore response here; UI is best-effort.
             });

@@ -4,9 +4,6 @@
  * MV3 service worker: receives download requests from content script.
  */
 
-/** @type {any} */
-const chromeAny = /** @type {any} */ (globalThis).chrome;
-
 /**
  * @param {any} msg
  * @param {any} _sender
@@ -29,7 +26,7 @@ function onMessage(msg, _sender, sendResponse) {
             return;
         }
 
-        chromeAny.downloads.download(
+        chrome.downloads.download(
             {
                 url,
                 filename,
@@ -37,7 +34,7 @@ function onMessage(msg, _sender, sendResponse) {
                 saveAs: false,
             },
             (/** @type {any} */ downloadId) => {
-                const err = chromeAny.runtime.lastError;
+                const err = chrome.runtime.lastError;
                 if (err) {
                     sendResponse({ ok: false, error: String(err.message || err) });
                 } else {
@@ -54,6 +51,4 @@ function onMessage(msg, _sender, sendResponse) {
     }
 }
 
-if (chromeAny && chromeAny.runtime && chromeAny.runtime.onMessage) {
-    chromeAny.runtime.onMessage.addListener(onMessage);
-}
+chrome.runtime.onMessage.addListener(onMessage);
