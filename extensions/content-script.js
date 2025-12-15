@@ -1,5 +1,3 @@
-// @ts-check
-
 (function () {
     /**
      * Injects a script into the page context (not the isolated extension world)

@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * MV3 service worker: receives download requests from content script.
  */
