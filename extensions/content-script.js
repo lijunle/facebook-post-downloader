@@ -72,11 +72,41 @@
         }
     }
 
+    /**
+     * Injects webpage-script.js into the page context.
+     *
+     * @returns {void}
+     */
+    function injectWebpageScript() {
+        const markerId = "fpdl-webpage-script";
+        if (document.getElementById(markerId)) return;
+
+        const script = document.createElement("script");
+        script.id = markerId;
+        script.type = "text/javascript";
+
+        try {
+            script.src = chrome.runtime.getURL("extensions/webpage-script.js");
+            script.onload = () => {
+                script.remove();
+            };
+            script.onerror = (e) => {
+                console.warn("[fpdl] Failed to load webpage-script.js via script.src", e);
+            };
+            document.documentElement.appendChild(script);
+        } catch (err) {
+            console.warn("[fpdl] Failed to inject webpage-script.js", err);
+        }
+    }
+
     // Install the fetch hook as early as possible (document_start).
     injectFetchHijack();
 
     // Install the floating post table renderer.
     injectPostTable();
+
+    // Inject the page-world helper script (pasteable console version).
+    injectWebpageScript();
 
     // Bridge download requests from page-world UI to the extension background.
     window.addEventListener("message", (event) => {

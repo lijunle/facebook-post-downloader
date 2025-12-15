@@ -13,7 +13,8 @@
         {
             "resources": [
                 "extensions/facebook-fetch.js",
-                "extensions/post-table.js"
+                "extensions/post-table.js",
+                "extensions/webpage-script.js"
             ],
             "matches": [
                 "https://www.facebook.com/*",
