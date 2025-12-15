@@ -83,7 +83,7 @@
 
         const script = document.createElement("script");
         script.id = markerId;
-        script.type = "text/javascript";
+        script.type = "module";
 
         try {
             script.src = chrome.runtime.getURL("extensions/webpage-script.js");

@@ -13,7 +13,9 @@
         {
             "resources": [
                 "extensions/facebook-fetch.js",
+                "extensions/graphql.js",
                 "extensions/post-table.js",
+                "extensions/story.js",
                 "extensions/webpage-script.js"
             ],
             "matches": [
