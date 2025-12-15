@@ -1,5 +1,3 @@
-// @ts-check
-
 (() => {
     // Prevent double-install if injected multiple times.
     // @ts-ignore

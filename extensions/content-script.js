@@ -1,6 +1,20 @@
-// @ts-check
-
 (function () {
+    /**
+     * @param {unknown} value
+     * @returns {value is (import("./types").FpdlDownloadMessage & { __fpdl: true })}
+     */
+    function isDownloadMessageData(value) {
+        if (!value || typeof value !== "object") return false;
+        /** @type {Record<string, unknown>} */
+        const obj = /** @type {Record<string, unknown>} */ (value);
+        return (
+            obj.__fpdl === true &&
+            obj.type === "FPDL_DOWNLOAD" &&
+            typeof obj.url === "string" &&
+            typeof obj.filename === "string"
+        );
+    }
+
     /**
      * Injects a script into the page context (not the isolated extension world)
      * so we can wrap the real `window.fetch` used by the page.
@@ -16,7 +30,6 @@
             script.id = markerId;
             script.type = "text/javascript";
 
-            // @ts-ignore - `chrome` exists in extension content-script context.
             script.src = chrome.runtime.getURL("extensions/facebook-fetch.js");
             script.onload = () => {
                 // Keep the DOM tidy; the script has already executed.
@@ -46,7 +59,6 @@
         script.type = "text/javascript";
 
         try {
-            // @ts-ignore - `chrome` exists in extension content-script context.
             script.src = chrome.runtime.getURL("extensions/post-table.js");
             script.onload = () => {
                 script.remove();
@@ -70,18 +82,16 @@
     window.addEventListener("message", (event) => {
         try {
             if (event.source !== window) return;
+
             const data = event.data;
-            if (!data || typeof data !== "object") return;
-            if (data.__fpdl !== true) return;
-            if (data.type !== "FPDL_DOWNLOAD") return;
+            if (!isDownloadMessageData(data)) return;
 
-            const url = data.url;
-            const filename = data.filename;
-            if (typeof url !== "string" || typeof filename !== "string") return;
+            const { url, filename } = data;
 
-            // Forward to service worker.
-            // @ts-ignore
-            chrome.runtime.sendMessage({ type: "FPDL_DOWNLOAD", url, filename }, () => {
+            /** @type {import("./types").FpdlDownloadMessage} */
+            const message = { type: "FPDL_DOWNLOAD", url, filename };
+
+            chrome.runtime.sendMessage(message, () => {
                 // Ignore response here; UI is best-effort.
             });
         } catch (err) {

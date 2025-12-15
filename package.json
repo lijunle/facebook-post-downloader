@@ -1,0 +1,11 @@
+{
+    "name": "facebook-post-downloader",
+    "private": true,
+    "scripts": {
+        "check": "tsc -p tsconfig.json"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.1.0",
+        "typescript": "^5.9.0"
+    }
+}
