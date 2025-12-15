@@ -3,26 +3,38 @@
  */
 
 /**
- * @param {any} msg
- * @param {any} _sender
- * @param {(resp: any) => void} sendResponse
+ * @typedef {import("./types").FpdlDownloadMessage} FpdlDownloadMessage
+ * @typedef {import("./types").FpdlDownloadResponse} FpdlDownloadResponse
+ */
+
+/**
+ * @param {unknown} value
+ * @returns {value is FpdlDownloadMessage}
+ */
+function isDownloadMessage(value) {
+    if (!value || typeof value !== "object") return false;
+    /** @type {Record<string, unknown>} */
+    const obj = /** @type {Record<string, unknown>} */ (value);
+    return (
+        obj.type === "FPDL_DOWNLOAD" &&
+        typeof obj.url === "string" &&
+        /^https?:\/\//i.test(obj.url) &&
+        typeof obj.filename === "string" &&
+        !!obj.filename.trim()
+    );
+}
+
+/**
+ * @param {unknown} msg
+ * @param {chrome.runtime.MessageSender} _sender
+ * @param {(resp: FpdlDownloadResponse) => void} sendResponse
+ * @returns {true | void}
  */
 function onMessage(msg, _sender, sendResponse) {
     try {
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type !== "FPDL_DOWNLOAD") return;
+        if (!isDownloadMessage(msg)) return;
 
-        const url = msg.url;
-        const filename = msg.filename;
-
-        if (typeof url !== "string" || !/^https?:\/\//i.test(url)) {
-            sendResponse({ ok: false, error: "Invalid url" });
-            return;
-        }
-        if (typeof filename !== "string" || !filename.trim()) {
-            sendResponse({ ok: false, error: "Invalid filename" });
-            return;
-        }
+        const { url, filename } = msg;
 
         chrome.downloads.download(
             {
@@ -31,10 +43,12 @@ function onMessage(msg, _sender, sendResponse) {
                 conflictAction: "overwrite",
                 saveAs: false,
             },
-            (/** @type {any} */ downloadId) => {
+            (downloadId) => {
                 const err = chrome.runtime.lastError;
                 if (err) {
                     sendResponse({ ok: false, error: String(err.message || err) });
+                } else if (typeof downloadId !== "number") {
+                    sendResponse({ ok: false, error: "Download failed" });
                 } else {
                     sendResponse({ ok: true, downloadId });
                 }
