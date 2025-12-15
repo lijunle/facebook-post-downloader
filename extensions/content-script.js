@@ -16,35 +16,6 @@
     }
 
     /**
-     * Injects a script into the page context (not the isolated extension world)
-     * so we can wrap the real `window.fetch` used by the page.
-     *
-     * @returns {void}
-     */
-    function injectFetchHijack() {
-        const markerId = "fpdl-facebook-fetch";
-        if (document.getElementById(markerId)) return;
-
-        try {
-            const script = document.createElement("script");
-            script.id = markerId;
-            script.type = "text/javascript";
-
-            script.src = chrome.runtime.getURL("extensions/facebook-fetch.js");
-            script.onload = () => {
-                // Keep the DOM tidy; the script has already executed.
-                script.remove();
-            };
-            script.onerror = (e) => {
-                console.warn("[fpdl] Failed to load facebook-fetch.js via script.src", e);
-            };
-            document.documentElement.appendChild(script);
-        } catch (err) {
-            console.warn("[fpdl] Failed to inject facebook-fetch.js", err);
-        }
-    }
-
-    /**
      * Injects the post table renderer into the page context so it can read
      * window.__fpdl_posts (a page-world global).
      *
@@ -99,14 +70,9 @@
         }
     }
 
-    // Install the fetch hook as early as possible (document_start).
-    injectFetchHijack();
-
-    // Install the floating post table renderer.
-    injectPostTable();
-
-    // Inject the page-world helper script (pasteable console version).
     injectWebpageScript();
+
+    injectPostTable();
 
     // Bridge download requests from page-world UI to the extension background.
     window.addEventListener("message", (event) => {
