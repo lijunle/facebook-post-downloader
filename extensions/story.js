@@ -277,10 +277,11 @@ function extractEmbeddedStories() {
 }
 
 // Facebook uses different GraphQL operation ("friendly") names depending on context.
-// - Home feed: CometNewsFeedPaginationQuery
+// - Home feed: CometModernHomeFeedQuery, CometNewsFeedPaginationQuery
 // - Group feed: GroupsCometFeedRegularStoriesPaginationQuery
 // - Cross-group feed (/groups/feed/): GroupsCometCrossGroupFeedPaginationQuery
 const TARGET_API_NAMES = new Set([
+    "CometModernHomeFeedQuery",
     "CometNewsFeedPaginationQuery",
     "GroupsCometFeedRegularStoriesPaginationQuery",
     "GroupsCometCrossGroupFeedPaginationQuery",
