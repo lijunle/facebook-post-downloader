@@ -149,13 +149,14 @@ export async function fetchAttachments(story, onAttachment) {
     if (!seedId) return;
 
     const mediasetToken = `pcb.${story.post_id}`;
+    const totalCount = getAttachmentCount(story);
 
     // Walk from the seed to collect all media
     /** @type {import('./types').StoryMedia[]} */
     const result = [];
     /** @type {string | undefined} */
     let currentId = seedId;
-    while (currentId && !result.some(m => m.id === currentId)) {
+    while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
         const nav = await fetchMediaNav(currentId, mediasetToken);
         if (!nav.currMedia) break;
         result.push(nav.currMedia);
