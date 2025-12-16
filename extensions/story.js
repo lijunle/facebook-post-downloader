@@ -172,7 +172,7 @@ export async function fetchAttachments(story, onAttachment) {
  * @param {unknown} obj
  * @returns {obj is import('./types').Story}
  */
-function isStory(obj) {
+export function isStory(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
@@ -208,7 +208,7 @@ function isStory(obj) {
  * @param {import('./types').Story[]} [results] - Array to collect stories, deduplicates by post_id
  * @returns {import('./types').Story[]}
  */
-function extractStories(obj, results = []) {
+export function extractStories(obj, results = []) {
     if (!obj || typeof obj !== 'object') return results;
 
     const o = /** @type {Record<string, unknown>} */ (obj);
