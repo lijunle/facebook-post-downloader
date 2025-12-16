@@ -16,34 +16,6 @@
     }
 
     /**
-     * Injects the post table renderer into the page context so it can read
-     * window.__fpdl_posts (a page-world global).
-     *
-     * @returns {void}
-     */
-    function injectPostTable() {
-        const markerId = "fpdl-post-table";
-        if (document.getElementById(markerId)) return;
-
-        const script = document.createElement("script");
-        script.id = markerId;
-        script.type = "text/javascript";
-
-        try {
-            script.src = chrome.runtime.getURL("extensions/post-table.js");
-            script.onload = () => {
-                script.remove();
-            };
-            script.onerror = (e) => {
-                console.warn("[fpdl] Failed to load post-table.js via script.src", e);
-            };
-            document.documentElement.appendChild(script);
-        } catch (err) {
-            console.warn("[fpdl] Failed to inject post-table.js", err);
-        }
-    }
-
-    /**
      * Injects webpage-script.js into the page context.
      *
      * @returns {void}
@@ -71,8 +43,6 @@
     }
 
     injectWebpageScript();
-
-    injectPostTable();
 
     // Bridge download requests from page-world UI to the extension background.
     window.addEventListener("message", (event) => {
