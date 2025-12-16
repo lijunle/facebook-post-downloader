@@ -46,7 +46,7 @@ export type Story = {
   id: string;
   post_id: string;
   wwwURL: string;
-  message: { text: string };
+  message?: { text: string } | null;
   attachments:
     | []
     | [

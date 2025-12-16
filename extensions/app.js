@@ -42,7 +42,7 @@ function StoryRow({ story, postFpdlMessage }) {
 
     return React.createElement("tr", null,
         React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } }, story.post_id),
-        React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, story.message.text.slice(0, 100)),
+        React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, (story.message?.text ?? "").slice(0, 100)),
         React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } },
             getAttachmentCount(story),
             React.createElement("button", {
