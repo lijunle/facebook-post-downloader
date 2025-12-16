@@ -127,20 +127,26 @@ async function fetchMediaNav(nodeId, mediasetToken) {
 }
 
 /**
- * Fetch all attachments for a story by walking the media viewer graph.
+ * Fetch attachments for a story, calling the callback for each attachment as it's retrieved.
  * @param {import('./types').Story} story
- * @returns {Promise<import('./types').StoryMedia[]>}
+ * @param {(media: import('./types').StoryMedia) => void} onAttachment
+ * @returns {Promise<void>}
  */
-export async function fetchAllAttachments(story) {
+export async function fetchAttachments(story, onAttachment) {
     const cached = attachmentsCache.get(story);
-    if (cached) return cached;
+    if (cached) {
+        for (const media of cached) {
+            onAttachment(media);
+        }
+        return;
+    }
 
-    if (story.attachments.length === 0) return [];
+    if (story.attachments.length === 0) return;
     const attachment = story.attachments[0].styles.attachment;
     const seedId = 'media' in attachment
         ? attachment.media.id
         : attachment.all_subattachments.nodes[0]?.media.id;
-    if (!seedId) return [];
+    if (!seedId) return;
 
     const mediasetToken = `pcb.${story.post_id}`;
 
@@ -153,11 +159,11 @@ export async function fetchAllAttachments(story) {
         const nav = await fetchMediaNav(currentId, mediasetToken);
         if (!nav.currMedia) break;
         result.push(nav.currMedia);
+        onAttachment(nav.currMedia);
         currentId = nav.nextId;
     }
 
     attachmentsCache.set(story, result);
-    return result;
 }
 
 /**

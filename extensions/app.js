@@ -10,7 +10,7 @@ const React = require('React');
 // @ts-ignore
 const ReactDOM = require('ReactDOM');
 
-import { storyListener, fetchAllAttachments, getDownloadUrl, getAttachmentCount } from './story.js';
+import { storyListener, fetchAttachments, getDownloadUrl, getAttachmentCount } from './story.js';
 
 const { useState, useEffect, useCallback } = React;
 
@@ -26,43 +26,28 @@ function postFpdlMessage(url, filename) {
  * @param {{ story: import('./types').Story, postFpdlMessage: (url: string, filename: string) => void }} props
  */
 function StoryRow({ story, postFpdlMessage }) {
-    const [retrieving, setRetrieving] = useState(false);
     const [downloading, setDownloading] = useState(false);
-
-    const isDisabled = retrieving || downloading;
-    const buttonText = downloading ? "Downloading…" : "Download";
 
     const handleDownload = useCallback(async () => {
         try {
-            setRetrieving(true);
-
-            const fetchedAttachments = await fetchAllAttachments(story);
-
-            setRetrieving(false);
             setDownloading(true);
 
-            /** @type {string[]} */
-            const downloaded = [];
-
-            for (const media of fetchedAttachments) {
-                const attachmentId = media.id;
-                if (!attachmentId) continue;
-                if (downloaded.includes(attachmentId)) continue;
-
+            await fetchAttachments(story, (media) => {
                 const download = getDownloadUrl(media);
-                if (!download) continue;
+                if (!download) return;
 
-                downloaded.push(attachmentId);
-                const filename = `${story.post_id}/${attachmentId}.${download.ext}`;
+                const filename = `${story.post_id}/${media.id}.${download.ext}`;
                 postFpdlMessage(download.url, filename);
-            }
+            });
         } catch (err) {
             console.warn("[fpdl] download failed", err);
         } finally {
-            setRetrieving(false);
             setDownloading(false);
         }
     }, [story]);
+
+    const isDisabled = downloading;
+    const buttonText = downloading ? "Downloading…" : "Download";
 
     const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
 
