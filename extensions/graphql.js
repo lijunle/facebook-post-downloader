@@ -27,50 +27,167 @@ function emit(ev) {
 // and alternate hosts (web.facebook.com, m.facebook.com) still match.
 const GRAPHQL_URL = `${location.origin}/api/graphql/`;
 
-// Best-effort GraphQL request context captured from real page traffic.
-// Used to replay the same operation later.
-/** @type {Record<string, string>} */
-let lastParams = {};
-/** @type {string} */
-let lastLsd = "";
-/** @type {Record<string, { docId: string; variables: Record<string, unknown> | null }>} */
-const operations = {};
+/**
+ * Map of API names to their Facebook module names containing doc_id.
+ * @type {Record<string, string>}
+ */
+const DOC_ID_MODULES = {
+    "CometPhotoRootContentQuery": "CometPhotoRootContentQuery_facebookRelayOperation",
+};
 
 /**
- * Capture base request params and operation doc_id from any GraphQL request.
- * @param {Record<string, string>} headers
- * @param {string | undefined} bodyText
+ * Default variables for each API. These will be merged with input variables.
+ * @type {Record<string, Record<string, unknown>>}
  */
-function captureGraphqlContext(headers, bodyText) {
-    if (!bodyText) return;
-    const params = new URLSearchParams(bodyText);
+const DEFAULT_VARIABLES = {
+    "CometPhotoRootContentQuery": {
+        feedbackSource: 65,
+        feedLocation: "COMET_MEDIA_VIEWER",
+        focusCommentID: null,
+        privacySelectorRenderLocation: "COMET_MEDIA_VIEWER",
+        renderLocation: "comet_media_viewer",
+        shouldShowComments: true,
+        useDefaultActor: false,
+        __relay_internal__pv__GHLShouldChangeSponsoredDataFieldNamerelayprovider: true,
+        __relay_internal__pv__TestPilotShouldIncludeDemoAdUseCaserelayprovider: false,
+        __relay_internal__pv__CometUFIShareActionMigrationrelayprovider: true,
+        __relay_internal__pv__CometUFICommentAvatarStickerAnimatedImagerelayprovider: false,
+        __relay_internal__pv__IsWorkUserrelayprovider: false,
+        __relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider: false,
+        __relay_internal__pv__CometImmersivePhotoCanUserDisable3DMotionrelayprovider: false,
+    },
+};
 
-    const lsd = params.get("lsd") || headers["x-fb-lsd"];
-    if (lsd) lastLsd = lsd;
+/**
+ * Get doc_id for an API using Facebook's internal require().
+ * @param {string} apiName
+ * @returns {string | undefined}
+ */
+function getDocId(apiName) {
+    const moduleName = DOC_ID_MODULES[apiName];
+    if (!moduleName) return undefined;
+    try {
+        // @ts-ignore - Facebook's global require
+        return require(moduleName);
+    } catch {
+        return undefined;
+    }
+}
 
-    const apiName = params.get("fb_api_req_friendly_name") || headers["x-fb-friendly-name"];
-    const docId = params.get("doc_id");
-    if (apiName && docId) {
-        const variablesStr = params.get("variables");
-        /** @type {Record<string, unknown> | null} */
-        let variables = null;
-        if (variablesStr) {
-            try {
-                variables = JSON.parse(variablesStr);
-            } catch {
-                // ignore parse errors
+/**
+ * Extract common request parameters from the page.
+ * @returns {{ params: URLSearchParams, lsd: string }}
+ */
+function extractPageContext() {
+    const params = new URLSearchParams();
+    let lsd = "";
+
+    try {
+        // Get user ID from cookie
+        const userMatch = document.cookie.match(/c_user=(\d+)/);
+        if (userMatch) {
+            params.set("__user", userMatch[1]);
+            params.set("av", userMatch[1]);
+        }
+
+        // Get fb_dtsg from DTSGInitData module (preferred) or hidden input
+        try {
+            // @ts-ignore
+            const dtsgData = require("DTSGInitData");
+            if (dtsgData?.token) {
+                params.set("fb_dtsg", dtsgData.token);
+            }
+        } catch {
+            const dtsgInput = document.querySelector('input[name="fb_dtsg"]');
+            if (dtsgInput instanceof HTMLInputElement && dtsgInput.value) {
+                params.set("fb_dtsg", dtsgInput.value);
             }
         }
-        operations[apiName] = { docId, variables };
+
+        // Get lsd from LSD module or hidden input
+        try {
+            // @ts-ignore
+            const lsdData = require("LSD");
+            if (lsdData?.token) {
+                lsd = lsdData.token;
+                params.set("lsd", lsd);
+            }
+        } catch {
+            const lsdInput = document.querySelector('input[name="lsd"]');
+            if (lsdInput instanceof HTMLInputElement && lsdInput.value) {
+                lsd = lsdInput.value;
+                params.set("lsd", lsd);
+            }
+        }
+
+        // Get jazoest - it's a checksum derived from fb_dtsg
+        // Format: "2" + sum of char codes of fb_dtsg
+        const fbDtsg = params.get("fb_dtsg");
+        if (fbDtsg) {
+            let sum = 0;
+            for (let i = 0; i < fbDtsg.length; i++) {
+                sum += fbDtsg.charCodeAt(i);
+            }
+            params.set("jazoest", "2" + sum);
+        }
+
+        // Get SiteData for revision and other context
+        try {
+            // @ts-ignore
+            const siteData = require("SiteData");
+            if (siteData?.server_revision) {
+                params.set("__rev", String(siteData.server_revision));
+                params.set("__spin_r", String(siteData.server_revision));
+            }
+            if (siteData?.hsi) {
+                params.set("__hsi", siteData.hsi);
+            }
+            if (siteData?.haste_session) {
+                params.set("__hs", siteData.haste_session);
+            }
+        } catch {
+            // fallback: skip these optional params
+        }
+
+        // Get SprinkleConfig for __s
+        try {
+            // @ts-ignore
+            const sprinkle = require("SprinkleConfig");
+            if (sprinkle?.param_name && sprinkle?.version) {
+                params.set("__s", sprinkle.version);
+            }
+        } catch {
+            // skip if not available
+        }
+
+        // Get CurrentRoute for __crn
+        try {
+            // @ts-ignore
+            const route = require("CurrentCometRouteStateStore");
+            const currentRoute = route?.getState?.()?.currentRoute?.name;
+            if (currentRoute) {
+                params.set("__crn", currentRoute);
+            }
+        } catch {
+            // skip if not available
+        }
+
+        // Static/common params
+        params.set("__a", "1");
+        params.set("__aaid", "0");
+        params.set("dpr", String(window.devicePixelRatio || 1));
+        params.set("__ccg", "EXCELLENT");
+        params.set("__comet_req", "15");
+        params.set("__spin_b", "trunk");
+        params.set("__spin_t", String(Math.floor(Date.now() / 1000)));
+        params.set("fb_api_caller_class", "RelayModern");
+        params.set("server_timestamps", "true");
+
+    } catch {
+        // ignore extraction errors
     }
 
-    /** @type {Record<string, string>} */
-    const capturedParams = {};
-    for (const [k, v] of params.entries()) {
-        if (k === "variables" || k === "doc_id" || k === "fb_api_req_friendly_name") continue;
-        capturedParams[k] = v;
-    }
-    lastParams = capturedParams;
+    return { params, lsd };
 }
 
 /** @type {WeakMap<XMLHttpRequest, string>} */
@@ -193,33 +310,33 @@ XMLHttpRequest.prototype.send = function patchedSend(body) {
                 payload[k] = v;
             }
             xhrPayload.set(this, payload);
-            captureGraphqlContext(xhrHeaders.get(this) || {}, bodyText);
         }
     }
     return originalXhrSend.call(this, body);
 };
 
 /**
- * Replay a GraphQL call using captured base params.
+ * Send a GraphQL request using doc_id from Facebook's module system.
  * @param {{ apiName: string, variables: Record<string, unknown> }} input
  * @returns {Promise<Record<string, unknown>[]>}
  */
 export async function sendGraphqlRequest(input) {
-    const op = operations[input.apiName];
-    if (!op) throw new Error(`Operation not found: ${input.apiName}`);
+    const docId = getDocId(input.apiName);
+    if (!docId) throw new Error(`doc_id not found for: ${input.apiName}. Module may not be loaded.`);
 
-    const variables = { ...(op.variables || {}), ...input.variables };
+    const { params, lsd } = extractPageContext();
 
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(lastParams)) params.set(k, v);
+    // Merge default variables with input variables (input takes precedence)
+    const defaultVars = DEFAULT_VARIABLES[input.apiName] || {};
+    const variables = { ...defaultVars, ...input.variables };
+
     params.set("fb_api_req_friendly_name", input.apiName);
-    params.set("doc_id", op.docId);
-    params.set("server_timestamps", "true");
+    params.set("doc_id", docId);
     params.set("variables", JSON.stringify(variables));
 
     /** @type {Record<string, string>} */
     const headers = { "content-type": "application/x-www-form-urlencoded" };
-    if (lastLsd) headers["x-fb-lsd"] = lastLsd;
+    if (lsd) headers["x-fb-lsd"] = lsd;
     headers["x-fb-friendly-name"] = input.apiName;
 
     const res = await fetch(GRAPHQL_URL, {
