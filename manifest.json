@@ -12,8 +12,12 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "extensions/facebook-fetch.js",
-                "extensions/post-table.js"
+                "extensions/app.js",
+                "extensions/graphql.js",
+                "extensions/react.js",
+                "extensions/story.js",
+                "node_modules/umd-react/dist/react.production.min.js",
+                "node_modules/umd-react/dist/react-dom.production.min.js"
             ],
             "matches": [
                 "https://www.facebook.com/*",
