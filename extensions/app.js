@@ -65,18 +65,9 @@ function StoryRow({ story, postFpdlMessage }) {
 }
 
 /**
- * @param {{ storyListener: typeof storyListener, postFpdlMessage: (url: string, filename: string) => void }} props
+ * @param {{ stories: import('./types').Story[], postFpdlMessage: (url: string, filename: string) => void }} props
  */
-function StoryTable({ storyListener: listener, postFpdlMessage }) {
-    const [stories, setStories] = useState(/** @type {import('./types').Story[]} */([]));
-
-    useEffect(() => {
-        const unsubscribe = listener((story) => {
-            setStories((prev) => [...prev, story]);
-        });
-        return unsubscribe;
-    }, [listener]);
-
+function StoryTable({ stories, postFpdlMessage }) {
     const recent = stories.slice(-50);
 
     const containerStyle = {
@@ -136,10 +127,24 @@ function StoryTable({ storyListener: listener, postFpdlMessage }) {
 function renderApp() {
     console.log('[FPDL] Rendering React app');
 
+    /** @type {import('./types').Story[]} */
+    let stories = [];
+
     const container = document.createElement('div');
     container.id = 'fpdl-post-table-root';
     document.body.appendChild(container);
-    ReactDOM.createRoot(container).render(React.createElement(StoryTable, { storyListener, postFpdlMessage }));
+    const root = ReactDOM.createRoot(container);
+
+    const render = () => {
+        root.render(React.createElement(StoryTable, { stories, postFpdlMessage }));
+    };
+
+    storyListener((story) => {
+        stories = [...stories, story];
+        render();
+    });
+
+    render();
 }
 
 renderApp();
