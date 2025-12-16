@@ -3,6 +3,73 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
 
 /**
+ * @param {string} url
+ * @returns {string}
+ */
+function guessExt(url) {
+    try {
+        if (/\.png(\?|$)/i.test(url)) return "png";
+        const u = new URL(url);
+        const fmt = u.searchParams.get("format");
+        if (fmt && /^png$/i.test(fmt)) return "png";
+        return "jpg";
+    } catch {
+        return /\.png(\?|$)/i.test(url) ? "png" : "jpg";
+    }
+}
+
+/**
+ * @param {import('./types').StoryVideo} media
+ * @returns {string | undefined}
+ */
+function pickBestProgressiveUrl(media) {
+    const list = media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
+    if (!Array.isArray(list) || list.length === 0) return undefined;
+
+    const hd = list.find(
+        /** @param {any} x */(x) => x?.metadata?.quality === "HD" && typeof x?.progressive_url === "string" && x.progressive_url,
+    );
+    if (hd && typeof hd.progressive_url === "string") return hd.progressive_url;
+
+    const first = list.find(
+        /** @param {any} x */(x) => typeof x?.progressive_url === "string" && x.progressive_url,
+    );
+    return first ? String(first.progressive_url) : undefined;
+}
+
+/**
+ * Get the download URL and extension for a media item.
+ * @param {import('./types').StoryMedia} media
+ * @returns {{ url: string, ext: string } | undefined}
+ */
+export function getDownloadUrl(media) {
+    if (media.__typename === "Video") {
+        const url = pickBestProgressiveUrl(media);
+        if (!url) return undefined;
+        return { url, ext: "mp4" };
+    }
+
+    const url = media.image?.uri;
+    if (typeof url !== "string" || !url) return undefined;
+    return { url, ext: guessExt(url) };
+}
+
+/**
+ * Get the number of attachments in a story.
+ * @param {import('./types').Story} story
+ * @returns {number}
+ */
+export function getAttachmentCount(story) {
+    const attachment = story.attachments[0]?.styles.attachment;
+    if (!attachment) return 0;
+    if ('media' in attachment) return 1;
+    return attachment.all_subattachments.count;
+}
+
+/** @type {WeakMap<import('./types').Story, import('./types').StoryMedia[]>} */
+const attachmentsCache = new WeakMap();
+
+/**
  * Extract media navigation info from a CometPhotoRootContentQuery response.
  * @param {Record<string, unknown>} obj
  * @returns {{ currMedia: import('./types').StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }}
@@ -65,6 +132,9 @@ async function fetchMediaNav(nodeId, mediasetToken) {
  * @returns {Promise<import('./types').StoryMedia[]>}
  */
 export async function fetchAllAttachments(story) {
+    const cached = attachmentsCache.get(story);
+    if (cached) return cached;
+
     if (story.attachments.length === 0) return [];
     const attachment = story.attachments[0].styles.attachment;
     const seedId = 'media' in attachment
@@ -86,6 +156,7 @@ export async function fetchAllAttachments(story) {
         currentId = nav.nextId;
     }
 
+    attachmentsCache.set(story, result);
     return result;
 }
 
