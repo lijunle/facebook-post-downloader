@@ -1,16 +1,5 @@
-// @ts-ignore
-await import('../node_modules/umd-react/dist/react.production.min.js');
-// @ts-ignore
-await import('../node_modules/umd-react/dist/react-dom.production.min.js');
-
-/** @type {typeof import('react')} */
-// @ts-ignore
-const React = require('React');
-/** @type {typeof import('react-dom/client')} */
-// @ts-ignore
-const ReactDOM = require('ReactDOM');
-
 import { storyListener, fetchAttachments, getDownloadUrl, getAttachmentCount } from './story.js';
+import { React, ReactDOM } from './react.js';
 
 const { useState, useEffect, useCallback } = React;
 

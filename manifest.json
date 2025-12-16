@@ -14,6 +14,7 @@
             "resources": [
                 "extensions/app.js",
                 "extensions/graphql.js",
+                "extensions/react.js",
                 "extensions/story.js",
                 "node_modules/umd-react/dist/react.production.min.js",
                 "node_modules/umd-react/dist/react-dom.production.min.js"
