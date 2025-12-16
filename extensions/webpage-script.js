@@ -1,3 +1,4 @@
+import { renderApp } from './app.js';
 import { storyListener, fetchAllAttachments } from './story.js';
 
 console.log('[FPDL] GraphQL patch applied');
@@ -30,3 +31,5 @@ window.__fpdl_retrieveAttachments = async (/** @type {{ story: import('./types')
         post.attachments = attachments;
     }
 };
+
+renderApp();

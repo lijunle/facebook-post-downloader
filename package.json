@@ -4,8 +4,13 @@
     "scripts": {
         "check": "tsc -p tsconfig.json"
     },
+    "dependencies": {
+        "umd-react": "^19.2.1"
+    },
     "devDependencies": {
         "@types/chrome": "^0.1.0",
+        "@types/react": "^19.2.7",
+        "@types/react-dom": "^19.2.3",
         "typescript": "^5.9.0"
     }
 }
