@@ -16,12 +16,12 @@
     }
 
     /**
-     * Injects webpage-script.js into the page context.
+     * Injects app.js into the page context.
      *
      * @returns {void}
      */
-    function injectWebpageScript() {
-        const markerId = "fpdl-webpage-script";
+    function injectAppScript() {
+        const markerId = "fpdl-app-script";
         if (document.getElementById(markerId)) return;
 
         const script = document.createElement("script");
@@ -29,20 +29,20 @@
         script.type = "module";
 
         try {
-            script.src = chrome.runtime.getURL("extensions/webpage-script.js");
+            script.src = chrome.runtime.getURL("extensions/app.js");
             script.onload = () => {
                 script.remove();
             };
             script.onerror = (e) => {
-                console.warn("[fpdl] Failed to load webpage-script.js via script.src", e);
+                console.warn("[fpdl] Failed to load app.js via script.src", e);
             };
             document.documentElement.appendChild(script);
         } catch (err) {
-            console.warn("[fpdl] Failed to inject webpage-script.js", err);
+            console.warn("[fpdl] Failed to inject app.js", err);
         }
     }
 
-    injectWebpageScript();
+    injectAppScript();
 
     // Bridge download requests from page-world UI to the extension background.
     window.addEventListener("message", (event) => {

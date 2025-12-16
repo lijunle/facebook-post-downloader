@@ -244,7 +244,7 @@ function PostTable({ storyListener: listener, postFpdlMessage }) {
     );
 }
 
-export function renderApp() {
+function renderApp() {
     console.log('[FPDL] Rendering React app');
 
     const container = document.createElement('div');
@@ -252,3 +252,5 @@ export function renderApp() {
     document.body.appendChild(container);
     ReactDOM.createRoot(container).render(React.createElement(PostTable, { storyListener, postFpdlMessage }));
 }
+
+renderApp();
