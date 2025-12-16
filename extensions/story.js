@@ -180,7 +180,7 @@ export function isStory(obj) {
     if (typeof o.id !== 'string' || !o.id) return false;
     if (typeof o.post_id !== 'string' || !o.post_id) return false;
 
-    // Must have attachments array (can be empty for text-only posts)
+    // Must have attachments array
     if (!Array.isArray(o.attachments)) return false;
 
     // If attachments exist, first one must have styles.attachment with media or all_subattachments
@@ -196,6 +196,10 @@ export function isStory(obj) {
 
         // Must have either media or all_subattachments
         if (!('media' in attachment) && !('all_subattachments' in attachment)) return false;
+    } else {
+        // Text-only post: must have message.text with content
+        const message = /** @type {Record<string, unknown> | undefined} */ (o.message);
+        if (!message || typeof message.text !== 'string' || !message.text) return false;
     }
 
     return true;
