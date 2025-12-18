@@ -172,6 +172,22 @@ export async function fetchAttachments(story, onAttachment) {
 }
 
 /**
+ * Download all attachments for a story.
+ * @param {import('./types').Story} story
+ * @param {(url: string, filename: string) => void} postAppMessage
+ * @returns {Promise<void>}
+ */
+export async function downloadStory(story, postAppMessage) {
+    await fetchAttachments(story, (media) => {
+        const download = getDownloadUrl(media);
+        if (!download) return;
+
+        const filename = `${story.post_id}/${media.id}.${download.ext}`;
+        postAppMessage(download.url, filename);
+    });
+}
+
+/**
  * Check if an object is a valid Story.
  * @param {unknown} obj
  * @returns {obj is import('./types').Story}

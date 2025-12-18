@@ -1,4 +1,4 @@
-import { fetchAttachments, getDownloadUrl } from './story.js';
+import { downloadStory } from './story.js';
 
 /**
  * Extract postID from React fiber of a DOM element.
@@ -57,13 +57,7 @@ function createDownloadButton(story, postAppMessage) {
         btn.style.cursor = 'wait';
 
         try {
-            await fetchAttachments(story, (media) => {
-                const download = getDownloadUrl(media);
-                if (!download) return;
-
-                const filename = `${story.post_id}/${media.id}.${download.ext}`;
-                postAppMessage(download.url, filename);
-            });
+            await downloadStory(story, postAppMessage);
         } catch (err) {
             console.warn('[fpdl] download failed', err);
         } finally {

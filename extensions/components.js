@@ -1,4 +1,4 @@
-import { fetchAttachments, getDownloadUrl, getAttachmentCount } from './story.js';
+import { downloadStory, getAttachmentCount } from './story.js';
 import { React } from './react.js';
 
 const { useState, useCallback } = React;
@@ -13,13 +13,7 @@ export function StoryRow({ story, postAppMessage }) {
         try {
             setDownloading(true);
 
-            await fetchAttachments(story, (media) => {
-                const download = getDownloadUrl(media);
-                if (!download) return;
-
-                const filename = `${story.post_id}/${media.id}.${download.ext}`;
-                postAppMessage(download.url, filename);
-            });
+            await downloadStory(story, postAppMessage);
         } catch (err) {
             console.warn("[fpdl] download failed", err);
         } finally {
