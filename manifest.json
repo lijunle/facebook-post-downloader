@@ -14,6 +14,7 @@
             "resources": [
                 "extensions/app.js",
                 "extensions/components.js",
+                "extensions/download-button.js",
                 "extensions/graphql.js",
                 "extensions/react.js",
                 "extensions/story.js",
