@@ -46,13 +46,14 @@ export type Story = {
   id: string;
   post_id: string;
   wwwURL: string;
-  message: { text?: string };
+  message: null | { text: string };
   attachments:
     | []
     | [
         {
           styles: {
             attachment:
+              | {} // Un-supported attachment
               | {
                   media: StoryMedia;
                 }
@@ -63,6 +64,7 @@ export type Story = {
                   };
                 };
           };
-        },
+        }
       ];
+  attached_story: null | Story;
 };

@@ -143,9 +143,13 @@ export async function fetchAttachments(story, onAttachment) {
 
     if (story.attachments.length === 0) return;
     const attachment = story.attachments[0].styles.attachment;
-    const seedId = 'media' in attachment
-        ? attachment.media.id
-        : attachment.all_subattachments.nodes[0]?.media.id;
+    /** @type {string | undefined} */
+    let seedId;
+    if ('media' in attachment) {
+        seedId = attachment.media.id;
+    } else if ('all_subattachments' in attachment) {
+        seedId = attachment.all_subattachments.nodes[0]?.media.id;
+    }
     if (!seedId) return;
 
     const mediasetToken = `pcb.${story.post_id}`;
@@ -176,31 +180,13 @@ export function isStory(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
-    // Must have id and post_id
+    // Must have id, post_id, and wwwURL
     if (typeof o.id !== 'string' || !o.id) return false;
     if (typeof o.post_id !== 'string' || !o.post_id) return false;
+    if (typeof o.wwwURL !== 'string' || !o.wwwURL) return false;
 
     // Must have attachments array
     if (!Array.isArray(o.attachments)) return false;
-
-    // If attachments exist, first one must have styles.attachment with media or all_subattachments
-    if (o.attachments.length > 0) {
-        const firstAttachment = /** @type {Record<string, unknown> | undefined} */ (o.attachments[0]);
-        if (!firstAttachment) return false;
-
-        const styles = /** @type {Record<string, unknown> | undefined} */ (firstAttachment.styles);
-        if (!styles) return false;
-
-        const attachment = /** @type {Record<string, unknown> | undefined} */ (styles.attachment);
-        if (!attachment) return false;
-
-        // Must have either media or all_subattachments
-        if (!('media' in attachment) && !('all_subattachments' in attachment)) return false;
-    } else {
-        // Text-only post: must have message.text with content
-        const message = /** @type {Record<string, unknown> | undefined} */ (o.message);
-        if (!message || typeof message.text !== 'string' || !message.text) return false;
-    }
 
     return true;
 }
@@ -218,7 +204,8 @@ export function extractStories(obj, results = []) {
     const o = /** @type {Record<string, unknown>} */ (obj);
 
     // Check if this object is a valid story
-    if (isStory(obj)) {
+    const objIsStory = isStory(obj);
+    if (objIsStory) {
         const story = /** @type {import('./types').Story} */ (obj);
         const postId = story.post_id;
         const existingIndex = results.findIndex(s => s.post_id === postId);
@@ -240,6 +227,8 @@ export function extractStories(obj, results = []) {
     } else {
         const keys = Object.keys(o);
         for (const key of keys) {
+            // Skip attached_story for story objects - it should remain nested, not extracted separately
+            if (objIsStory && key === 'attached_story') continue;
             extractStories(o[key], results);
         }
     }
