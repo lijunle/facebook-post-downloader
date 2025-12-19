@@ -208,12 +208,13 @@ function buildFolderName(story) {
 }
 
 /**
- * Build the index.md content for a story.
+ * Render a story to markdown content.
  * @param {Story} story
  * @param {Array<{ media: StoryMedia, filename: string }>} attachments
+ * @param {string} [quoted_story] - Pre-rendered quoted story content
  * @returns {string}
  */
-function buildIndexMarkdownFile(story, attachments) {
+function renderStory(story, attachments, quoted_story) {
     const lines = [];
 
     // Group
@@ -260,6 +261,16 @@ function buildIndexMarkdownFile(story, attachments) {
         lines.push('');
     }
 
+    // Quoted story
+    if (quoted_story) {
+        lines.push('---');
+        lines.push('');
+        // Prefix each line with "> " for blockquote
+        const quotedLines = quoted_story.split('\n').map(line => `> ${line}`);
+        lines.push(...quotedLines);
+        lines.push('');
+    }
+
     return lines.join('\n');
 }
 
@@ -287,9 +298,26 @@ export async function downloadStory(story, postAppMessage) {
         downloadedAttachments.push({ media, filename });
     });
 
-    // Build and download index.md
-    const indexMarkdown = buildIndexMarkdownFile(story, downloadedAttachments);
-    // Use data URL instead of blob URL - blob URLs can't be accessed by the background script
+    // Fetch attachments for attached_story if it exists
+    /** @type {string | undefined} */
+    let quotedStory;
+    if (story.attached_story) {
+        /** @type {Array<{ media: StoryMedia, filename: string }>} */
+        const attachedStoryAttachments = [];
+        await fetchAttachments(story.attached_story, (media) => {
+            const download = getDownloadUrl(media);
+            if (!download) return;
+
+            mediaIndex++;
+            const indexPrefix = String(mediaIndex).padStart(4, '0');
+            const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
+            postAppMessage(download.url, filename);
+            attachedStoryAttachments.push({ media, filename });
+        });
+        quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
+    }
+
+    const indexMarkdown = renderStory(story, downloadedAttachments, quotedStory);
     const indexDataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(indexMarkdown);
     postAppMessage(indexDataUrl, `${folder}/index.md`);
 }
