@@ -69,6 +69,9 @@ export function getAttachmentCount(story) {
 /** @type {WeakMap<import('./types').Story, import('./types').StoryMedia[]>} */
 const attachmentsCache = new WeakMap();
 
+/** @type {Map<string, number>} */
+const storyCreateTimeCache = new Map();
+
 /**
  * Extract media navigation info from a CometPhotoRootContentQuery response.
  * @param {Record<string, unknown>} obj
@@ -188,6 +191,17 @@ export async function downloadStory(story, postAppMessage) {
 }
 
 /**
+ * Get the creation time for a story.
+ * @param {import('./types').Story} story
+ * @returns {Date | undefined}
+ */
+export function getCreateTime(story) {
+    const createTime = storyCreateTimeCache.get(story.id);
+    if (createTime === undefined) return undefined;
+    return new Date(createTime * 1000);
+}
+
+/**
  * Check if an object is a valid Story.
  * @param {unknown} obj
  * @returns {obj is import('./types').Story}
@@ -253,6 +267,33 @@ export function extractStories(obj, results = []) {
 }
 
 /**
+ * Recursively extract metadata (creation_time, url) from deeply nested objects
+ * and populate storyCreateTimeCache directly.
+ * @param {unknown} obj
+ */
+function extractMetadataMap(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has creation_time, id and url (metadata object)
+    if (typeof o.creation_time === 'number' && typeof o.id === 'string' && typeof o.url === 'string') {
+        storyCreateTimeCache.set(o.id, o.creation_time);
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractMetadataMap(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractMetadataMap(o[key]);
+        }
+    }
+}
+
+/**
  * Extract stories embedded in the initial HTML page load.
  * These are delivered via <script type="application/json"> tags.
  * @returns {import('./types').Story[]}
@@ -273,6 +314,7 @@ function extractEmbeddedStories() {
         try {
             const data = JSON.parse(content);
             extractStories(data, stories);
+            extractMetadataMap(data);
         } catch {
             // ignore parse errors
         }
@@ -329,6 +371,8 @@ export function storyListener(cb) {
         if (!apiName || !TARGET_API_NAMES.has(apiName)) return;
 
         const stories = extractStories(ev.responseBody);
+        extractMetadataMap(ev.responseBody);
+
         for (const story of stories) {
             try {
                 cb(story);

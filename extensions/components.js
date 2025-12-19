@@ -1,4 +1,4 @@
-import { downloadStory, getAttachmentCount } from './story.js';
+import { downloadStory, getAttachmentCount, getCreateTime } from './story.js';
 import { React } from './react.js';
 
 const { useState, useCallback } = React;
@@ -27,16 +27,17 @@ export function StoryRow({ story, postAppMessage }) {
     const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
 
     return React.createElement("tr", null,
-        React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } }, story.post_id),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
         React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, (story.message?.text ?? "").slice(0, 100)),
-        React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } },
-            getAttachmentCount(story),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.attached_story ? "true" : "false"),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story)),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
             React.createElement("button", {
                 type: "button",
                 disabled: isDisabled,
                 onClick: handleDownload,
                 style: {
-                    marginLeft: "6px",
                     fontSize: "11px",
                     padding: "2px 6px",
                     borderRadius: "4px",
@@ -61,7 +62,7 @@ export function StoryTable({ stories, postAppMessage }) {
         left: "12px",
         bottom: "12px",
         zIndex: 2147483647,
-        maxWidth: "520px",
+        maxWidth: "90vw",
         maxHeight: "40vh",
         overflow: "auto",
         background: "rgba(0, 0, 0, 0.5)",
@@ -96,9 +97,12 @@ export function StoryTable({ stories, postAppMessage }) {
         React.createElement("table", { style: tableStyle },
             React.createElement("thead", null,
                 React.createElement("tr", null,
+                    React.createElement("th", { style: thStyle }, "create_time"),
                     React.createElement("th", { style: thStyle }, "post_id"),
-                    React.createElement("th", { style: { ...thStyle, textAlign: "left" } }, "text"),
-                    React.createElement("th", { style: { ...thStyle, textAlign: "right" } }, "attachments")
+                    React.createElement("th", { style: thStyle }, "text"),
+                    React.createElement("th", { style: thStyle }, "attached_story"),
+                    React.createElement("th", { style: thStyle }, "attachments"),
+                    React.createElement("th", { style: thStyle }, "download")
                 )
             ),
             React.createElement("tbody", null,
