@@ -18,7 +18,7 @@ function isDownloadMessage(value) {
     return (
         obj.type === "FPDL_DOWNLOAD" &&
         typeof obj.url === "string" &&
-        /^https?:\/\//i.test(obj.url) &&
+        /^(https?|data):/i.test(obj.url) &&
         typeof obj.filename === "string" &&
         !!obj.filename.trim()
     );

@@ -21,6 +21,7 @@ export type StoryPhoto = {
   __typename: "Photo";
   id: string;
   url: string;
+  created_time: number;
   image: {
     uri: string;
   };
@@ -30,6 +31,7 @@ export type StoryVideo = {
   __typename: "Video";
   id: string;
   url: string;
+  created_time: number;
   videoDeliveryResponseFragment: {
     videoDeliveryResponseResult: {
       progressive_urls: Array<{

@@ -223,6 +223,62 @@ function buildFolderName(story) {
 }
 
 /**
+ * Build the index.md content for a story.
+ * @param {import('./types').Story} story
+ * @param {Array<{ media: import('./types').StoryMedia, filename: string }>} attachments
+ * @returns {string}
+ */
+function buildIndexMarkdownFile(story, attachments) {
+    const lines = [];
+
+    // Group
+    const group = getGroup(story);
+    if (group) {
+        lines.push(`**Group:** ${group.name}`);
+        lines.push('');
+    }
+
+    // Actor
+    const actor = story.actors?.[0];
+    if (actor) {
+        lines.push(`**Author:** ${actor.name}`);
+        lines.push('');
+    }
+
+    // Create time
+    const createTime = getCreateTime(story);
+    if (createTime) {
+        lines.push(`**Date:** ${createTime.toISOString()}`);
+        lines.push('');
+    }
+
+    // Message
+    if (story.message?.text) {
+        lines.push('---');
+        lines.push('');
+        lines.push(story.message.text);
+        lines.push('');
+    }
+
+    // Attachments
+    if (attachments.length > 0) {
+        lines.push('---');
+        lines.push('');
+        for (const { media, filename } of attachments) {
+            const basename = filename.split('/').pop() || filename;
+            if (media.__typename === 'Video') {
+                lines.push(`- [${basename}](./${basename})`);
+            } else {
+                lines.push(`![${basename}](./${basename})`);
+            }
+        }
+        lines.push('');
+    }
+
+    return lines.join('\n');
+}
+
+/**
  * Download all attachments for a story.
  * @param {import('./types').Story} story
  * @param {(url: string, filename: string) => void} postAppMessage
@@ -230,13 +286,27 @@ function buildFolderName(story) {
  */
 export async function downloadStory(story, postAppMessage) {
     const folder = buildFolderName(story);
+
+    /** @type {Array<{ media: import('./types').StoryMedia, filename: string }>} */
+    const downloadedAttachments = [];
+    let mediaIndex = 0;
+
     await fetchAttachments(story, (media) => {
         const download = getDownloadUrl(media);
         if (!download) return;
 
-        const filename = `${folder}/${media.id}.${download.ext}`;
+        mediaIndex++;
+        const indexPrefix = String(mediaIndex).padStart(4, '0');
+        const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
         postAppMessage(download.url, filename);
+        downloadedAttachments.push({ media, filename });
     });
+
+    // Build and download index.md
+    const indexMarkdown = buildIndexMarkdownFile(story, downloadedAttachments);
+    // Use data URL instead of blob URL - blob URLs can't be accessed by the background script
+    const indexDataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(indexMarkdown);
+    postAppMessage(indexDataUrl, `${folder}/index.md`);
 }
 
 /**
