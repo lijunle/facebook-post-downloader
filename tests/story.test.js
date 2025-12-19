@@ -19,7 +19,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { isStory, extractStories } = await import('../extensions/story.js');
+const { isStory, extractStories, extractStoryGroupMap, getGroup } = await import('../extensions/story.js');
 
 describe('isStory', () => {
     it('should return false for null', () => {
@@ -259,5 +259,156 @@ describe('extractStories with real data', () => {
         if (storyWithUrl) {
             assert.ok(storyWithUrl.wwwURL, 'Should prefer story with wwwURL');
         }
+    });
+});
+
+describe('extractStoryGroupMap', () => {
+    it('should do nothing for null', () => {
+        extractStoryGroupMap(null);
+        // Should not throw
+    });
+
+    it('should do nothing for undefined', () => {
+        extractStoryGroupMap(undefined);
+        // Should not throw
+    });
+
+    it('should do nothing for non-object', () => {
+        extractStoryGroupMap('string');
+        extractStoryGroupMap(123);
+        // Should not throw
+    });
+
+    it('should extract group from object with id and to field', () => {
+        const obj = {
+            id: 'story-123',
+            to: {
+                __typename: 'Group',
+                id: 'group-456',
+                name: 'Test Group'
+            }
+        };
+        extractStoryGroupMap(obj);
+        const story = /** @type {import('../extensions/types').Story} */ ({ id: 'story-123', post_id: '123', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        const group = getGroup(story);
+        assert.ok(group, 'Should extract group');
+        assert.strictEqual(group.id, 'group-456');
+        assert.strictEqual(group.name, 'Test Group');
+    });
+
+    it('should ignore to field without __typename Group', () => {
+        const obj = {
+            id: 'story-user',
+            to: {
+                __typename: 'User',
+                id: 'user-789',
+                name: 'Some User'
+            }
+        };
+        extractStoryGroupMap(obj);
+        const story = /** @type {import('../extensions/types').Story} */ ({ id: 'story-user', post_id: '123', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        const group = getGroup(story);
+        assert.strictEqual(group, undefined, 'Should not extract non-Group to field');
+    });
+
+    it('should ignore to field without name', () => {
+        const obj = {
+            id: 'story-no-name',
+            to: {
+                __typename: 'Group',
+                id: 'group-no-name'
+                // missing name
+            }
+        };
+        extractStoryGroupMap(obj);
+        const story = /** @type {import('../extensions/types').Story} */ ({ id: 'story-no-name', post_id: '123', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        const group = getGroup(story);
+        assert.strictEqual(group, undefined, 'Should not extract group without name');
+    });
+
+    it('should extract group from deeply nested object', () => {
+        const obj = {
+            data: {
+                viewer: {
+                    story: {
+                        id: 'nested-story',
+                        to: {
+                            __typename: 'Group',
+                            id: 'nested-group',
+                            name: 'Nested Group'
+                        }
+                    }
+                }
+            }
+        };
+        extractStoryGroupMap(obj);
+        const story = /** @type {import('../extensions/types').Story} */ ({ id: 'nested-story', post_id: '123', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        const group = getGroup(story);
+        assert.ok(group, 'Should extract group from nested object');
+        assert.strictEqual(group.name, 'Nested Group');
+    });
+
+    it('should extract group from array', () => {
+        const obj = [
+            {
+                id: 'array-story-1',
+                to: {
+                    __typename: 'Group',
+                    id: 'array-group-1',
+                    name: 'Array Group 1'
+                }
+            },
+            {
+                id: 'array-story-2',
+                to: {
+                    __typename: 'Group',
+                    id: 'array-group-2',
+                    name: 'Array Group 2'
+                }
+            }
+        ];
+        extractStoryGroupMap(obj);
+        const story1 = /** @type {import('../extensions/types').Story} */ ({ id: 'array-story-1', post_id: '1', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        const story2 = /** @type {import('../extensions/types').Story} */ ({ id: 'array-story-2', post_id: '2', wwwURL: 'url', attachments: [], message: null, attached_story: null });
+        assert.strictEqual(getGroup(story1)?.name, 'Array Group 1');
+        assert.strictEqual(getGroup(story2)?.name, 'Array Group 2');
+    });
+});
+
+describe('extractStoryGroupMap with real data', () => {
+    it('should extract group from mock-story-with-group.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
+
+        // First extract stories to get the story id
+        const stories = extractStories(mockData);
+        assert.ok(stories.length > 0, 'Should extract at least one story');
+
+        // Then extract group map
+        extractStoryGroupMap(mockData);
+
+        // Find the story
+        const story = stories.find(s => s.post_id === '2282323118944469');
+        assert.ok(story, 'Should find the story');
+
+        // Get the group for this story
+        const group = getGroup(story);
+        assert.ok(group, 'Should extract group for the story');
+        assert.strictEqual(group.__typename, 'Group');
+        assert.strictEqual(group.id, '1250325325477592');
+        assert.strictEqual(group.name, 'PS NINTENDO XBOX MALAYSIA CLUB (PNXC)');
+    });
+
+    it('should return undefined for story without group', () => {
+        // Use mock-story-text-only.json which doesn't have a group
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '1411731986983785');
+        assert.ok(story, 'Should find the story');
+
+        const group = getGroup(story);
+        assert.strictEqual(group, undefined, 'Text-only story should not have a group');
     });
 });

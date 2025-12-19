@@ -72,6 +72,9 @@ const attachmentsCache = new WeakMap();
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 
+/** @type {Map<string, import('./types').StoryGroup>} */
+const storyGroupCache = new Map();
+
 /**
  * Extract media navigation info from a CometPhotoRootContentQuery response.
  * @param {Record<string, unknown>} obj
@@ -202,6 +205,15 @@ export function getCreateTime(story) {
 }
 
 /**
+ * Get the group for a story.
+ * @param {import('./types').Story} story
+ * @returns {import('./types').StoryGroup | undefined}
+ */
+export function getGroup(story) {
+    return storyGroupCache.get(story.id);
+}
+
+/**
  * Check if an object is a valid Story.
  * @param {unknown} obj
  * @returns {obj is import('./types').Story}
@@ -271,7 +283,7 @@ export function extractStories(obj, results = []) {
  * and populate storyCreateTimeCache directly.
  * @param {unknown} obj
  */
-function extractMetadataMap(obj) {
+function extractStoryCreateTime(obj) {
     if (!obj || typeof obj !== 'object') return;
 
     const o = /** @type {Record<string, unknown>} */ (obj);
@@ -284,11 +296,44 @@ function extractMetadataMap(obj) {
     // Recurse into arrays and objects
     if (Array.isArray(obj)) {
         for (const item of obj) {
-            extractMetadataMap(item);
+            extractStoryCreateTime(item);
         }
     } else {
         for (const key of Object.keys(o)) {
-            extractMetadataMap(o[key]);
+            extractStoryCreateTime(o[key]);
+        }
+    }
+}
+
+/**
+ * Recursively extract group info from deeply nested objects
+ * and populate storyGroupCache directly.
+ * @param {unknown} obj
+ */
+export function extractStoryGroupMap(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has id (string) and to.__typename === "Group"
+    if (typeof o.id === 'string' && o.to && typeof o.to === 'object') {
+        const to = /** @type {Record<string, unknown>} */ (o.to);
+        if (to.__typename === 'Group' && typeof to.id === 'string' && typeof to.name === 'string') {
+            // Only set if not already present (prefer first/most complete match)
+            if (!storyGroupCache.has(o.id)) {
+                storyGroupCache.set(o.id, /** @type {import('./types').StoryGroup} */(to));
+            }
+        }
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractStoryGroupMap(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractStoryGroupMap(o[key]);
         }
     }
 }
@@ -314,7 +359,8 @@ function extractEmbeddedStories() {
         try {
             const data = JSON.parse(content);
             extractStories(data, stories);
-            extractMetadataMap(data);
+            extractStoryCreateTime(data);
+            extractStoryGroupMap(data);
         } catch {
             // ignore parse errors
         }
@@ -371,7 +417,8 @@ export function storyListener(cb) {
         if (!apiName || !TARGET_API_NAMES.has(apiName)) return;
 
         const stories = extractStories(ev.responseBody);
-        extractMetadataMap(ev.responseBody);
+        extractStoryCreateTime(ev.responseBody);
+        extractStoryGroupMap(ev.responseBody);
 
         for (const story of stories) {
             try {

@@ -42,6 +42,12 @@ export type StoryVideo = {
 
 export type StoryMedia = StoryPhoto | StoryVideo;
 
+export type StoryGroup = {
+  __typename: "Group";
+  id: string;
+  name: string;
+};
+
 export type Story = {
   id: string;
   post_id: string;
