@@ -48,11 +48,18 @@ export type StoryGroup = {
   name: string;
 };
 
+export type StoryActor = {
+  __typename: "User";
+  id: string;
+  name: string;
+};
+
 export type Story = {
   id: string;
   post_id: string;
   wwwURL: string;
   message: null | { text: string };
+  actors: [StoryActor];
   attachments:
     | []
     | [

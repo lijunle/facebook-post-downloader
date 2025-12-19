@@ -178,17 +178,63 @@ export async function fetchAttachments(story, onAttachment) {
 }
 
 /**
+ * Sanitize a string for use in a filename.
+ * @param {string} str
+ * @returns {string}
+ */
+function sanitizeFilename(str) {
+    return str.replace(/[<>:"/\\|?*]/g, '_').trim();
+}
+
+/**
+ * Build the folder name for a story download.
+ * Format: {date:YYYY-MM-DD}_{groupName}_{actorName}_{post_id}
+ * @param {import('./types').Story} story
+ * @returns {string}
+ */
+function buildFolderName(story) {
+    const parts = [];
+
+    // Date part
+    const createTime = getCreateTime(story);
+    if (createTime) {
+        const year = createTime.getFullYear();
+        const month = String(createTime.getMonth() + 1).padStart(2, '0');
+        const day = String(createTime.getDate()).padStart(2, '0');
+        parts.push(`${year}-${month}-${day}`);
+    }
+
+    // Group name part
+    const group = getGroup(story);
+    if (group) {
+        parts.push(sanitizeFilename(group.name));
+    }
+
+    // Actor name part
+    const actor = story.actors?.[0];
+    if (actor) {
+        parts.push(sanitizeFilename(actor.name));
+    }
+
+    // Post ID part (always included)
+    parts.push(story.post_id);
+
+    return parts.join('_');
+}
+
+/**
  * Download all attachments for a story.
  * @param {import('./types').Story} story
  * @param {(url: string, filename: string) => void} postAppMessage
  * @returns {Promise<void>}
  */
 export async function downloadStory(story, postAppMessage) {
+    const folder = buildFolderName(story);
     await fetchAttachments(story, (media) => {
         const download = getDownloadUrl(media);
         if (!download) return;
 
-        const filename = `${story.post_id}/${media.id}.${download.ext}`;
+        const filename = `${folder}/${media.id}.${download.ext}`;
         postAppMessage(download.url, filename);
     });
 }
