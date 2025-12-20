@@ -9,49 +9,73 @@ import { useDownloadButtonInjection } from './download-button.js';
 const { useState, useEffect, useCallback } = React;
 
 /**
- * @param {{ story: Story, onDownloadFile: (url: string, filename: string) => void }} props
+ * @param {{ story: Story, selected: boolean, onToggle: () => void }} props
  */
-function StoryRow({ story, onDownloadFile }) {
-    const [downloading, setDownloading] = useState(false);
-
-    const handleDownload = useCallback(async () => {
-        try {
-            setDownloading(true);
-
-            await downloadStory(story, onDownloadFile);
-        } catch (err) {
-            console.warn("[fpdl] download failed", err);
-        } finally {
-            setDownloading(false);
-        }
-    }, [story]);
-
-    const isDisabled = downloading;
-    const buttonText = downloading ? "Downloading…" : "Download";
-
+function StoryRow({ story, selected, onToggle }) {
     const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
+    const rowStyle = selected ? { background: "rgba(255,255,255,0.1)" } : {};
 
-    return React.createElement("tr", null,
+    return React.createElement("tr", { style: rowStyle },
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
+            React.createElement("input", {
+                type: "checkbox",
+                checked: selected,
+                onChange: onToggle,
+            })
+        ),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
         React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, (story.message?.text ?? "").slice(0, 100)),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.attached_story ? "true" : "false"),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story)),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
-            React.createElement("button", {
-                type: "button",
-                disabled: isDisabled,
-                onClick: handleDownload,
-                style: {
-                    fontSize: "11px",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(255,255,255,0.35)",
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#fff",
-                    cursor: isDisabled ? "not-allowed" : "pointer",
-                },
-            }, buttonText)
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
+    );
+}
+
+/**
+ * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void }} props
+ */
+function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
+    const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(s.id));
+
+    const tableStyle = {
+        width: "100%",
+        borderCollapse: "collapse",
+        fontSize: "12px",
+    };
+
+    const thStyle = {
+        textAlign: "left",
+        padding: "4px 6px",
+        borderBottom: "1px solid rgba(255,255,255,0.2)",
+        whiteSpace: "nowrap",
+    };
+
+    return React.createElement("table", { style: tableStyle },
+        React.createElement("thead", null,
+            React.createElement("tr", null,
+                React.createElement("th", { style: thStyle },
+                    React.createElement("input", {
+                        type: "checkbox",
+                        checked: allSelected,
+                        onChange: onToggleAll,
+                    })
+                ),
+                React.createElement("th", { style: thStyle }, "create_time"),
+                React.createElement("th", { style: thStyle }, "post_id"),
+                React.createElement("th", { style: thStyle }, "text"),
+                React.createElement("th", { style: thStyle }, "attached_story"),
+                React.createElement("th", { style: thStyle }, "attachments")
+            )
+        ),
+        React.createElement("tbody", null,
+            stories.map((story) =>
+                React.createElement(StoryRow, {
+                    key: story.id,
+                    story,
+                    selected: selectedIds.has(story.id),
+                    onToggle: () => onToggleStory(story.id),
+                })
+            )
         )
     );
 }
@@ -59,7 +83,50 @@ function StoryRow({ story, onDownloadFile }) {
 /**
  * @param {{ stories: Story[], onDownloadFile: (url: string, filename: string) => void, onClose: () => void }} props
  */
-function StoryTable({ stories, onDownloadFile, onClose }) {
+function StoryDialog({ stories, onDownloadFile, onClose }) {
+    const [selectedIds, setSelectedIds] = useState(/** @type {Set<string>} */(new Set()));
+    const [downloading, setDownloading] = useState(false);
+
+    const onToggleStory = useCallback((/** @type {string} */ id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }, []);
+
+    const onToggleAll = useCallback(() => {
+        setSelectedIds(prev => {
+            const allSelected = stories.every(s => prev.has(s.id));
+            if (allSelected) {
+                return new Set();
+            } else {
+                return new Set(stories.map(s => s.id));
+            }
+        });
+    }, [stories]);
+
+    const handleDownload = useCallback(async () => {
+        if (selectedIds.size === 0 || downloading) return;
+
+        setDownloading(true);
+        try {
+            const selectedStories = stories.filter(s => selectedIds.has(s.id));
+            for (let i = 0; i < selectedStories.length; i++) {
+                if (i > 0) await new Promise(r => setTimeout(r, 1000));
+                await downloadStory(selectedStories[i], onDownloadFile);
+            }
+        } catch (err) {
+            console.warn("[fpdl] download failed", err);
+        } finally {
+            setDownloading(false);
+        }
+    }, [selectedIds, stories, onDownloadFile, downloading]);
+
     const containerStyle = {
         position: "fixed",
         left: "12px",
@@ -86,6 +153,19 @@ function StoryTable({ stories, onDownloadFile, onClose }) {
         fontSize: "12px",
         fontWeight: 700,
         userSelect: "none",
+        flex: 1,
+        textAlign: "center",
+    };
+
+    const buttonStyle = {
+        fontSize: "11px",
+        padding: "2px 8px",
+        borderRadius: "4px",
+        border: "1px solid rgba(255,255,255,0.35)",
+        background: "rgba(255,255,255,0.12)",
+        color: "#fff",
+        cursor: downloading || selectedIds.size === 0 ? "not-allowed" : "pointer",
+        opacity: downloading || selectedIds.size === 0 ? 0.5 : 1,
     };
 
     const closeButtonStyle = {
@@ -99,21 +179,14 @@ function StoryTable({ stories, onDownloadFile, onClose }) {
         opacity: 0.7,
     };
 
-    const tableStyle = {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: "12px",
-    };
-
-    const thStyle = {
-        textAlign: "left",
-        padding: "4px 6px",
-        borderBottom: "1px solid rgba(255,255,255,0.2)",
-        whiteSpace: "nowrap",
-    };
-
     return React.createElement("div", { style: containerStyle },
         React.createElement("div", { style: headerStyle },
+            React.createElement("button", {
+                type: "button",
+                style: buttonStyle,
+                onClick: handleDownload,
+                disabled: downloading || selectedIds.size === 0,
+            }, downloading ? "Downloading…" : `Download (${selectedIds.size})`),
             React.createElement("div", { style: titleStyle }, "Facebook Post Downloader"),
             React.createElement("button", {
                 type: "button",
@@ -122,23 +195,7 @@ function StoryTable({ stories, onDownloadFile, onClose }) {
                 title: "Close",
             }, "×")
         ),
-        React.createElement("table", { style: tableStyle },
-            React.createElement("thead", null,
-                React.createElement("tr", null,
-                    React.createElement("th", { style: thStyle }, "create_time"),
-                    React.createElement("th", { style: thStyle }, "post_id"),
-                    React.createElement("th", { style: thStyle }, "text"),
-                    React.createElement("th", { style: thStyle }, "attached_story"),
-                    React.createElement("th", { style: thStyle }, "attachments"),
-                    React.createElement("th", { style: thStyle }, "download")
-                )
-            ),
-            React.createElement("tbody", null,
-                stories.map((story) =>
-                    React.createElement(StoryRow, { key: story.id, story, onDownloadFile })
-                )
-            )
-        )
+        React.createElement(StoryTable, { stories, selectedIds, onToggleStory, onToggleAll })
     );
 }
 
@@ -186,7 +243,7 @@ function App({ initialStories, onStory }) {
 
     if (!visible) return null;
 
-    return React.createElement(StoryTable, { stories, onDownloadFile, onClose });
+    return React.createElement(StoryDialog, { stories, onDownloadFile, onClose });
 }
 
 function run() {
