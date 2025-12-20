@@ -1,6 +1,6 @@
 import { storyListener, downloadStory, getAttachmentCount, getCreateTime } from './story.js';
 import { React, ReactDOM } from './react.js';
-import { setupDownloadButtonInjection } from './download-button.js';
+import { useDownloadButtonInjection } from './download-button.js';
 
 /**
  * @typedef {import('./types').Story} Story
@@ -182,10 +182,7 @@ function App({ initialStories, onStory }) {
     }, [onStory]);
 
     // Inject download buttons when stories change
-    useEffect(() => {
-        const injectDownloadButtons = setupDownloadButtonInjection(() => stories, onDownloadFile);
-        injectDownloadButtons();
-    }, [stories, onDownloadFile]);
+    useDownloadButtonInjection(stories, onDownloadFile);
 
     if (!visible) return null;
 
