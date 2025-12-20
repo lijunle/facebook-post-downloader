@@ -238,6 +238,11 @@ function App({ initialStories, onStory }) {
         });
     }, [onStory]);
 
+    // Update badge count when stories change
+    useEffect(() => {
+        window.postMessage({ __fpdl: true, type: "FPDL_STORY_COUNT", count: stories.length }, window.location.origin);
+    }, [stories.length]);
+
     // Inject download buttons when stories change
     useDownloadButtonInjection(stories, onDownloadFile);
 

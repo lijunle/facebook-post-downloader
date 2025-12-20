@@ -25,8 +25,18 @@ function isDownloadMessage(value) {
 }
 
 chrome.runtime.onMessage.addListener(
-    (msg, _sender, sendResponse) => {
+    (msg, sender, sendResponse) => {
         try {
+            // Handle story count updates for badge
+            if (msg && msg.type === "FPDL_STORY_COUNT" && typeof msg.count === "number") {
+                const text = msg.count > 0 ? String(msg.count) : "";
+                if (sender.tab?.id) {
+                    chrome.action.setBadgeText({ text, tabId: sender.tab.id });
+                    chrome.action.setBadgeBackgroundColor({ color: "#4267B2", tabId: sender.tab.id });
+                }
+                return;
+            }
+
             if (!isDownloadMessage(msg)) return;
 
             const { url, filename } = msg;

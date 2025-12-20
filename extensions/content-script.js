@@ -57,16 +57,18 @@
             if (event.source !== window) return;
 
             const data = event.data;
-            if (!isDownloadMessageData(data)) return;
+            if (!data || typeof data !== "object" || !data.__fpdl) return;
 
-            const { url, filename } = data;
+            if (data.type === "FPDL_STORY_COUNT" && typeof data.count === "number") {
+                chrome.runtime.sendMessage({ type: "FPDL_STORY_COUNT", count: data.count });
+            } else if (isDownloadMessageData(data)) {
+                const { url, filename } = data;
 
-            /** @type {import("./types").FpdlDownloadMessage} */
-            const message = { type: "FPDL_DOWNLOAD", url, filename };
+                /** @type {import("./types").FpdlDownloadMessage} */
+                const message = { type: "FPDL_DOWNLOAD", url, filename };
 
-            chrome.runtime.sendMessage(message, () => {
-                // Ignore response here; UI is best-effort.
-            });
+                chrome.runtime.sendMessage(message);
+            }
         } catch (err) {
             console.warn("[fpdl] download bridge failed", err);
         }
