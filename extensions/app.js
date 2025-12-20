@@ -25,7 +25,7 @@ function StoryRow({ story, selected, onToggle }) {
         ),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
-        React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, (story.message?.text ?? "").slice(0, 100)),
+        React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (story.message?.text ?? "").slice(0, 500)),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.attached_story ? "true" : "false"),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
     );
@@ -62,7 +62,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
                 ),
                 React.createElement("th", { style: thStyle }, "Created"),
                 React.createElement("th", { style: thStyle }, "Post ID"),
-                React.createElement("th", { style: thStyle }, "Message"),
+                React.createElement("th", { style: { ...thStyle, width: "50vw" } }, "Message"),
                 React.createElement("th", { style: thStyle }, "Attached Story"),
                 React.createElement("th", { style: thStyle }, "Attachments")
             )
