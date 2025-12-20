@@ -1,4 +1,7 @@
 import { downloadStory } from './story.js';
+import { React } from './react.js';
+
+const { useEffect } = React;
 
 /**
  * Extract postID from React fiber of a DOM element.
@@ -71,6 +74,24 @@ function createDownloadButton(story, postAppMessage) {
 }
 
 /**
+ * Create a debounced version of a function.
+ * @template {(...args: any[]) => void} T
+ * @param {T} fn
+ * @param {number} delay
+ * @returns {{ call: T, cancel: () => void }}
+ */
+function debounce(fn, delay) {
+    let timer = 0;
+    return {
+        call: /** @type {T} */ ((...args) => {
+            clearTimeout(timer);
+            timer = window.setTimeout(() => fn(...args), delay);
+        }),
+        cancel: () => clearTimeout(timer),
+    };
+}
+
+/**
  * Inject download buttons into posts that match captured stories.
  * @param {import('./types').Story[]} stories
  * @param {(url: string, filename: string) => void} postAppMessage
@@ -127,48 +148,35 @@ function injectDownloadButtonStyles() {
 }
 
 /**
- * Set up download button injection with MutationObserver.
- * @param {() => import('./types').Story[]} getStories - Function to get current stories
- * @param {(url: string, filename: string) => void} postAppMessage
- * @returns {() => void} Function to trigger injection (debounced)
+ * @typedef {import('./types').Story} Story
  */
-export function setupDownloadButtonInjection(getStories, postAppMessage) {
-    injectDownloadButtonStyles();
 
-    // Debounce to avoid running too frequently during rapid DOM changes
-    let debounceTimer = 0;
-    const debouncedInject = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = window.setTimeout(() => {
-            injectDownloadButtons(getStories(), postAppMessage);
-        }, 100);
-    };
+/**
+ * React hook to inject download buttons into posts.
+ * @param {Story[]} stories
+ * @param {(url: string, filename: string) => void} onDownloadFile
+ */
+export function useDownloadButtonInjection(stories, onDownloadFile) {
+    // Inject styles once
+    useEffect(() => {
+        injectDownloadButtonStyles();
+    }, []);
 
-    // Use MutationObserver to detect new posts added to the feed
-    const observer = new MutationObserver((mutations) => {
-        // Only process if mutations might contain new posts
-        const hasRelevantChanges = mutations.some(mutation => {
-            // Check added nodes for post containers or action buttons
-            for (const node of mutation.addedNodes) {
-                if (node.nodeType !== Node.ELEMENT_NODE) continue;
-                const el = /** @type {Element} */ (node);
-                if (el.matches?.('[data-virtualized="false"]') ||
-                    el.querySelector?.('[aria-label="Actions for this post"]')) {
-                    return true;
-                }
-            }
-            return false;
-        });
+    // Set up observer and inject buttons
+    useEffect(() => {
+        const { call: inject, cancel } = debounce(
+            () => injectDownloadButtons(stories, onDownloadFile),
+            100
+        );
 
-        if (hasRelevantChanges) {
-            debouncedInject();
-        }
-    });
+        const observer = new MutationObserver(inject);
+        observer.observe(document.body, { childList: true, subtree: true });
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
+        inject();
 
-    return debouncedInject;
+        return () => {
+            cancel();
+            observer.disconnect();
+        };
+    }, [stories, onDownloadFile]);
 }

@@ -1,23 +1,24 @@
 (function () {
     /**
-     * @param {unknown} value
-     * @returns {value is (import("./types").FpdlDownloadMessage & { __fpdl: true })}
+     * Sends a message to the background script.
+     * @param {import("./types").AppMessage} message
      */
-    function isDownloadMessageData(value) {
+    function sendChromeMessage(message) {
+        chrome.runtime.sendMessage(message);
+    }
+
+    /**
+     * @param {unknown} value
+     * @returns {value is (import("./types").AppMessage & { __fpdl: true })}
+     */
+    function isAppMessage(value) {
         if (!value || typeof value !== "object") return false;
-        /** @type {Record<string, unknown>} */
         const obj = /** @type {Record<string, unknown>} */ (value);
-        return (
-            obj.__fpdl === true &&
-            obj.type === "FPDL_DOWNLOAD" &&
-            typeof obj.url === "string" &&
-            typeof obj.filename === "string"
-        );
+        return obj.__fpdl === true;
     }
 
     /**
      * Injects app.js into the page context.
-     *
      * @returns {void}
      */
     function injectAppScript() {
@@ -45,8 +46,8 @@
     injectAppScript();
 
     // Forward toggle messages from background to page context
-    chrome.runtime.onMessage.addListener((message) => {
-        if (message?.type === 'FPDL_TOGGLE') {
+    chrome.runtime.onMessage.addListener((/** @type {import("./types").ChromeMessageToggle} */ message) => {
+        if (message.type === 'FPDL_TOGGLE') {
             window.postMessage({ __fpdl: true, type: 'FPDL_TOGGLE' }, window.location.origin);
         }
     });
@@ -57,16 +58,13 @@
             if (event.source !== window) return;
 
             const data = event.data;
-            if (!isDownloadMessageData(data)) return;
+            if (!isAppMessage(data)) return;
 
-            const { url, filename } = data;
-
-            /** @type {import("./types").FpdlDownloadMessage} */
-            const message = { type: "FPDL_DOWNLOAD", url, filename };
-
-            chrome.runtime.sendMessage(message, () => {
-                // Ignore response here; UI is best-effort.
-            });
+            if (data.type === "FPDL_STORY_COUNT" && typeof data.count === "number") {
+                sendChromeMessage({ type: "FPDL_STORY_COUNT", count: data.count });
+            } else if (data.type === "FPDL_DOWNLOAD" && typeof data.url === "string" && typeof data.filename === "string") {
+                sendChromeMessage({ type: "FPDL_DOWNLOAD", url: data.url, filename: data.filename });
+            }
         } catch (err) {
             console.warn("[fpdl] download bridge failed", err);
         }
