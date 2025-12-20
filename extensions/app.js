@@ -197,7 +197,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
                 onClick: handleDownload,
                 disabled: downloading || selectedIds.size === 0,
             }, downloading ? "Downloading…" : `Download (${selectedIds.size})`),
-            React.createElement("div", { style: titleStyle }, "Facebook Post Downloader"),
+            React.createElement("div", { style: titleStyle }, `Facebook Post Downloader (${stories.length})`),
             React.createElement("button", {
                 type: "button",
                 style: closeButtonStyle,
