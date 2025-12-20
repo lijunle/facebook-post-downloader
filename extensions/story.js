@@ -219,6 +219,10 @@ function buildFolderName(story) {
 function renderStory(story, attachments, quoted_story) {
     const lines = [];
 
+    // URL
+    lines.push(`**URL:** ${story.wwwURL}`);
+    lines.push('');
+
     // Group
     const group = getGroup(story);
     if (group) {
