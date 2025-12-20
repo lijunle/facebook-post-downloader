@@ -24,43 +24,43 @@ function isDownloadMessage(value) {
     );
 }
 
-/**
- * @param {unknown} msg
- * @param {chrome.runtime.MessageSender} _sender
- * @param {(resp: FpdlDownloadResponse) => void} sendResponse
- * @returns {true | void}
- */
-function onMessage(msg, _sender, sendResponse) {
-    try {
-        if (!isDownloadMessage(msg)) return;
+chrome.runtime.onMessage.addListener(
+    (msg, _sender, sendResponse) => {
+        try {
+            if (!isDownloadMessage(msg)) return;
 
-        const { url, filename } = msg;
+            const { url, filename } = msg;
 
-        chrome.downloads.download(
-            {
-                url,
-                filename,
-                conflictAction: "overwrite",
-                saveAs: false,
-            },
-            (downloadId) => {
-                const err = chrome.runtime.lastError;
-                if (err) {
-                    sendResponse({ ok: false, error: String(err.message || err) });
-                } else if (typeof downloadId !== "number") {
-                    sendResponse({ ok: false, error: "Download failed" });
-                } else {
-                    sendResponse({ ok: true, downloadId });
-                }
-            },
-        );
+            chrome.downloads.download(
+                {
+                    url,
+                    filename,
+                    conflictAction: "overwrite",
+                    saveAs: false,
+                },
+                (downloadId) => {
+                    const err = chrome.runtime.lastError;
+                    if (err) {
+                        sendResponse({ ok: false, error: String(err.message || err) });
+                    } else if (typeof downloadId !== "number") {
+                        sendResponse({ ok: false, error: "Download failed" });
+                    } else {
+                        sendResponse({ ok: true, downloadId });
+                    }
+                },
+            );
 
-        // Keep the message channel open for async sendResponse.
-        return true;
-    } catch (e) {
-        sendResponse({ ok: false, error: String(e) });
-        return;
+            // Keep the message channel open for async sendResponse.
+            return true;
+        } catch (e) {
+            sendResponse({ ok: false, error: String(e) });
+            return;
+        }
     }
-}
+);
 
-chrome.runtime.onMessage.addListener(onMessage);
+chrome.action.onClicked.addListener((tab) => {
+    if (tab.id) {
+        chrome.tabs.sendMessage(tab.id, { type: "FPDL_TOGGLE" });
+    }
+});
