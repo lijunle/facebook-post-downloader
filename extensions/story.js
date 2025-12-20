@@ -126,8 +126,9 @@ async function fetchMediaNav(nodeId, mediasetToken) {
 export async function fetchAttachments(story, onAttachment) {
     const cached = attachmentsCache.get(story);
     if (cached) {
-        for (const media of cached) {
-            onAttachment(media);
+        for (let i = 0; i < cached.length; i++) {
+            if (i > 0) await new Promise(r => setTimeout(r, 500));
+            onAttachment(cached[i]);
         }
         return;
     }
@@ -157,6 +158,7 @@ export async function fetchAttachments(story, onAttachment) {
         result.push(nav.currMedia);
         onAttachment(nav.currMedia);
         currentId = nav.nextId;
+        if (currentId) await new Promise(r => setTimeout(r, 500));
     }
 
     attachmentsCache.set(story, result);
