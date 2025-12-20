@@ -514,12 +514,12 @@ const TARGET_API_NAMES = new Set([
  * @returns {() => void}
  */
 export function storyListener(cb) {
-    // Poll for embedded stories every 500ms for 5 seconds
+    // Poll for embedded stories every 500ms for 10 seconds
     /** @type {Set<string>} */
     const emittedPostIds = new Set();
     let elapsed = 0;
     const pollInterval = 500;
-    const maxDuration = 5000;
+    const maxDuration = 10000;
 
     const intervalId = setInterval(() => {
         elapsed += pollInterval;
