@@ -1,12 +1,19 @@
-export type FpdlDownloadMessage = {
+export type AppMessageDownload = {
   type: "FPDL_DOWNLOAD";
   url: string;
   filename: string;
 };
 
-export type FpdlDownloadResponse =
-  | { ok: true; downloadId: number }
-  | { ok: false; error: string };
+export type AppMessageStoryCount = {
+  type: "FPDL_STORY_COUNT";
+  count: number;
+};
+
+export type AppMessage = AppMessageDownload | AppMessageStoryCount;
+
+export type ChromeMessageToggle = {
+  type: "FPDL_TOGGLE";
+};
 
 export type GraphqlEvent = {
   url: string;

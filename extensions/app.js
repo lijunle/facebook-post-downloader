@@ -4,9 +4,19 @@ import { useDownloadButtonInjection } from './download-button.js';
 
 /**
  * @typedef {import('./types').Story} Story
+ * @typedef {import('./types').AppMessage} AppMessage
+ * @typedef {import('./types').ChromeMessageToggle} ChromeMessageToggle
  */
 
 const { useState, useEffect, useCallback } = React;
+
+/**
+ * Sends a message to the content script.
+ * @param {AppMessage} message
+ */
+function sendAppMessage(message) {
+    window.postMessage({ __fpdl: true, ...message }, window.location.origin);
+}
 
 /**
  * @param {{ story: Story, selected: boolean, onToggle: () => void }} props
@@ -209,7 +219,7 @@ function App({ initialStories, onStory }) {
     const onDownloadFile = useCallback(
         /** @param {string} url @param {string} filename */
         (url, filename) => {
-            window.postMessage({ __fpdl: true, type: "FPDL_DOWNLOAD", url, filename }, window.location.origin);
+            sendAppMessage({ type: "FPDL_DOWNLOAD", url, filename });
         }, []);
 
     const onClose = useCallback(() => {
@@ -218,12 +228,11 @@ function App({ initialStories, onStory }) {
 
     // Listen for toggle messages
     useEffect(() => {
-        /** @param {MessageEvent} event */
+        /** @param {MessageEvent<ChromeMessageToggle & { __fpdl?: boolean }>} event */
         const listener = (event) => {
             if (event.source !== window) return;
-            const data = event.data;
-            if (!data || typeof data !== 'object' || !data.__fpdl) return;
-            if (data.type === 'FPDL_TOGGLE') {
+            if (!event.data.__fpdl) return;
+            if (event.data.type === 'FPDL_TOGGLE') {
                 setVisible(v => !v);
             }
         };
@@ -240,7 +249,7 @@ function App({ initialStories, onStory }) {
 
     // Update badge count when stories change
     useEffect(() => {
-        window.postMessage({ __fpdl: true, type: "FPDL_STORY_COUNT", count: stories.length }, window.location.origin);
+        sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
     }, [stories.length]);
 
     // Inject download buttons when stories change
