@@ -1,33 +1,24 @@
-import { storyListener, fetchAttachments, getDownloadUrl, getAttachmentCount } from './story.js';
+import { storyListener, downloadStory, getAttachmentCount, getCreateTime } from './story.js';
 import { React, ReactDOM } from './react.js';
+import { setupDownloadButtonInjection } from './download-button.js';
+
+/**
+ * @typedef {import('./types').Story} Story
+ */
 
 const { useState, useEffect, useCallback } = React;
 
 /**
- * @param {string} url
- * @param {string} filename
+ * @param {{ story: Story, onDownloadFile: (url: string, filename: string) => void }} props
  */
-function postFpdlMessage(url, filename) {
-    window.postMessage({ __fpdl: true, type: "FPDL_DOWNLOAD", url, filename }, "*");
-}
-
-/**
- * @param {{ story: import('./types').Story, postFpdlMessage: (url: string, filename: string) => void }} props
- */
-function StoryRow({ story, postFpdlMessage }) {
+function StoryRow({ story, onDownloadFile }) {
     const [downloading, setDownloading] = useState(false);
 
     const handleDownload = useCallback(async () => {
         try {
             setDownloading(true);
 
-            await fetchAttachments(story, (media) => {
-                const download = getDownloadUrl(media);
-                if (!download) return;
-
-                const filename = `${story.post_id}/${media.id}.${download.ext}`;
-                postFpdlMessage(download.url, filename);
-            });
+            await downloadStory(story, onDownloadFile);
         } catch (err) {
             console.warn("[fpdl] download failed", err);
         } finally {
@@ -41,16 +32,17 @@ function StoryRow({ story, postFpdlMessage }) {
     const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
 
     return React.createElement("tr", null,
-        React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } }, story.post_id),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
         React.createElement("td", { style: { ...cellStyle, wordBreak: "break-word" } }, (story.message?.text ?? "").slice(0, 100)),
-        React.createElement("td", { style: { ...cellStyle, textAlign: "right", whiteSpace: "nowrap" } },
-            getAttachmentCount(story),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.attached_story ? "true" : "false"),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story)),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
             React.createElement("button", {
                 type: "button",
                 disabled: isDisabled,
                 onClick: handleDownload,
                 style: {
-                    marginLeft: "6px",
                     fontSize: "11px",
                     padding: "2px 6px",
                     borderRadius: "4px",
@@ -65,18 +57,16 @@ function StoryRow({ story, postFpdlMessage }) {
 }
 
 /**
- * @param {{ stories: import('./types').Story[], postFpdlMessage: (url: string, filename: string) => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (url: string, filename: string) => void, onClose: () => void }} props
  */
-function StoryTable({ stories, postFpdlMessage }) {
-    const recent = stories.slice(-50);
-
+function StoryTable({ stories, onDownloadFile, onClose }) {
     const containerStyle = {
         position: "fixed",
         left: "12px",
         bottom: "12px",
         zIndex: 2147483647,
-        maxWidth: "520px",
-        maxHeight: "40vh",
+        maxWidth: "90vw",
+        maxHeight: "80vh",
         overflow: "auto",
         background: "rgba(0, 0, 0, 0.5)",
         color: "#fff",
@@ -85,11 +75,28 @@ function StoryTable({ stories, postFpdlMessage }) {
         padding: "8px",
     };
 
+    const headerStyle = {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "6px",
+    };
+
     const titleStyle = {
         fontSize: "12px",
         fontWeight: 700,
-        marginBottom: "6px",
         userSelect: "none",
+    };
+
+    const closeButtonStyle = {
+        background: "transparent",
+        border: "none",
+        color: "#fff",
+        fontSize: "16px",
+        cursor: "pointer",
+        padding: "0 4px",
+        lineHeight: 1,
+        opacity: 0.7,
     };
 
     const tableStyle = {
@@ -106,45 +113,109 @@ function StoryTable({ stories, postFpdlMessage }) {
     };
 
     return React.createElement("div", { style: containerStyle },
-        React.createElement("div", { style: titleStyle }, "FPDL Captured Posts"),
+        React.createElement("div", { style: headerStyle },
+            React.createElement("div", { style: titleStyle }, "Facebook Post Downloader"),
+            React.createElement("button", {
+                type: "button",
+                style: closeButtonStyle,
+                onClick: onClose,
+                title: "Close",
+            }, "×")
+        ),
         React.createElement("table", { style: tableStyle },
             React.createElement("thead", null,
                 React.createElement("tr", null,
+                    React.createElement("th", { style: thStyle }, "create_time"),
                     React.createElement("th", { style: thStyle }, "post_id"),
-                    React.createElement("th", { style: { ...thStyle, textAlign: "left" } }, "text"),
-                    React.createElement("th", { style: { ...thStyle, textAlign: "right" } }, "attachments")
+                    React.createElement("th", { style: thStyle }, "text"),
+                    React.createElement("th", { style: thStyle }, "attached_story"),
+                    React.createElement("th", { style: thStyle }, "attachments"),
+                    React.createElement("th", { style: thStyle }, "download")
                 )
             ),
             React.createElement("tbody", null,
-                recent.map((story) =>
-                    React.createElement(StoryRow, { key: story.id, story, postFpdlMessage })
+                stories.map((story) =>
+                    React.createElement(StoryRow, { key: story.id, story, onDownloadFile })
                 )
             )
         )
     );
 }
 
-function renderApp() {
-    console.log('[FPDL] Rendering React app');
+/**
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
+ */
+function App({ initialStories, onStory }) {
+    const [stories, setStories] = useState(initialStories);
+    const [visible, setVisible] = useState(false);
 
-    /** @type {import('./types').Story[]} */
-    let stories = [];
+    const onDownloadFile = useCallback(
+        /** @param {string} url @param {string} filename */
+        (url, filename) => {
+            window.postMessage({ __fpdl: true, type: "FPDL_DOWNLOAD", url, filename }, window.location.origin);
+        }, []);
+
+    const onClose = useCallback(() => {
+        setVisible(false);
+    }, []);
+
+    // Listen for toggle messages
+    useEffect(() => {
+        /** @param {MessageEvent} event */
+        const listener = (event) => {
+            if (event.source !== window) return;
+            const data = event.data;
+            if (!data || typeof data !== 'object' || !data.__fpdl) return;
+            if (data.type === 'FPDL_TOGGLE') {
+                setVisible(v => !v);
+            }
+        };
+        window.addEventListener('message', listener);
+        return () => window.removeEventListener('message', listener);
+    }, []);
+
+    // Subscribe to new stories
+    useEffect(() => {
+        onStory((story) => {
+            setStories(prev => [...prev, story]);
+        });
+    }, [onStory]);
+
+    // Inject download buttons when stories change
+    useEffect(() => {
+        const injectDownloadButtons = setupDownloadButtonInjection(() => stories, onDownloadFile);
+        injectDownloadButtons();
+    }, [stories, onDownloadFile]);
+
+    if (!visible) return null;
+
+    return React.createElement(StoryTable, { stories, onDownloadFile, onClose });
+}
+
+function run() {
+    /** @type {Story[]} */
+    const collectedStories = [];
+    /** @type {((story: Story) => void) | null} */
+    let storyCallback = null;
+
+    // Start listening immediately, before React mounts
+    storyListener((story) => {
+        if (storyCallback) {
+            storyCallback(story);
+        } else {
+            collectedStories.push(story);
+        }
+    });
 
     const container = document.createElement('div');
     container.id = 'fpdl-post-table-root';
     document.body.appendChild(container);
     const root = ReactDOM.createRoot(container);
 
-    const render = () => {
-        root.render(React.createElement(StoryTable, { stories, postFpdlMessage }));
-    };
-
-    storyListener((story) => {
-        stories = [...stories, story];
-        render();
-    });
-
-    render();
+    root.render(React.createElement(App, {
+        initialStories: collectedStories,
+        onStory: (cb) => { storyCallback = cb; }
+    }));
 }
 
-renderApp();
+run();

@@ -1,5 +1,12 @@
 import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 
+/**
+ * @typedef {import('./types').Story} Story
+ * @typedef {import('./types').StoryMedia} StoryMedia
+ * @typedef {import('./types').StoryVideo} StoryVideo
+ * @typedef {import('./types').StoryGroup} StoryGroup
+ */
+
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
 
 /**
@@ -19,7 +26,7 @@ function guessExt(url) {
 }
 
 /**
- * @param {import('./types').StoryVideo} media
+ * @param {StoryVideo} media
  * @returns {string | undefined}
  */
 function pickBestProgressiveUrl(media) {
@@ -39,7 +46,7 @@ function pickBestProgressiveUrl(media) {
 
 /**
  * Get the download URL and extension for a media item.
- * @param {import('./types').StoryMedia} media
+ * @param {StoryMedia} media
  * @returns {{ url: string, ext: string } | undefined}
  */
 export function getDownloadUrl(media) {
@@ -56,7 +63,7 @@ export function getDownloadUrl(media) {
 
 /**
  * Get the number of attachments in a story.
- * @param {import('./types').Story} story
+ * @param {Story} story
  * @returns {number}
  */
 export function getAttachmentCount(story) {
@@ -66,37 +73,20 @@ export function getAttachmentCount(story) {
     return 1;
 }
 
-/** @type {WeakMap<import('./types').Story, import('./types').StoryMedia[]>} */
+/** @type {WeakMap<Story, StoryMedia[]>} */
 const attachmentsCache = new WeakMap();
 
-/**
- * Extract media navigation info from a CometPhotoRootContentQuery response.
- * @param {Record<string, unknown>} obj
- * @returns {{ currMedia: import('./types').StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }}
- */
-function extractMediaNav(obj) {
-    /** @type {any} */
-    const data = obj?.data;
+/** @type {Map<string, number>} */
+const storyCreateTimeCache = new Map();
 
-    /** @type {import('./types').StoryMedia | undefined} */
-    const currMedia = data?.currMedia;
-    /** @type {{ id: string } | undefined} */
-    const nextNav = data?.nextMediaAfterNodeId;
-    /** @type {{ id: string } | undefined} */
-    const prevNav = data?.prevMediaBeforeNodeId;
-
-    return {
-        currMedia,
-        nextId: nextNav?.id,
-        prevId: prevNav?.id,
-    };
-}
+/** @type {Map<string, StoryGroup>} */
+const storyGroupCache = new Map();
 
 /**
  * Fetch navigation info for a media node.
  * @param {string} nodeId
  * @param {string} mediasetToken
- * @returns {Promise<{ currMedia: import('./types').StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }>}
+ * @returns {Promise<{ currMedia: StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }>}
  */
 async function fetchMediaNav(nodeId, mediasetToken) {
     const objs = await sendGraphqlRequest({
@@ -109,18 +99,19 @@ async function fetchMediaNav(nodeId, mediasetToken) {
         },
     });
 
-    /** @type {import('./types').StoryMedia | undefined} */
+    /** @type {StoryMedia | undefined} */
     let currMedia;
     /** @type {string | undefined} */
     let nextId;
     /** @type {string | undefined} */
     let prevId;
 
-    for (const o of objs) {
-        const nav = extractMediaNav(o);
-        if (nav.currMedia) currMedia = nav.currMedia;
-        if (nav.nextId) nextId = nav.nextId;
-        if (nav.prevId) prevId = nav.prevId;
+    for (const obj of objs) {
+        /** @type {any} */
+        const data = obj?.data;
+        if (data?.currMedia) currMedia = data.currMedia;
+        if (data?.nextMediaAfterNodeId?.id) nextId = data.nextMediaAfterNodeId.id;
+        if (data?.prevMediaBeforeNodeId?.id) prevId = data.prevMediaBeforeNodeId.id;
     }
 
     return { currMedia, nextId, prevId };
@@ -128,8 +119,8 @@ async function fetchMediaNav(nodeId, mediasetToken) {
 
 /**
  * Fetch attachments for a story, calling the callback for each attachment as it's retrieved.
- * @param {import('./types').Story} story
- * @param {(media: import('./types').StoryMedia) => void} onAttachment
+ * @param {Story} story
+ * @param {(media: StoryMedia) => void} onAttachment
  * @returns {Promise<void>}
  */
 export async function fetchAttachments(story, onAttachment) {
@@ -143,16 +134,20 @@ export async function fetchAttachments(story, onAttachment) {
 
     if (story.attachments.length === 0) return;
     const attachment = story.attachments[0].styles.attachment;
-    const seedId = 'media' in attachment
-        ? attachment.media.id
-        : attachment.all_subattachments.nodes[0]?.media.id;
+    /** @type {string | undefined} */
+    let seedId;
+    if ('media' in attachment) {
+        seedId = attachment.media.id;
+    } else if ('all_subattachments' in attachment) {
+        seedId = attachment.all_subattachments.nodes[0]?.media.id;
+    }
     if (!seedId) return;
 
     const mediasetToken = `pcb.${story.post_id}`;
     const totalCount = getAttachmentCount(story);
 
     // Walk from the seed to collect all media
-    /** @type {import('./types').StoryMedia[]} */
+    /** @type {StoryMedia[]} */
     const result = [];
     /** @type {string | undefined} */
     let currentId = seedId;
@@ -168,39 +163,201 @@ export async function fetchAttachments(story, onAttachment) {
 }
 
 /**
+ * Sanitize a string for use in a filename.
+ * @param {string} str
+ * @returns {string}
+ */
+function sanitizeFilename(str) {
+    return str.replace(/[<>:"/\\|?*]/g, '_').trim();
+}
+
+/**
+ * Build the folder name for a story download.
+ * Format: {date:YYYY-MM-DD}_{groupName}_{actorName}_{post_id}
+ * @param {Story} story
+ * @returns {string}
+ */
+function buildFolderName(story) {
+    const parts = [];
+
+    // Date part
+    const createTime = getCreateTime(story);
+    if (createTime) {
+        const year = createTime.getFullYear();
+        const month = String(createTime.getMonth() + 1).padStart(2, '0');
+        const day = String(createTime.getDate()).padStart(2, '0');
+        parts.push(`${year}-${month}-${day}`);
+    }
+
+    // Group name part
+    const group = getGroup(story);
+    if (group) {
+        parts.push(sanitizeFilename(group.name));
+    }
+
+    // Actor name part
+    const actor = story.actors?.[0];
+    if (actor) {
+        parts.push(sanitizeFilename(actor.name));
+    }
+
+    // Post ID part (always included)
+    parts.push(story.post_id);
+
+    return parts.join('_');
+}
+
+/**
+ * Render a story to markdown content.
+ * @param {Story} story
+ * @param {Array<{ media: StoryMedia, filename: string }>} attachments
+ * @param {string} [quoted_story] - Pre-rendered quoted story content
+ * @returns {string}
+ */
+function renderStory(story, attachments, quoted_story) {
+    const lines = [];
+
+    // Group
+    const group = getGroup(story);
+    if (group) {
+        lines.push(`**Group:** ${group.name}`);
+        lines.push('');
+    }
+
+    // Actor
+    const actor = story.actors?.[0];
+    if (actor) {
+        lines.push(`**Author:** ${actor.name}`);
+        lines.push('');
+    }
+
+    // Create time
+    const createTime = getCreateTime(story);
+    if (createTime) {
+        lines.push(`**Date:** ${createTime.toISOString()}`);
+        lines.push('');
+    }
+
+    // Message
+    if (story.message?.text) {
+        lines.push('---');
+        lines.push('');
+        lines.push(story.message.text);
+        lines.push('');
+    }
+
+    // Attachments
+    if (attachments.length > 0) {
+        lines.push('---');
+        lines.push('');
+        for (const { media, filename } of attachments) {
+            const basename = filename.split('/').pop() || filename;
+            if (media.__typename === 'Video') {
+                lines.push(`- [${basename}](./${basename})`);
+            } else {
+                lines.push(`![${basename}](./${basename})`);
+            }
+        }
+        lines.push('');
+    }
+
+    // Quoted story
+    if (quoted_story) {
+        lines.push('---');
+        lines.push('');
+        // Prefix each line with "> " for blockquote
+        const quotedLines = quoted_story.split('\n').map(line => `> ${line}`);
+        lines.push(...quotedLines);
+        lines.push('');
+    }
+
+    return lines.join('\n');
+}
+
+/**
+ * Download all attachments for a story.
+ * @param {Story} story
+ * @param {(url: string, filename: string) => void} postAppMessage
+ * @returns {Promise<void>}
+ */
+export async function downloadStory(story, postAppMessage) {
+    const folder = buildFolderName(story);
+
+    /** @type {Array<{ media: StoryMedia, filename: string }>} */
+    const downloadedAttachments = [];
+    let mediaIndex = 0;
+
+    await fetchAttachments(story, (media) => {
+        const download = getDownloadUrl(media);
+        if (!download) return;
+
+        mediaIndex++;
+        const indexPrefix = String(mediaIndex).padStart(4, '0');
+        const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
+        postAppMessage(download.url, filename);
+        downloadedAttachments.push({ media, filename });
+    });
+
+    // Fetch attachments for attached_story if it exists
+    /** @type {string | undefined} */
+    let quotedStory;
+    if (story.attached_story) {
+        /** @type {Array<{ media: StoryMedia, filename: string }>} */
+        const attachedStoryAttachments = [];
+        await fetchAttachments(story.attached_story, (media) => {
+            const download = getDownloadUrl(media);
+            if (!download) return;
+
+            mediaIndex++;
+            const indexPrefix = String(mediaIndex).padStart(4, '0');
+            const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
+            postAppMessage(download.url, filename);
+            attachedStoryAttachments.push({ media, filename });
+        });
+        quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
+    }
+
+    const indexMarkdown = renderStory(story, downloadedAttachments, quotedStory);
+    const indexDataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(indexMarkdown);
+    postAppMessage(indexDataUrl, `${folder}/index.md`);
+}
+
+/**
+ * Get the creation time for a story.
+ * @param {Story} story
+ * @returns {Date | undefined}
+ */
+export function getCreateTime(story) {
+    const createTime = storyCreateTimeCache.get(story.id);
+    if (createTime === undefined) return undefined;
+    return new Date(createTime * 1000);
+}
+
+/**
+ * Get the group for a story.
+ * @param {Story} story
+ * @returns {StoryGroup | undefined}
+ */
+export function getGroup(story) {
+    return storyGroupCache.get(story.id);
+}
+
+/**
  * Check if an object is a valid Story.
  * @param {unknown} obj
- * @returns {obj is import('./types').Story}
+ * @returns {obj is Story}
  */
 export function isStory(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
-    // Must have id and post_id
+    // Must have id, post_id, and wwwURL
     if (typeof o.id !== 'string' || !o.id) return false;
     if (typeof o.post_id !== 'string' || !o.post_id) return false;
+    if (typeof o.wwwURL !== 'string' || !o.wwwURL) return false;
 
     // Must have attachments array
     if (!Array.isArray(o.attachments)) return false;
-
-    // If attachments exist, first one must have styles.attachment with media or all_subattachments
-    if (o.attachments.length > 0) {
-        const firstAttachment = /** @type {Record<string, unknown> | undefined} */ (o.attachments[0]);
-        if (!firstAttachment) return false;
-
-        const styles = /** @type {Record<string, unknown> | undefined} */ (firstAttachment.styles);
-        if (!styles) return false;
-
-        const attachment = /** @type {Record<string, unknown> | undefined} */ (styles.attachment);
-        if (!attachment) return false;
-
-        // Must have either media or all_subattachments
-        if (!('media' in attachment) && !('all_subattachments' in attachment)) return false;
-    } else {
-        // Text-only post: must have message.text with content
-        const message = /** @type {Record<string, unknown> | undefined} */ (o.message);
-        if (!message || typeof message.text !== 'string' || !message.text) return false;
-    }
 
     return true;
 }
@@ -209,8 +366,8 @@ export function isStory(obj) {
  * Recursively extract stories from deeply nested objects.
  * Stories are identified by having id, post_id, and attachments array.
  * @param {unknown} obj
- * @param {import('./types').Story[]} [results] - Array to collect stories, deduplicates by post_id
- * @returns {import('./types').Story[]}
+ * @param {Story[]} [results] - Array to collect stories, deduplicates by post_id
+ * @returns {Story[]}
  */
 export function extractStories(obj, results = []) {
     if (!obj || typeof obj !== 'object') return results;
@@ -218,8 +375,9 @@ export function extractStories(obj, results = []) {
     const o = /** @type {Record<string, unknown>} */ (obj);
 
     // Check if this object is a valid story
-    if (isStory(obj)) {
-        const story = /** @type {import('./types').Story} */ (obj);
+    const objIsStory = isStory(obj);
+    if (objIsStory) {
+        const story = /** @type {Story} */ (obj);
         const postId = story.post_id;
         const existingIndex = results.findIndex(s => s.post_id === postId);
 
@@ -240,6 +398,8 @@ export function extractStories(obj, results = []) {
     } else {
         const keys = Object.keys(o);
         for (const key of keys) {
+            // Skip attached_story for story objects - it should remain nested, not extracted separately
+            if (objIsStory && key === 'attached_story') continue;
             extractStories(o[key], results);
         }
     }
@@ -248,12 +408,72 @@ export function extractStories(obj, results = []) {
 }
 
 /**
+ * Recursively extract metadata (creation_time, url) from deeply nested objects
+ * and populate storyCreateTimeCache directly.
+ * @param {unknown} obj
+ */
+function extractStoryCreateTime(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has creation_time, id and url (metadata object)
+    if (typeof o.creation_time === 'number' && typeof o.id === 'string' && typeof o.url === 'string') {
+        storyCreateTimeCache.set(o.id, o.creation_time);
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractStoryCreateTime(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractStoryCreateTime(o[key]);
+        }
+    }
+}
+
+/**
+ * Recursively extract group info from deeply nested objects
+ * and populate storyGroupCache directly.
+ * @param {unknown} obj
+ */
+export function extractStoryGroupMap(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has id (string) and to.__typename === "Group"
+    if (typeof o.id === 'string' && o.to && typeof o.to === 'object') {
+        const to = /** @type {Record<string, unknown>} */ (o.to);
+        if (to.__typename === 'Group' && typeof to.id === 'string' && typeof to.name === 'string') {
+            // Only set if not already present (prefer first/most complete match)
+            if (!storyGroupCache.has(o.id)) {
+                storyGroupCache.set(o.id, /** @type {StoryGroup} */(to));
+            }
+        }
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractStoryGroupMap(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractStoryGroupMap(o[key]);
+        }
+    }
+}
+
+/**
  * Extract stories embedded in the initial HTML page load.
  * These are delivered via <script type="application/json"> tags.
- * @returns {import('./types').Story[]}
+ * @returns {Story[]}
  */
 function extractEmbeddedStories() {
-    /** @type {import('./types').Story[]} */
+    /** @type {Story[]} */
     const stories = [];
 
     const scripts = document.querySelectorAll('script[type="application/json"]');
@@ -268,6 +488,8 @@ function extractEmbeddedStories() {
         try {
             const data = JSON.parse(content);
             extractStories(data, stories);
+            extractStoryCreateTime(data);
+            extractStoryGroupMap(data);
         } catch {
             // ignore parse errors
         }
@@ -288,16 +510,16 @@ const TARGET_API_NAMES = new Set([
 ]);
 
 /**
- * @param {(story: import('./types').Story) => void} cb
+ * @param {(story: Story) => void} cb
  * @returns {() => void}
  */
 export function storyListener(cb) {
-    // Poll for embedded stories every 500ms for 5 seconds
+    // Poll for embedded stories every 500ms for 10 seconds
     /** @type {Set<string>} */
     const emittedPostIds = new Set();
     let elapsed = 0;
     const pollInterval = 500;
-    const maxDuration = 5000;
+    const maxDuration = 10000;
 
     const intervalId = setInterval(() => {
         elapsed += pollInterval;
@@ -324,6 +546,9 @@ export function storyListener(cb) {
         if (!apiName || !TARGET_API_NAMES.has(apiName)) return;
 
         const stories = extractStories(ev.responseBody);
+        extractStoryCreateTime(ev.responseBody);
+        extractStoryGroupMap(ev.responseBody);
+
         for (const story of stories) {
             try {
                 cb(story);

@@ -44,6 +44,13 @@
 
     injectAppScript();
 
+    // Forward toggle messages from background to page context
+    chrome.runtime.onMessage.addListener((message) => {
+        if (message?.type === 'FPDL_TOGGLE') {
+            window.postMessage({ __fpdl: true, type: 'FPDL_TOGGLE' }, window.location.origin);
+        }
+    });
+
     // Bridge download requests from page-world UI to the extension background.
     window.addEventListener("message", (event) => {
         try {

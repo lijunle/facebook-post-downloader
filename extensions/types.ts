@@ -21,6 +21,7 @@ export type StoryPhoto = {
   __typename: "Photo";
   id: string;
   url: string;
+  created_time: number;
   image: {
     uri: string;
   };
@@ -30,6 +31,7 @@ export type StoryVideo = {
   __typename: "Video";
   id: string;
   url: string;
+  created_time: number;
   videoDeliveryResponseFragment: {
     videoDeliveryResponseResult: {
       progressive_urls: Array<{
@@ -42,17 +44,31 @@ export type StoryVideo = {
 
 export type StoryMedia = StoryPhoto | StoryVideo;
 
+export type StoryGroup = {
+  __typename: "Group";
+  id: string;
+  name: string;
+};
+
+export type StoryActor = {
+  __typename: "User";
+  id: string;
+  name: string;
+};
+
 export type Story = {
   id: string;
   post_id: string;
   wwwURL: string;
-  message: { text?: string };
+  message: null | { text: string };
+  actors: [StoryActor];
   attachments:
     | []
     | [
         {
           styles: {
             attachment:
+              | {} // Un-supported attachment
               | {
                   media: StoryMedia;
                 }
@@ -63,6 +79,7 @@ export type Story = {
                   };
                 };
           };
-        },
+        }
       ];
+  attached_story: null | Story;
 };

@@ -6,6 +6,9 @@
     "permissions": [
         "downloads"
     ],
+    "action": {
+        "default_title": "Facebook Post Downloader"
+    },
     "background": {
         "service_worker": "extensions/background.js"
     },
@@ -13,6 +16,7 @@
         {
             "resources": [
                 "extensions/app.js",
+                "extensions/download-button.js",
                 "extensions/graphql.js",
                 "extensions/react.js",
                 "extensions/story.js",
