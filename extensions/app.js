@@ -60,11 +60,11 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
                         onChange: onToggleAll,
                     })
                 ),
-                React.createElement("th", { style: thStyle }, "create_time"),
-                React.createElement("th", { style: thStyle }, "post_id"),
-                React.createElement("th", { style: thStyle }, "text"),
-                React.createElement("th", { style: thStyle }, "attached_story"),
-                React.createElement("th", { style: thStyle }, "attachments")
+                React.createElement("th", { style: thStyle }, "Created"),
+                React.createElement("th", { style: thStyle }, "Post ID"),
+                React.createElement("th", { style: thStyle }, "Message"),
+                React.createElement("th", { style: thStyle }, "Attached Story"),
+                React.createElement("th", { style: thStyle }, "Attachments")
             )
         ),
         React.createElement("tbody", null,
