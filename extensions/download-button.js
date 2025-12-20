@@ -4,11 +4,11 @@ import { React } from './react.js';
 const { useEffect } = React;
 
 /**
- * Extract postID from React fiber of a DOM element.
+ * Extract story ID from React fiber of a DOM element.
  * @param {Element} element
  * @returns {string | null}
  */
-function getPostIdFromReactFiber(element) {
+function getStoryIdFromReactFiber(element) {
     const fiberKey = Object.keys(element || {}).find(k => k.startsWith('__reactFiber$'));
     if (!fiberKey) return null;
 
@@ -16,12 +16,12 @@ function getPostIdFromReactFiber(element) {
     let currentFiber = element[fiberKey];
     let visited = 0;
 
-    while (currentFiber && visited < 50) {
+    while (currentFiber && visited < 60) {
         visited++;
         const props = currentFiber.memoizedProps;
 
-        if (props && typeof props.postID === 'string') {
-            return props.postID;
+        if (props?.feedUnit?.id) {
+            return props.feedUnit.id;
         }
 
         currentFiber = currentFiber.return;
@@ -106,10 +106,10 @@ function injectDownloadButtons(stories, postAppMessage) {
         // Skip if already injected
         if (postContainer.querySelector('.fpdl-download-btn')) continue;
 
-        const postId = getPostIdFromReactFiber(postContainer);
-        if (!postId) continue;
+        const storyId = getStoryIdFromReactFiber(postContainer);
+        if (!storyId) continue;
 
-        const story = stories.find(s => s.post_id === postId);
+        const story = stories.find(s => s.id === storyId);
         if (!story) continue;
 
         // Find the overflow button container (parent of parent of the "..." button)
