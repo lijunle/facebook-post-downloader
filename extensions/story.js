@@ -504,18 +504,30 @@ function extractEmbeddedStories() {
     return stories;
 }
 
-// Facebook uses different GraphQL operation ("friendly") names depending on context.
-// - Home feed: CometModernHomeFeedQuery, CometNewsFeedPaginationQuery
-// - Group feed: GroupsCometFeedRegularStoriesPaginationQuery
-// - Cross-group feed (/groups/feed/): GroupsCometCrossGroupFeedPaginationQuery, GroupsCometCrossGroupFeedContainerQuery
-// - Group discussion page: CometGroupDiscussionRootSuccessQuery
+/**
+ * Facebook uses different GraphQL operation ("friendly") names depending on context.
+ * - CometGroupDiscussionRootSuccessQuery: Group discussion page
+ * - CometModernHomeFeedQuery: Home feed
+ * - CometNewsFeedPaginationQuery: Home feed pagination
+ * - GroupsCometCrossGroupFeedContainerQuery: Cross-group feed (/groups/feed/)
+ * - GroupsCometCrossGroupFeedPaginationQuery: Cross-group feed pagination
+ * - GroupsCometFeedRegularStoriesPaginationQuery: Group feed
+ * - ProfileCometContextualProfileGroupPostsFeedPaginationQuery: Group member profile feed
+ * - ProfileCometContextualProfileRootQuery: Contextual profile root
+ * - ProfileCometTimelineFeedQuery: User profile timeline
+ * - ProfileCometTimelineFeedRefetchQuery: User profile timeline refetch/pagination
+ */
 const TARGET_API_NAMES = new Set([
+    "CometGroupDiscussionRootSuccessQuery",
     "CometModernHomeFeedQuery",
     "CometNewsFeedPaginationQuery",
-    "GroupsCometFeedRegularStoriesPaginationQuery",
-    "GroupsCometCrossGroupFeedPaginationQuery",
     "GroupsCometCrossGroupFeedContainerQuery",
-    "CometGroupDiscussionRootSuccessQuery",
+    "GroupsCometCrossGroupFeedPaginationQuery",
+    "GroupsCometFeedRegularStoriesPaginationQuery",
+    "ProfileCometContextualProfileGroupPostsFeedPaginationQuery",
+    "ProfileCometContextualProfileRootQuery",
+    "ProfileCometTimelineFeedQuery",
+    "ProfileCometTimelineFeedRefetchQuery",
 ]);
 
 /**
