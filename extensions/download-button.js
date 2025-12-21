@@ -4,11 +4,12 @@ import { React } from './react.js';
 const { useEffect } = React;
 
 /**
- * Extract story ID from React fiber of a DOM element.
+ * Extract a value from React fiber using an accessor function.
  * @param {Element} element
+ * @param {(props: any) => string | undefined} accessor
  * @returns {string | null}
  */
-function getStoryIdFromReactFiber(element) {
+function getValueFromReactFiber(element, accessor) {
     const fiberKey = Object.keys(element || {}).find(k => k.startsWith('__reactFiber$'));
     if (!fiberKey) return null;
 
@@ -16,12 +17,13 @@ function getStoryIdFromReactFiber(element) {
     let currentFiber = element[fiberKey];
     let visited = 0;
 
-    while (currentFiber && visited < 60) {
+    while (currentFiber && visited < 100) {
         visited++;
         const props = currentFiber.memoizedProps;
 
-        if (props?.feedUnit?.id) {
-            return props.feedUnit.id;
+        const value = accessor(props);
+        if (value) {
+            return value;
         }
 
         currentFiber = currentFiber.return;
@@ -100,24 +102,33 @@ function injectDownloadButtons(stories, postAppMessage) {
     const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"]');
 
     for (const actionBtn of actionButtons) {
-        const postContainer = actionBtn.closest('[data-virtualized="false"]');
-        if (!postContainer) continue;
-
-        // Skip if already injected
-        if (postContainer.querySelector('.fpdl-download-btn')) continue;
-
-        const storyId = getStoryIdFromReactFiber(postContainer);
-        if (!storyId) continue;
-
-        const story = stories.find(s => s.id === storyId);
-        if (!story) continue;
-
         // Find the overflow button container (parent of parent of the "..." button)
         const overflowButtonContainer = actionBtn.parentElement?.parentElement;
         if (!overflowButtonContainer?.parentElement) continue;
 
+        const buttonRow = overflowButtonContainer.parentElement;
+        if (buttonRow.querySelector('.fpdl-download-btn')) continue;
+
+        // Match by story.id
+        const storyId = getValueFromReactFiber(actionBtn, p => p?.story?.id);
+        let story = storyId ? stories.find(s => s.id === storyId) : null;
+
+        // Fall back to matching by storyPostID
+        if (!story) {
+            const postId = getValueFromReactFiber(actionBtn, p => p?.storyPostID);
+            story = postId ? stories.find(s => s.post_id === postId) : null;
+        }
+
+        // Fall back to matching by permalink_url to wwwURL
+        if (!story) {
+            const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
+            story = permalinkUrl ? stories.find(s => s.wwwURL === permalinkUrl) : null;
+        }
+
+        if (!story) continue;
+
         const downloadBtn = createDownloadButton(story, postAppMessage);
-        overflowButtonContainer.parentElement.insertBefore(downloadBtn, overflowButtonContainer);
+        buttonRow.insertBefore(downloadBtn, overflowButtonContainer);
     }
 }
 
