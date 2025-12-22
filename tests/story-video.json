@@ -210,7 +210,7 @@
               "video_audio_translations_meta_data": {
                 "header_label_renderer": null
               },
-              "name": "",
+              "name": "THIS IS MEDIA NAME",
               "savable_description": {
                 "delight_ranges": [],
                 "image_ranges": [],

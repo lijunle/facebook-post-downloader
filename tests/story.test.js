@@ -646,6 +646,9 @@ describe('StoryVideo', () => {
         assert.ok(markdownContent.includes(getStoryUrl(storyVideo)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('はじめてちゃれんじ'), 'Markdown should include the actor name');
 
+        // Check that video title (media.name) is rendered
+        assert.ok(markdownContent.includes('**THIS IS MEDIA NAME**'), 'Markdown should include video title in bold');
+
         // Check that video is rendered as link (not image)
         assert.ok(markdownContent.includes('[0001_1303605278204660.mp4]'), 'Markdown should include video link');
         assert.ok(!markdownContent.includes('![0001_1303605278204660.mp4]'), 'Video should not be rendered as image');

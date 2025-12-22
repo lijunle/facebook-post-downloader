@@ -264,6 +264,17 @@ function renderStory(story, attachments, quoted_story) {
         lines.push('');
     }
 
+    // Video title (for StoryVideo with media.name)
+    if (isStoryVideo(story)) {
+        const mediaName = story.attachments[0].media.name;
+        if (mediaName) {
+            lines.push('---');
+            lines.push('');
+            lines.push(`**${mediaName}**`);
+            lines.push('');
+        }
+    }
+
     // Message
     if (story.message?.text) {
         lines.push('---');
