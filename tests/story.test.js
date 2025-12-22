@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * @typedef {{ id: string, nextId?: string }} MockMediaConfig
+ * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video' }} MockMediaConfig
  */
 
 /**
@@ -19,14 +19,15 @@ const mockMediaConfig = new Map();
 
 /**
  * Helper to set up mock media for a test case
- * @param {string[]} photoIds - Array of photo IDs in navigation order
+ * @param {string[]} mediaIds - Array of media IDs in navigation order
+ * @param {'Photo' | 'Video'} [type='Photo'] - Type of media
  */
-function setupMockMedia(photoIds) {
+function setupMockMedia(mediaIds, type = 'Photo') {
     mockMediaConfig.clear();
-    for (let i = 0; i < photoIds.length; i++) {
-        const id = photoIds[i];
-        const nextId = i + 1 < photoIds.length ? photoIds[i + 1] : undefined;
-        mockMediaConfig.set(id, { id, nextId });
+    for (let i = 0; i < mediaIds.length; i++) {
+        const id = mediaIds[i];
+        const nextId = i + 1 < mediaIds.length ? mediaIds[i + 1] : undefined;
+        mockMediaConfig.set(id, { id, nextId, type });
     }
 }
 
@@ -38,13 +39,31 @@ async function mockSendGraphqlRequest({ apiName, variables }) {
     if (apiName === 'CometPhotoRootContentQuery' && variables.nodeID) {
         const config = mockMediaConfig.get(variables.nodeID);
         if (config) {
+            /** @type {any} */
+            let currMedia;
+            if (config.type === 'Video') {
+                currMedia = {
+                    __typename: 'Video',
+                    id: config.id,
+                    videoDeliveryResponseFragment: {
+                        videoDeliveryResponseResult: {
+                            progressive_urls: [
+                                { progressive_url: `https://example.com/video_${config.id}_hd.mp4`, metadata: { quality: 'HD' } },
+                                { progressive_url: `https://example.com/video_${config.id}_sd.mp4`, metadata: { quality: 'SD' } }
+                            ]
+                        }
+                    }
+                };
+            } else {
+                currMedia = {
+                    __typename: 'Photo',
+                    id: config.id,
+                    image: { uri: `https://example.com/photo_${config.id}.jpg` }
+                };
+            }
             return [{
                 data: {
-                    currMedia: {
-                        __typename: 'Photo',
-                        id: config.id,
-                        image: { uri: `https://example.com/photo_${config.id}.jpg` }
-                    },
+                    currMedia,
                     nextMediaAfterNodeId: config.nextId ? { id: config.nextId } : null,
                     prevMediaBeforeNodeId: null
                 }
@@ -493,5 +512,56 @@ describe('downloadStory', () => {
         // Check that attached story content is included as blockquote
         assert.ok(markdownContent.includes('> '), 'Markdown should include blockquoted attached story');
         assert.ok(markdownContent.includes('Anime Feels'), 'Markdown should include the attached story actor name');
+    });
+
+    it('should download story with video attachment from story-attachment-video.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-video.json'), 'utf8'));
+
+        // Setup mock for video attachment
+        const videoId = '1800120837356279';
+        setupMockMedia([videoId], 'Video');
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '2284744602035654');
+        assert.ok(story, 'Should find the story');
+        assert.strictEqual(getAttachmentCount(story), 1, 'Story should have 1 video attachment');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should have 2 downloads: 1 video + 1 index.md
+        assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 video + index.md)');
+
+        // Check that video was downloaded
+        const videoDownload = downloads.find(d => d.filename.includes(videoId));
+        assert.ok(videoDownload, 'Should have download for video');
+        assert.ok(videoDownload.filename.endsWith('.mp4'), 'Video should have .mp4 extension');
+        assert.ok(videoDownload.url.includes('_hd.mp4'), 'Should prefer HD quality video');
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes('月 影'), 'Markdown should include the actor name');
+        assert.ok(markdownContent.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Markdown should include the group name');
+
+        // Check that video is rendered as link (not image)
+        assert.ok(markdownContent.includes(`[0001_${videoId}.mp4]`), 'Markdown should include video link');
+        assert.ok(!markdownContent.includes(`![0001_${videoId}.mp4]`), 'Video should not be rendered as image');
+
+        // Check folder name format
+        const folderName = indexDownload.filename.split('/')[0];
+        assert.ok(folderName.includes('月 影'), 'Folder name should include actor name');
+        assert.ok(folderName.includes('2284744602035654'), 'Folder name should include post_id');
+        assert.ok(folderName.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Folder name should include group name');
     });
 });
