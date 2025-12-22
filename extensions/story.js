@@ -2,6 +2,8 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 
 /**
  * @typedef {import('./types').Story} Story
+ * @typedef {import('./types').StoryPost} StoryPost
+ * @typedef {import('./types').StoryVideo} StoryVideo
  * @typedef {import('./types').Media} Media
  * @typedef {import('./types').MediaVideo} MediaVideo
  * @typedef {import('./types').Group} StoryGroup
@@ -67,10 +69,16 @@ function getDownloadUrl(media) {
  * @returns {number}
  */
 export function getAttachmentCount(story) {
-    const attachment = story.attachments[0]?.styles.attachment;
-    if (!attachment) return 0;
-    if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
-    return 1;
+    if (isStoryPost(story)) {
+        const attachment = story.attachments[0]?.styles.attachment;
+        if (!attachment) return 0;
+        if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
+        return 1;
+    }
+    if (isStoryVideo(story)) {
+        return 1;
+    }
+    return 0;
 }
 
 /** @type {WeakMap<Story, Media[]>} */
@@ -134,12 +142,24 @@ async function fetchAttachments(story, onAttachment) {
     }
 
     if (story.attachments.length === 0) return;
-    const attachment = story.attachments[0].styles.attachment;
+
+    // For StoryVideo, directly use the media from the attachment
+    if (isStoryVideo(story)) {
+        const media = story.attachments[0].media;
+        onAttachment(media);
+        attachmentsCache.set(story, [media]);
+        return;
+    }
+
+    // For StoryPost, walk through the media set
+    if (!isStoryPost(story)) return;
+
+    const attachment = story.attachments[0]?.styles.attachment;
     /** @type {string | undefined} */
     let seedId;
-    if ('media' in attachment) {
+    if (attachment && 'media' in attachment) {
         seedId = attachment.media.id;
-    } else if ('all_subattachments' in attachment) {
+    } else if (attachment && 'all_subattachments' in attachment) {
         seedId = attachment.all_subattachments.nodes[0]?.media.id;
     }
     if (!seedId) return;
@@ -220,7 +240,7 @@ function renderStory(story, attachments, quoted_story) {
     const lines = [];
 
     // URL
-    lines.push(`**URL:** ${story.wwwURL}`);
+    lines.push(`**URL:** ${getStoryUrl(story)}`);
     lines.push('');
 
     // Group
@@ -307,7 +327,7 @@ export async function downloadStory(story, postAppMessage) {
     // Fetch attachments for attached_story if it exists
     /** @type {string | undefined} */
     let quotedStory;
-    if (story.attached_story) {
+    if (isStoryPost(story) && story.attached_story) {
         /** @type {Array<{ media: Media, filename: string }>} */
         const attachedStoryAttachments = [];
         await fetchAttachments(story.attached_story, (media) => {
@@ -349,11 +369,26 @@ export function getGroup(story) {
 }
 
 /**
- * Check if an object is a valid Story.
- * @param {unknown} obj
- * @returns {obj is Story}
+ * Get the URL for a story.
+ * @param {Story} story
+ * @returns {string}
  */
-function isStory(obj) {
+export function getStoryUrl(story) {
+    if (isStoryPost(story)) {
+        return story.wwwURL;
+    }
+    if (isStoryVideo(story)) {
+        return `https://www.facebook.com/watch/?v=${story.post_id}`;
+    }
+    return '';
+}
+
+/**
+ * Check if an object is a valid StoryPost.
+ * @param {unknown} obj
+ * @returns {obj is StoryPost}
+ */
+function isStoryPost(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
@@ -366,6 +401,39 @@ function isStory(obj) {
     if (!Array.isArray(o.attachments)) return false;
 
     return true;
+}
+
+/**
+ * Check if an object is a valid StoryVideo.
+ * @param {unknown} obj
+ * @returns {obj is StoryVideo}
+ */
+function isStoryVideo(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Must have attachments array with url and media
+    if (!Array.isArray(o.attachments)) return false;
+    if (o.attachments.length === 0) return false;
+
+    const attachment = /** @type {Record<string, unknown>} */ (o.attachments[0]);
+    if (typeof attachment?.url !== 'string' || !attachment.url) return false;
+    if (!attachment.media || typeof attachment.media !== 'object') return false;
+
+    const media = /** @type {Record<string, unknown>} */ (attachment.media);
+    if (media.__typename !== 'Video') return false;
+    if (typeof media.publish_time !== 'number') return false;
+
+    return true;
+}
+
+/**
+ * Check if an object is a valid Story (StoryPost or StoryVideo).
+ * @param {unknown} obj
+ * @returns {obj is Story}
+ */
+function isStory(obj) {
+    return isStoryPost(obj) || isStoryVideo(obj);
 }
 
 /**
@@ -390,8 +458,6 @@ export function extractStories(obj, results = []) {
         // Prefer story with wwwURL (the nested one has more complete data)
         if (existingIndex === -1) {
             results.push(story);
-        } else if (story.wwwURL && !results[existingIndex].wwwURL) {
-            results[existingIndex] = story;
         }
         // Continue recursing - there might be better nested stories
     }

@@ -63,7 +63,7 @@ export type User = {
   name: string;
 };
 
-export type Story = {
+export type StoryPost = {
   id: string;
   post_id: string;
   wwwURL: string;
@@ -88,5 +88,27 @@ export type Story = {
           };
         }
       ];
-  attached_story: null | Story;
+  attached_story: null | StoryPost;
 };
+
+export type StoryVideo = {
+  id: string;
+  post_id: string;
+  message: null | { text: string };
+  actors: [User];
+  attachments: [
+    {
+      url: string;
+      media: MediaVideo & {
+        name: string;
+        publish_time: number;
+        owner: {
+          __typename: "User";
+          id: string;
+        };
+      };
+    }
+  ];
+};
+
+export type Story = StoryPost | StoryVideo;

@@ -4,12 +4,13 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 /**
+ * @typedef {import('../extensions/types').StoryPost} StoryPost
  * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video' }} MockMediaConfig
  */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Global mock configuration that test cases can set up
@@ -85,7 +86,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
     it('should extract text-only story from story-text-only.json', () => {
@@ -124,7 +125,7 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story
-        const mainStory = result.find(s => s.post_id === '1414037856753198');
+        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '1414037856753198'));
         assert.ok(mainStory, 'Main story should be extracted');
         assert.strictEqual(getAttachmentCount(mainStory), 0, 'Main story should have 0 attachments');
         assert.strictEqual(mainStory.actors[0].name, '蔡正元', 'Main story actor name should be 蔡正元');
@@ -144,7 +145,7 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story (outer story)
-        const mainStory = result.find(s => s.post_id === '2280345139142267');
+        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '2280345139142267'));
         assert.ok(mainStory, 'Main story should be extracted');
 
         // Outer story has no message and no attachments
@@ -173,7 +174,7 @@ describe('extractStories', () => {
         assert.strictEqual(postIds.length, uniquePostIds.length, 'All post_ids should be unique');
 
         // Check that story with wwwURL is preferred
-        const storyWithUrl = result.find(s => s.post_id === '1411731986983785');
+        const storyWithUrl = /** @type {import('../extensions/types').StoryPost | undefined} */ (result.find(s => s.post_id === '1411731986983785'));
         if (storyWithUrl) {
             assert.ok(storyWithUrl.wwwURL, 'Should prefer story with wwwURL');
         }
@@ -272,7 +273,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         extractStoryCreateTime(mockData);
 
         // Main story
-        const mainStory = stories.find(s => s.post_id === '1414037856753198');
+        const mainStory = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
         assert.ok(mainStory, 'Should find the main story');
 
         const mainCreateTime = getCreateTime(mainStory);
@@ -330,7 +331,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('蔡正元'), 'Markdown should include the actor name');
         assert.ok(markdownContent.includes('2025-12-13'), 'Markdown should include the date');
 
@@ -382,7 +383,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('Kimi Cui'), 'Markdown should include the actor name');
 
         // Markdown should include image references
@@ -437,7 +438,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '1414037856753198');
+        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -481,7 +482,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '2280345139142267');
+        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '2280345139142267'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -550,7 +551,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('月 影'), 'Markdown should include the actor name');
         assert.ok(markdownContent.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Markdown should include the group name');
 
