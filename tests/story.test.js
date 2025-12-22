@@ -591,8 +591,8 @@ describe('StoryVideo', () => {
         assert.ok(storyVideo, 'Should find the StoryVideo');
 
         const url = getStoryUrl(storyVideo);
-        // StoryVideo should return a watch URL based on post_id
-        assert.strictEqual(url, 'https://www.facebook.com/watch/?v=1140140214990654', 'StoryVideo URL should be watch URL');
+        // StoryVideo should return a watch URL based on media.id
+        assert.strictEqual(url, 'https://www.facebook.com/watch/?v=1303605278204660', 'StoryVideo URL should be watch URL');
     });
 
     it('should extract create time from StoryVideo media.publish_time', () => {

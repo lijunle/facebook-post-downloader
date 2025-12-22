@@ -389,7 +389,7 @@ export function getStoryUrl(story) {
         return story.wwwURL;
     }
     if (isStoryVideo(story)) {
-        return `https://www.facebook.com/watch/?v=${story.post_id}`;
+        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
     }
     return '';
 }
