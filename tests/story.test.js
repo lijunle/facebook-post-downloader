@@ -658,3 +658,57 @@ describe('StoryVideo', () => {
         assert.ok(folderName.includes('1140140214990654'), 'Folder name should include post_id');
     });
 });
+
+describe('StoryWatch', () => {
+    it('should extract StoryWatch from story-watched-video.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        // Should find exactly one story
+        assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
+
+        // Find the StoryWatch - uses video id as post_id
+        const storyWatch = result.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+        assert.strictEqual(getAttachmentCount(storyWatch), 1, 'StoryWatch should have 1 attachment');
+        assert.strictEqual(getStoryActor(storyWatch)?.name, '咩啊_Real', 'Actor name should be 咩啊_Real');
+    });
+
+    it('should return correct URL for StoryWatch via getStoryUrl', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyWatch = result.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+
+        const url = getStoryUrl(storyWatch);
+        // StoryWatch should return a watch URL based on media.id
+        assert.strictEqual(url, 'https://www.facebook.com/watch/?v=1403115984005683', 'StoryWatch URL should be watch URL');
+    });
+
+    it('should return correct message for StoryWatch via getStoryMessage', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyWatch = result.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+
+        const message = getStoryMessage(storyWatch);
+        assert.strictEqual(message, '當你穿越回以前的廣東過年...', 'StoryWatch message should be extracted from comet_sections');
+    });
+
+    it('should extract create time from StoryWatch via extractStoryCreateTime', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+
+        const storyWatch = stories.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+
+        const createTime = getCreateTime(storyWatch);
+        assert.ok(createTime instanceof Date, 'Create time should be a Date');
+        // creation_time from story-watched-video.json metadata is 1737889218
+        assert.strictEqual(createTime.getTime(), 1737889218 * 1000, 'Create time should match creation_time from metadata');
+    });
+});
