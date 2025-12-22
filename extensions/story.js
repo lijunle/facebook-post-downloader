@@ -77,7 +77,7 @@ export function getAttachmentCount(story) {
         if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
         return 1;
     }
-    if (isStoryVideo(story)) {
+    if (isStoryVideo(story) || isStoryWatch(story)) {
         return 1;
     }
     return 0;
@@ -381,6 +381,13 @@ export function getCreateTime(story) {
         return new Date(createTime * 1000);
     }
 
+    // For StoryWatch, use the cache (keyed by creation_story.id)
+    if (isStoryWatch(story)) {
+        const createTime = storyCreateTimeCache.get(getStoryId(story));
+        if (createTime === undefined) return undefined;
+        return new Date(createTime * 1000);
+    }
+
     return undefined;
 }
 
@@ -403,6 +410,9 @@ export function getStoryUrl(story) {
         return story.wwwURL;
     }
     if (isStoryVideo(story)) {
+        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
+    }
+    if (isStoryWatch(story)) {
         return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
     }
     return '';
