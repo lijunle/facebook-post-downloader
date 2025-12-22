@@ -88,8 +88,8 @@ mock.module('../extensions/graphql.js', {
 const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
-    it('should extract text-only story from mock-story-text-only.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+    it('should extract text-only story from story-text-only.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
         const result = extractStories(mockData);
 
         // Should find at least one story
@@ -102,8 +102,8 @@ describe('extractStories', () => {
         assert.strictEqual(textOnlyStory.actors[0].name, '蔡正元', 'Actor name should be 蔡正元');
     });
 
-    it('should extract story with attachments from mock-story-with-attachments.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attachments.json'), 'utf8'));
+    it('should extract story with photo attachments from story-attachment-photo.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
         const result = extractStories(mockData);
 
         // Should find at least one story
@@ -116,8 +116,8 @@ describe('extractStories', () => {
         assert.strictEqual(storyWithAttachments.actors[0].name, 'Kimi Cui', 'Actor name should be Kimi Cui');
     });
 
-    it('should extract story with attached story from mock-story-with-attached-story.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story.json'), 'utf8'));
+    it('should extract story with attached story from story-attached-story.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story.json'), 'utf8'));
         const result = extractStories(mockData);
 
         // Should extract only 1 story (the main story with attached_story nested inside)
@@ -136,8 +136,8 @@ describe('extractStories', () => {
         assert.strictEqual(mainStory.attached_story.actors[0].name, '徐勝凌', 'Attached story actor name should be 徐勝凌');
     });
 
-    it('should extract story with attached story only from mock-story-with-attached-story-only.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story-only.json'), 'utf8'));
+    it('should extract story with attached story only from story-attached-story-only.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story-only.json'), 'utf8'));
         const result = extractStories(mockData);
 
         // Should extract only 1 story
@@ -164,7 +164,7 @@ describe('extractStories', () => {
     });
 
     it('should deduplicate stories and prefer ones with wwwURL', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
         const result = extractStories(mockData);
 
         // Check that post_ids are unique
@@ -181,8 +181,8 @@ describe('extractStories', () => {
 });
 
 describe('extractStoryGroupMap', () => {
-    it('should extract group from mock-story-with-group.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
+    it('should extract group from story-user-group.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-user-group.json'), 'utf8'));
 
         // First extract stories to get the story id
         const stories = extractStories(mockData);
@@ -206,8 +206,8 @@ describe('extractStoryGroupMap', () => {
     });
 
     it('should return undefined for story without group', () => {
-        // Use mock-story-text-only.json which doesn't have a group
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+        // Use story-text-only.json which doesn't have a group
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryGroupMap(mockData);
@@ -223,8 +223,8 @@ describe('extractStoryGroupMap', () => {
 });
 
 describe('extractStoryCreateTime and getCreateTime', () => {
-    it('should extract create time from mock-story-text-only.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+    it('should extract create time from story-text-only.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -237,8 +237,8 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         assert.strictEqual(createTime.getTime(), 1765657548 * 1000, 'Create time should match expected timestamp');
     });
 
-    it('should extract create time from mock-story-with-attachments.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attachments.json'), 'utf8'));
+    it('should extract create time from story-attachment-photo.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -251,8 +251,8 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         assert.strictEqual(createTime.getTime(), 1765769968 * 1000, 'Create time should match expected timestamp');
     });
 
-    it('should extract create time from mock-story-with-group.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
+    it('should extract create time from story-user-group.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-user-group.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -265,8 +265,8 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         assert.strictEqual(createTime.getTime(), 1766143457 * 1000, 'Create time should match expected timestamp');
     });
 
-    it('should extract create time for main and attached story from mock-story-with-attached-story.json', () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story.json'), 'utf8'));
+    it('should extract create time for main and attached story from story-attached-story.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -304,8 +304,8 @@ describe('extractStoryCreateTime and getCreateTime', () => {
 });
 
 describe('downloadStory', () => {
-    it('should download text-only story from mock-story-text-only.json', async () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+    it('should download text-only story from story-text-only.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -341,8 +341,8 @@ describe('downloadStory', () => {
         assert.ok(folderName.includes('1411731986983785'), 'Folder name should include post_id');
     });
 
-    it('should download story with attachments from mock-story-with-attachments.json', async () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attachments.json'), 'utf8'));
+    it('should download story with photo attachments from story-attachment-photo.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
 
         // Setup mock for 4 photos (seed is attachment.media.id)
         const photoIds = ['10236779894211730', '10236779894131728', '10236779894291732', '10236779894371734'];
@@ -394,8 +394,8 @@ describe('downloadStory', () => {
         assert.ok(folderName.includes('25550089621287122'), 'Folder name should include post_id');
     });
 
-    it('should download story with group from mock-story-with-group.json', async () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
+    it('should download story with group from story-user-group.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-user-group.json'), 'utf8'));
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -426,8 +426,8 @@ describe('downloadStory', () => {
         assert.ok(folderName.includes('2282323118944469'), 'Folder name should include post_id');
     });
 
-    it('should download story with attached story from mock-story-with-attached-story.json', async () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story.json'), 'utf8'));
+    it('should download story with attached story from story-attached-story.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story.json'), 'utf8'));
 
         // Setup mock for attached story photo
         const attachedPhotoId = '1284281187062002';
@@ -470,8 +470,8 @@ describe('downloadStory', () => {
         assert.ok(markdownContent.includes('徐勝凌'), 'Markdown should include the attached story actor name');
     });
 
-    it('should download story with attached story only from mock-story-with-attached-story-only.json', async () => {
-        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story-only.json'), 'utf8'));
+    it('should download story with attached story only from story-attached-story-only.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story-only.json'), 'utf8'));
 
         // Setup mock for attached story photo
         const attachedPhotoId = '1422788539419067';
