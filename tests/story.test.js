@@ -4,12 +4,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 /**
+ * @typedef {import('../extensions/types').StoryPost} StoryPost
+ * @typedef {import('../extensions/types').StoryVideo} StoryVideo
  * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video' }} MockMediaConfig
  */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Global mock configuration that test cases can set up
@@ -85,7 +87,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
     it('should extract text-only story from story-text-only.json', () => {
@@ -124,7 +126,7 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story
-        const mainStory = result.find(s => s.post_id === '1414037856753198');
+        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '1414037856753198'));
         assert.ok(mainStory, 'Main story should be extracted');
         assert.strictEqual(getAttachmentCount(mainStory), 0, 'Main story should have 0 attachments');
         assert.strictEqual(mainStory.actors[0].name, '蔡正元', 'Main story actor name should be 蔡正元');
@@ -144,7 +146,7 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story (outer story)
-        const mainStory = result.find(s => s.post_id === '2280345139142267');
+        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '2280345139142267'));
         assert.ok(mainStory, 'Main story should be extracted');
 
         // Outer story has no message and no attachments
@@ -173,7 +175,7 @@ describe('extractStories', () => {
         assert.strictEqual(postIds.length, uniquePostIds.length, 'All post_ids should be unique');
 
         // Check that story with wwwURL is preferred
-        const storyWithUrl = result.find(s => s.post_id === '1411731986983785');
+        const storyWithUrl = /** @type {import('../extensions/types').StoryPost | undefined} */ (result.find(s => s.post_id === '1411731986983785'));
         if (storyWithUrl) {
             assert.ok(storyWithUrl.wwwURL, 'Should prefer story with wwwURL');
         }
@@ -272,7 +274,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         extractStoryCreateTime(mockData);
 
         // Main story
-        const mainStory = stories.find(s => s.post_id === '1414037856753198');
+        const mainStory = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
         assert.ok(mainStory, 'Should find the main story');
 
         const mainCreateTime = getCreateTime(mainStory);
@@ -330,7 +332,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('蔡正元'), 'Markdown should include the actor name');
         assert.ok(markdownContent.includes('2025-12-13'), 'Markdown should include the date');
 
@@ -382,7 +384,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('Kimi Cui'), 'Markdown should include the actor name');
 
         // Markdown should include image references
@@ -437,7 +439,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '1414037856753198');
+        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -481,7 +483,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '2280345139142267');
+        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '2280345139142267'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -550,7 +552,7 @@ describe('downloadStory', () => {
 
         // Decode and check the markdown content
         const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
-        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes(getStoryUrl(story)), 'Markdown should include the story URL');
         assert.ok(markdownContent.includes('月 影'), 'Markdown should include the actor name');
         assert.ok(markdownContent.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Markdown should include the group name');
 
@@ -563,5 +565,97 @@ describe('downloadStory', () => {
         assert.ok(folderName.includes('月 影'), 'Folder name should include actor name');
         assert.ok(folderName.includes('2284744602035654'), 'Folder name should include post_id');
         assert.ok(folderName.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Folder name should include group name');
+    });
+});
+
+describe('StoryVideo', () => {
+    it('should extract StoryVideo from story-video.json', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        // Should find at least one story
+        assert.ok(result.length > 0, 'Should extract at least one story');
+
+        // Find the StoryVideo
+        const storyVideo = result.find(s => s.post_id === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+        assert.strictEqual(getAttachmentCount(storyVideo), 1, 'StoryVideo should have 1 attachment');
+        assert.strictEqual(storyVideo.actors[0].name, 'はじめてちゃれんじ', 'Actor name should be はじめてちゃれんじ');
+    });
+
+    it('should return correct URL for StoryVideo via getStoryUrl', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyVideo = result.find(s => s.post_id === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+
+        const url = getStoryUrl(storyVideo);
+        // StoryVideo should return a watch URL based on media.id
+        assert.strictEqual(url, 'https://www.facebook.com/watch/?v=1303605278204660', 'StoryVideo URL should be watch URL');
+    });
+
+    it('should extract create time from StoryVideo media.publish_time', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+
+        const storyVideo = stories.find(s => s.post_id === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+
+        const createTime = getCreateTime(storyVideo);
+        assert.ok(createTime instanceof Date, 'Create time should be a Date');
+        // publish_time from story-video.json is 1762675355
+        assert.strictEqual(createTime.getTime(), 1762675355 * 1000, 'Create time should match publish_time');
+    });
+
+    it('should download StoryVideo from story-video.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const storyVideo = stories.find(s => s.post_id === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+        assert.strictEqual(getAttachmentCount(storyVideo), 1, 'StoryVideo should have 1 attachment');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(storyVideo, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should have 2 downloads: 1 video + 1 index.md
+        assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 video + index.md)');
+
+        // Check that video was downloaded - video id is 1303605278204660
+        const videoDownload = downloads.find(d => d.filename.includes('1303605278204660'));
+        assert.ok(videoDownload, 'Should have download for video');
+        assert.ok(videoDownload.filename.endsWith('.mp4'), 'Video should have .mp4 extension');
+        // Should have a progressive URL (contains video.fyvr or similar CDN URL)
+        assert.ok(videoDownload.url.includes('video.'), 'Should have video CDN URL');
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes(getStoryUrl(storyVideo)), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes('はじめてちゃれんじ'), 'Markdown should include the actor name');
+
+        // Check that video title (media.name) is rendered
+        assert.ok(markdownContent.includes('**THIS IS MEDIA NAME**'), 'Markdown should include video title in bold');
+
+        // Check that video is rendered as link (not image)
+        assert.ok(markdownContent.includes('[0001_1303605278204660.mp4]'), 'Markdown should include video link');
+        assert.ok(!markdownContent.includes('![0001_1303605278204660.mp4]'), 'Video should not be rendered as image');
+
+        // Check folder name format
+        const folderName = indexDownload.filename.split('/')[0];
+        assert.ok(folderName.includes('はじめてちゃれんじ'), 'Folder name should include actor name');
+        assert.ok(folderName.includes('1140140214990654'), 'Folder name should include post_id');
     });
 });

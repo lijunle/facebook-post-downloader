@@ -2,9 +2,11 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 
 /**
  * @typedef {import('./types').Story} Story
- * @typedef {import('./types').StoryMedia} StoryMedia
+ * @typedef {import('./types').StoryPost} StoryPost
  * @typedef {import('./types').StoryVideo} StoryVideo
- * @typedef {import('./types').StoryGroup} StoryGroup
+ * @typedef {import('./types').Media} Media
+ * @typedef {import('./types').MediaVideo} MediaVideo
+ * @typedef {import('./types').Group} StoryGroup
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
@@ -26,7 +28,7 @@ function guessExt(url) {
 }
 
 /**
- * @param {StoryVideo} media
+ * @param {MediaVideo} media
  * @returns {string | undefined}
  */
 function pickBestProgressiveUrl(media) {
@@ -46,7 +48,7 @@ function pickBestProgressiveUrl(media) {
 
 /**
  * Get the download URL and extension for a media item.
- * @param {StoryMedia} media
+ * @param {Media} media
  * @returns {{ url: string, ext: string } | undefined}
  */
 function getDownloadUrl(media) {
@@ -67,13 +69,19 @@ function getDownloadUrl(media) {
  * @returns {number}
  */
 export function getAttachmentCount(story) {
-    const attachment = story.attachments[0]?.styles.attachment;
-    if (!attachment) return 0;
-    if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
-    return 1;
+    if (isStoryPost(story)) {
+        const attachment = story.attachments[0]?.styles.attachment;
+        if (!attachment) return 0;
+        if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
+        return 1;
+    }
+    if (isStoryVideo(story)) {
+        return 1;
+    }
+    return 0;
 }
 
-/** @type {WeakMap<Story, StoryMedia[]>} */
+/** @type {WeakMap<Story, Media[]>} */
 const attachmentsCache = new WeakMap();
 
 /** @type {Map<string, number>} */
@@ -86,7 +94,7 @@ const storyGroupCache = new Map();
  * Fetch navigation info for a media node.
  * @param {string} nodeId
  * @param {string} mediasetToken
- * @returns {Promise<{ currMedia: StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }>}
+ * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, prevId: string | undefined }>}
  */
 async function fetchMediaNav(nodeId, mediasetToken) {
     const objs = await sendGraphqlRequest({
@@ -99,7 +107,7 @@ async function fetchMediaNav(nodeId, mediasetToken) {
         },
     });
 
-    /** @type {StoryMedia | undefined} */
+    /** @type {Media | undefined} */
     let currMedia;
     /** @type {string | undefined} */
     let nextId;
@@ -120,7 +128,7 @@ async function fetchMediaNav(nodeId, mediasetToken) {
 /**
  * Fetch attachments for a story, calling the callback for each attachment as it's retrieved.
  * @param {Story} story
- * @param {(media: StoryMedia) => void} onAttachment
+ * @param {(media: Media) => void} onAttachment
  * @returns {Promise<void>}
  */
 async function fetchAttachments(story, onAttachment) {
@@ -134,12 +142,24 @@ async function fetchAttachments(story, onAttachment) {
     }
 
     if (story.attachments.length === 0) return;
-    const attachment = story.attachments[0].styles.attachment;
+
+    // For StoryVideo, directly use the media from the attachment
+    if (isStoryVideo(story)) {
+        const media = story.attachments[0].media;
+        onAttachment(media);
+        attachmentsCache.set(story, [media]);
+        return;
+    }
+
+    // For StoryPost, walk through the media set
+    if (!isStoryPost(story)) return;
+
+    const attachment = story.attachments[0]?.styles.attachment;
     /** @type {string | undefined} */
     let seedId;
-    if ('media' in attachment) {
+    if (attachment && 'media' in attachment) {
         seedId = attachment.media.id;
-    } else if ('all_subattachments' in attachment) {
+    } else if (attachment && 'all_subattachments' in attachment) {
         seedId = attachment.all_subattachments.nodes[0]?.media.id;
     }
     if (!seedId) return;
@@ -148,7 +168,7 @@ async function fetchAttachments(story, onAttachment) {
     const totalCount = getAttachmentCount(story);
 
     // Walk from the seed to collect all media
-    /** @type {StoryMedia[]} */
+    /** @type {Media[]} */
     const result = [];
     /** @type {string | undefined} */
     let currentId = seedId;
@@ -212,7 +232,7 @@ function buildFolderName(story) {
 /**
  * Render a story to markdown content.
  * @param {Story} story
- * @param {Array<{ media: StoryMedia, filename: string }>} attachments
+ * @param {Array<{ media: Media, filename: string }>} attachments
  * @param {string} [quoted_story] - Pre-rendered quoted story content
  * @returns {string}
  */
@@ -220,7 +240,7 @@ function renderStory(story, attachments, quoted_story) {
     const lines = [];
 
     // URL
-    lines.push(`**URL:** ${story.wwwURL}`);
+    lines.push(`**URL:** ${getStoryUrl(story)}`);
     lines.push('');
 
     // Group
@@ -242,6 +262,17 @@ function renderStory(story, attachments, quoted_story) {
     if (createTime) {
         lines.push(`**Date:** ${createTime.toISOString()}`);
         lines.push('');
+    }
+
+    // Video title (for StoryVideo with media.name)
+    if (isStoryVideo(story)) {
+        const mediaName = story.attachments[0].media.name;
+        if (mediaName) {
+            lines.push('---');
+            lines.push('');
+            lines.push(`**${mediaName}**`);
+            lines.push('');
+        }
     }
 
     // Message
@@ -289,7 +320,7 @@ function renderStory(story, attachments, quoted_story) {
 export async function downloadStory(story, postAppMessage) {
     const folder = buildFolderName(story);
 
-    /** @type {Array<{ media: StoryMedia, filename: string }>} */
+    /** @type {Array<{ media: Media, filename: string }>} */
     const downloadedAttachments = [];
     let mediaIndex = 0;
 
@@ -307,8 +338,8 @@ export async function downloadStory(story, postAppMessage) {
     // Fetch attachments for attached_story if it exists
     /** @type {string | undefined} */
     let quotedStory;
-    if (story.attached_story) {
-        /** @type {Array<{ media: StoryMedia, filename: string }>} */
+    if (isStoryPost(story) && story.attached_story) {
+        /** @type {Array<{ media: Media, filename: string }>} */
         const attachedStoryAttachments = [];
         await fetchAttachments(story.attached_story, (media) => {
             const download = getDownloadUrl(media);
@@ -334,9 +365,20 @@ export async function downloadStory(story, postAppMessage) {
  * @returns {Date | undefined}
  */
 export function getCreateTime(story) {
-    const createTime = storyCreateTimeCache.get(story.id);
-    if (createTime === undefined) return undefined;
-    return new Date(createTime * 1000);
+    // For StoryVideo, get publish_time directly from the media
+    if (isStoryVideo(story)) {
+        const publishTime = story.attachments[0].media.publish_time;
+        return new Date(publishTime * 1000);
+    }
+
+    // For StoryPost, use the cache
+    if (isStoryPost(story)) {
+        const createTime = storyCreateTimeCache.get(story.id);
+        if (createTime === undefined) return undefined;
+        return new Date(createTime * 1000);
+    }
+
+    return undefined;
 }
 
 /**
@@ -349,11 +391,26 @@ export function getGroup(story) {
 }
 
 /**
- * Check if an object is a valid Story.
- * @param {unknown} obj
- * @returns {obj is Story}
+ * Get the URL for a story.
+ * @param {Story} story
+ * @returns {string}
  */
-function isStory(obj) {
+export function getStoryUrl(story) {
+    if (isStoryPost(story)) {
+        return story.wwwURL;
+    }
+    if (isStoryVideo(story)) {
+        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
+    }
+    return '';
+}
+
+/**
+ * Check if an object is a valid StoryPost.
+ * @param {unknown} obj
+ * @returns {obj is StoryPost}
+ */
+export function isStoryPost(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
@@ -366,6 +423,39 @@ function isStory(obj) {
     if (!Array.isArray(o.attachments)) return false;
 
     return true;
+}
+
+/**
+ * Check if an object is a valid StoryVideo.
+ * @param {unknown} obj
+ * @returns {obj is StoryVideo}
+ */
+function isStoryVideo(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Must have attachments array with url and media
+    if (!Array.isArray(o.attachments)) return false;
+    if (o.attachments.length === 0) return false;
+
+    const attachment = /** @type {Record<string, unknown>} */ (o.attachments[0]);
+    if (typeof attachment?.url !== 'string' || !attachment.url) return false;
+    if (!attachment.media || typeof attachment.media !== 'object') return false;
+
+    const media = /** @type {Record<string, unknown>} */ (attachment.media);
+    if (media.__typename !== 'Video') return false;
+    if (typeof media.publish_time !== 'number') return false;
+
+    return true;
+}
+
+/**
+ * Check if an object is a valid Story (StoryPost or StoryVideo).
+ * @param {unknown} obj
+ * @returns {obj is Story}
+ */
+function isStory(obj) {
+    return isStoryPost(obj) || isStoryVideo(obj);
 }
 
 /**
@@ -390,8 +480,6 @@ export function extractStories(obj, results = []) {
         // Prefer story with wwwURL (the nested one has more complete data)
         if (existingIndex === -1) {
             results.push(story);
-        } else if (story.wwwURL && !results[existingIndex].wwwURL) {
-            results[existingIndex] = story;
         }
         // Continue recursing - there might be better nested stories
     }
@@ -509,6 +597,8 @@ function extractEmbeddedStories() {
  * - CometGroupDiscussionRootSuccessQuery: Group discussion page
  * - CometModernHomeFeedQuery: Home feed
  * - CometNewsFeedPaginationQuery: Home feed pagination
+ * - CometVideoHomeFeedRootQuery: Video home feed root (Watch tab)
+ * - CometVideoHomeFeedSectionPaginationQuery: Video home feed pagination (Watch tab)
  * - GroupsCometCrossGroupFeedContainerQuery: Cross-group feed (/groups/feed/)
  * - GroupsCometCrossGroupFeedPaginationQuery: Cross-group feed pagination
  * - GroupsCometFeedRegularStoriesPaginationQuery: Group feed
@@ -521,6 +611,8 @@ const TARGET_API_NAMES = new Set([
     "CometGroupDiscussionRootSuccessQuery",
     "CometModernHomeFeedQuery",
     "CometNewsFeedPaginationQuery",
+    "CometVideoHomeFeedRootQuery",
+    "CometVideoHomeFeedSectionPaginationQuery",
     "GroupsCometCrossGroupFeedContainerQuery",
     "GroupsCometCrossGroupFeedPaginationQuery",
     "GroupsCometFeedRegularStoriesPaginationQuery",

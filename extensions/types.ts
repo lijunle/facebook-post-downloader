@@ -24,7 +24,7 @@ export type GraphqlEvent = {
   status: number;
 };
 
-export type StoryPhoto = {
+export type MediaPhoto = {
   __typename: "Photo";
   id: string;
   url: string;
@@ -34,7 +34,7 @@ export type StoryPhoto = {
   };
 };
 
-export type StoryVideo = {
+export type MediaVideo = {
   __typename: "Video";
   id: string;
   url: string;
@@ -49,26 +49,26 @@ export type StoryVideo = {
   };
 };
 
-export type StoryMedia = StoryPhoto | StoryVideo;
+export type Media = MediaPhoto | MediaVideo;
 
-export type StoryGroup = {
+export type Group = {
   __typename: "Group";
   id: string;
   name: string;
 };
 
-export type StoryActor = {
+export type User = {
   __typename: "User";
   id: string;
   name: string;
 };
 
-export type Story = {
+export type StoryPost = {
   id: string;
   post_id: string;
   wwwURL: string;
   message: null | { text: string };
-  actors: [StoryActor];
+  actors: [User];
   attachments:
     | []
     | [
@@ -77,16 +77,38 @@ export type Story = {
             attachment:
               | {} // Un-supported attachment
               | {
-                  media: StoryMedia;
+                  media: Media;
                 }
               | {
                   all_subattachments: {
                     count: number;
-                    nodes: Array<{ media: StoryMedia }>;
+                    nodes: Array<{ media: Media }>;
                   };
                 };
           };
         }
       ];
-  attached_story: null | Story;
+  attached_story: null | StoryPost;
 };
+
+export type StoryVideo = {
+  id: string;
+  post_id: string;
+  message: null | { text: string };
+  actors: [User];
+  attachments: [
+    {
+      url: string;
+      media: MediaVideo & {
+        name: string;
+        publish_time: number;
+        owner: {
+          __typename: "User";
+          id: string;
+        };
+      };
+    }
+  ];
+};
+
+export type Story = StoryPost | StoryVideo;

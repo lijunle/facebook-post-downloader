@@ -1,4 +1,4 @@
-import { downloadStory } from './story.js';
+import { downloadStory, getStoryUrl } from './story.js';
 import { React } from './react.js';
 
 const { useEffect } = React;
@@ -94,19 +94,51 @@ function debounce(fn, delay) {
 }
 
 /**
+ * Find the button row and insert position for a given action button.
+ * Returns null if unable to determine proper position.
+ * @param {Element} actionBtn
+ * @returns {{ buttonRow: Element, insertBefore: Element | null } | null}
+ */
+function findButtonRowAndPosition(actionBtn) {
+    const ariaLabel = actionBtn.getAttribute('aria-label');
+
+    if (ariaLabel === 'Actions for this post') {
+        // Regular feed: button -> parent -> parent = overflowContainer
+        // Insert before the overflowContainer in its parent (buttonRow)
+        const overflowContainer = actionBtn.parentElement?.parentElement;
+        const buttonRow = overflowContainer?.parentElement;
+        if (!buttonRow) return null;
+        return { buttonRow, insertBefore: overflowContainer };
+    }
+
+    if (ariaLabel === 'More') {
+        // Watch page: button -> parent = moreButtonWrapper (32x32 container)
+        // parent.parent = buttonRow (flex row with user info, post text, More button)
+        // Insert before the moreButtonWrapper
+        const moreButtonWrapper = actionBtn.parentElement;
+        const buttonRow = moreButtonWrapper?.parentElement;
+        if (!buttonRow) return null;
+        return { buttonRow, insertBefore: moreButtonWrapper };
+    }
+
+    return null;
+}
+
+/**
  * Inject download buttons into posts that match captured stories.
  * @param {import('./types').Story[]} stories
  * @param {(url: string, filename: string) => void} postAppMessage
  */
 function injectDownloadButtons(stories, postAppMessage) {
-    const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"]');
+    // Look for action buttons - "Actions for this post" is used in regular feeds,
+    // "More" is used in the Watch (video) page
+    const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"], [aria-label="More"]');
 
     for (const actionBtn of actionButtons) {
-        // Find the overflow button container (parent of parent of the "..." button)
-        const overflowButtonContainer = actionBtn.parentElement?.parentElement;
-        if (!overflowButtonContainer?.parentElement) continue;
+        const position = findButtonRowAndPosition(actionBtn);
+        if (!position) continue;
 
-        const buttonRow = overflowButtonContainer.parentElement;
+        const { buttonRow, insertBefore } = position;
         if (buttonRow.querySelector('.fpdl-download-btn')) continue;
 
         // Match by story.id
@@ -119,16 +151,24 @@ function injectDownloadButtons(stories, postAppMessage) {
             story = postId ? stories.find(s => s.post_id === postId) : null;
         }
 
-        // Fall back to matching by permalink_url to wwwURL
+        // Fall back to matching by permalink_url to story URL
         if (!story) {
             const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
-            story = permalinkUrl ? stories.find(s => s.wwwURL === permalinkUrl) : null;
+            story = permalinkUrl ? stories.find(s => getStoryUrl(s) === permalinkUrl) : null;
         }
 
         if (!story) continue;
 
+        const isWatchPage = actionBtn.getAttribute('aria-label') === 'More';
         const downloadBtn = createDownloadButton(story, postAppMessage);
-        buttonRow.insertBefore(downloadBtn, overflowButtonContainer);
+        if (isWatchPage) {
+            downloadBtn.classList.add('fpdl-download-btn--watch');
+        }
+        if (insertBefore) {
+            buttonRow.insertBefore(downloadBtn, insertBefore);
+        } else {
+            buttonRow.appendChild(downloadBtn);
+        }
     }
 }
 
@@ -152,6 +192,31 @@ function injectDownloadButtonStyles() {
             padding: 0;
         }
         .fpdl-download-btn:hover {
+            background: var(--hover-overlay);
+        }
+        .fpdl-download-btn--watch,
+        .fpdl-download-btn--watch:hover {
+            background: transparent;
+        }
+        .fpdl-download-btn--watch {
+            position: relative;
+            align-self: flex-start;
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+        }
+        .fpdl-download-btn--watch::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            z-index: -1;
+        }
+        .fpdl-download-btn--watch:hover::before {
             background: var(--hover-overlay);
         }
     `;
