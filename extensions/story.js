@@ -399,7 +399,7 @@ export function getStoryUrl(story) {
  * @param {unknown} obj
  * @returns {obj is StoryPost}
  */
-function isStoryPost(obj) {
+export function isStoryPost(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 

@@ -1,4 +1,4 @@
-import { storyListener, downloadStory, getAttachmentCount, getCreateTime } from './story.js';
+import { storyListener, downloadStory, getAttachmentCount, getCreateTime, isStoryPost } from './story.js';
 import { React, ReactDOM } from './react.js';
 import { useDownloadButtonInjection } from './download-button.js';
 
@@ -36,7 +36,7 @@ function StoryRow({ story, selected, onToggle }) {
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
         React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (story.message?.text ?? "").slice(0, 500)),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.attached_story ? "true" : "false"),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, isStoryPost(story) && story.attached_story ? "true" : "false"),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
     );
 }

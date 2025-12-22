@@ -1,4 +1,4 @@
-import { downloadStory } from './story.js';
+import { downloadStory, getStoryUrl } from './story.js';
 import { React } from './react.js';
 
 const { useEffect } = React;
@@ -119,10 +119,10 @@ function injectDownloadButtons(stories, postAppMessage) {
             story = postId ? stories.find(s => s.post_id === postId) : null;
         }
 
-        // Fall back to matching by permalink_url to wwwURL
+        // Fall back to matching by permalink_url to story URL
         if (!story) {
             const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
-            story = permalinkUrl ? stories.find(s => s.wwwURL === permalinkUrl) : null;
+            story = permalinkUrl ? stories.find(s => getStoryUrl(s) === permalinkUrl) : null;
         }
 
         if (!story) continue;
