@@ -49,7 +49,7 @@ function pickBestProgressiveUrl(media) {
  * @param {StoryMedia} media
  * @returns {{ url: string, ext: string } | undefined}
  */
-export function getDownloadUrl(media) {
+function getDownloadUrl(media) {
     if (media.__typename === "Video") {
         const url = pickBestProgressiveUrl(media);
         if (!url) return undefined;
@@ -123,7 +123,7 @@ async function fetchMediaNav(nodeId, mediasetToken) {
  * @param {(media: StoryMedia) => void} onAttachment
  * @returns {Promise<void>}
  */
-export async function fetchAttachments(story, onAttachment) {
+async function fetchAttachments(story, onAttachment) {
     const cached = attachmentsCache.get(story);
     if (cached) {
         for (let i = 0; i < cached.length; i++) {
@@ -353,7 +353,7 @@ export function getGroup(story) {
  * @param {unknown} obj
  * @returns {obj is Story}
  */
-export function isStory(obj) {
+function isStory(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const o = /** @type {Record<string, unknown>} */ (obj);
 
@@ -418,7 +418,7 @@ export function extractStories(obj, results = []) {
  * and populate storyCreateTimeCache directly.
  * @param {unknown} obj
  */
-function extractStoryCreateTime(obj) {
+export function extractStoryCreateTime(obj) {
     if (!obj || typeof obj !== 'object') return;
 
     const o = /** @type {Record<string, unknown>} */ (obj);
