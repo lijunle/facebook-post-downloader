@@ -7,6 +7,7 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').StoryWatch} StoryWatch
  * @typedef {import('./types').Media} Media
  * @typedef {import('./types').MediaVideo} MediaVideo
+ * @typedef {import('./types').MediaWatch} MediaWatch
  * @typedef {import('./types').User} User
  * @typedef {import('./types').Group} Group
  */
@@ -55,9 +56,14 @@ function pickBestProgressiveUrl(media) {
  */
 function getDownloadUrl(media) {
     if (media.__typename === "Video") {
-        const url = pickBestProgressiveUrl(media);
-        if (!url) return undefined;
-        return { url, ext: "mp4" };
+        // Try progressive URL first (MediaVideo)
+        const progressiveUrl = pickBestProgressiveUrl(/** @type {MediaVideo} */(media));
+        if (progressiveUrl) return { url: progressiveUrl, ext: "mp4" };
+
+        // Fall back to direct URL (MediaWatch)
+        if (media.url) return { url: media.url, ext: "mp4" };
+
+        return undefined;
     }
 
     const url = media.image?.uri;
@@ -83,14 +89,14 @@ export function getAttachmentCount(story) {
     return 0;
 }
 
-/** @type {WeakMap<Story, Media[]>} */
-const attachmentsCache = new WeakMap();
-
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 
 /** @type {Map<string, Group>} */
 const storyGroupCache = new Map();
+
+/** @type {Map<string, string>} */
+const videoUrlCache = new Map();
 
 /**
  * Fetch navigation info for a media node.
@@ -134,56 +140,60 @@ async function fetchMediaNav(nodeId, mediasetToken) {
  * @returns {Promise<void>}
  */
 async function fetchAttachments(story, onAttachment) {
-    const cached = attachmentsCache.get(story);
-    if (cached) {
-        for (let i = 0; i < cached.length; i++) {
-            if (i > 0) await new Promise(r => setTimeout(r, 500));
-            onAttachment(cached[i]);
-        }
-        return;
-    }
-
     if (story.attachments.length === 0) return;
+
+    // For StoryPost, walk through the media set
+    if (isStoryPost(story)) {
+        const attachment = story.attachments[0]?.styles.attachment;
+        /** @type {string | undefined} */
+        let seedId;
+        if (attachment && 'media' in attachment) {
+            seedId = attachment.media.id;
+        } else if (attachment && 'all_subattachments' in attachment) {
+            seedId = attachment.all_subattachments.nodes[0]?.media.id;
+        }
+        if (!seedId) return;
+
+        const mediasetToken = `pcb.${story.post_id}`;
+        const totalCount = getAttachmentCount(story);
+
+        // Walk from the seed to collect all media
+        /** @type {Media[]} */
+        const result = [];
+        /** @type {string | undefined} */
+        let currentId = seedId;
+        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
+            const nav = await fetchMediaNav(currentId, mediasetToken);
+            if (!nav.currMedia) break;
+            result.push(nav.currMedia);
+            onAttachment(nav.currMedia);
+            currentId = nav.nextId;
+            if (currentId) await new Promise(r => setTimeout(r, 500));
+        }
+    }
 
     // For StoryVideo, directly use the media from the attachment
     if (isStoryVideo(story)) {
         const media = story.attachments[0].media;
         onAttachment(media);
-        attachmentsCache.set(story, [media]);
         return;
     }
 
-    // For StoryPost, walk through the media set
-    if (!isStoryPost(story)) return;
-
-    const attachment = story.attachments[0]?.styles.attachment;
-    /** @type {string | undefined} */
-    let seedId;
-    if (attachment && 'media' in attachment) {
-        seedId = attachment.media.id;
-    } else if (attachment && 'all_subattachments' in attachment) {
-        seedId = attachment.all_subattachments.nodes[0]?.media.id;
+    // For StoryWatch, use cached video URL
+    if (isStoryWatch(story)) {
+        const videoId = story.attachments[0].media.id;
+        const videoUrl = videoUrlCache.get(videoId);
+        if (videoUrl) {
+            /** @type {MediaWatch} */
+            const media = {
+                __typename: 'Video',
+                id: videoId,
+                url: videoUrl,
+            };
+            onAttachment(media);
+        }
+        return;
     }
-    if (!seedId) return;
-
-    const mediasetToken = `pcb.${story.post_id}`;
-    const totalCount = getAttachmentCount(story);
-
-    // Walk from the seed to collect all media
-    /** @type {Media[]} */
-    const result = [];
-    /** @type {string | undefined} */
-    let currentId = seedId;
-    while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
-        const nav = await fetchMediaNav(currentId, mediasetToken);
-        if (!nav.currMedia) break;
-        result.push(nav.currMedia);
-        onAttachment(nav.currMedia);
-        currentId = nav.nextId;
-        if (currentId) await new Promise(r => setTimeout(r, 500));
-    }
-
-    attachmentsCache.set(story, result);
 }
 
 /**
@@ -266,15 +276,13 @@ function renderStory(story, attachments, quoted_story) {
         lines.push('');
     }
 
-    // Video title (for StoryVideo with media.name)
-    if (isStoryVideo(story)) {
-        const mediaName = story.attachments[0].media.name;
-        if (mediaName) {
-            lines.push('---');
-            lines.push('');
-            lines.push(`**${mediaName}**`);
-            lines.push('');
-        }
+    // Video title (for StoryVideo/StoryWatch with media title)
+    const mediaTitle = getStoryMediaTitle(story);
+    if (mediaTitle) {
+        lines.push('---');
+        lines.push('');
+        lines.push(`**${mediaTitle}**`);
+        lines.push('');
     }
 
     // Message
@@ -501,6 +509,21 @@ export function getStoryActor(story) {
 }
 
 /**
+ * Get the media title for a story (video name/title).
+ * @param {Story} story
+ * @returns {string | undefined}
+ */
+export function getStoryMediaTitle(story) {
+    if (isStoryVideo(story)) {
+        return story.attachments[0].media.name;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.title?.text;
+    }
+    return undefined;
+}
+
+/**
  * Check if an object is a valid StoryPost.
  * @param {unknown} obj
  * @returns {obj is StoryPost}
@@ -684,6 +707,66 @@ export function extractStoryGroupMap(obj) {
 }
 
 /**
+ * Extract video URLs from all_video_dash_prefetch_representations in extensions field
+ * and populate videoUrlCache directly.
+ * @param {unknown} obj
+ */
+export function extractVideoUrls(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has all_video_dash_prefetch_representations
+    if (Array.isArray(o.all_video_dash_prefetch_representations)) {
+        for (const prefetch of o.all_video_dash_prefetch_representations) {
+            if (!prefetch || typeof prefetch !== 'object') continue;
+            const p = /** @type {Record<string, unknown>} */ (prefetch);
+            const videoId = p.video_id;
+            if (typeof videoId !== 'string') continue;
+            if (videoUrlCache.has(videoId)) continue;
+
+            // Find the best video representation (highest bandwidth, excluding audio-only)
+            const representations = p.representations;
+            if (!Array.isArray(representations)) continue;
+
+            /** @type {{ base_url: string, bandwidth: number } | null} */
+            let best = null;
+            for (const rep of representations) {
+                if (!rep || typeof rep !== 'object') continue;
+                const r = /** @type {Record<string, unknown>} */ (rep);
+                const baseUrl = r.base_url;
+                const bandwidth = r.bandwidth;
+                const mimeType = r.mime_type;
+
+                // Skip audio-only tracks
+                if (typeof mimeType === 'string' && mimeType.startsWith('audio/')) continue;
+
+                if (typeof baseUrl === 'string' && typeof bandwidth === 'number') {
+                    if (!best || bandwidth > best.bandwidth) {
+                        best = { base_url: baseUrl, bandwidth };
+                    }
+                }
+            }
+
+            if (best) {
+                videoUrlCache.set(videoId, best.base_url);
+            }
+        }
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractVideoUrls(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractVideoUrls(o[key]);
+        }
+    }
+}
+
+/**
  * Extract stories embedded in the initial HTML page load.
  * These are delivered via <script type="application/json"> tags.
  * @returns {Story[]}
@@ -702,6 +785,7 @@ function extractEmbeddedStories() {
             extractStories(data, stories);
             extractStoryCreateTime(data);
             extractStoryGroupMap(data);
+            extractVideoUrls(data);
         } catch {
             // ignore parse errors
         }
@@ -780,6 +864,7 @@ export function storyListener(cb) {
         const stories = extractStories(ev.responseBody);
         extractStoryCreateTime(ev.responseBody);
         extractStoryGroupMap(ev.responseBody);
+        extractVideoUrls(ev.responseBody);
 
         for (const story of stories) {
             try {

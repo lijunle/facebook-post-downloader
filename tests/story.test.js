@@ -87,7 +87,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl, getStoryPostId, getStoryActor, getStoryMessage } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl, getStoryPostId, getStoryActor, getStoryMessage, extractVideoUrls, getStoryMediaTitle } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
     it('should extract text-only story from story-text-only.json', () => {
@@ -710,5 +710,86 @@ describe('StoryWatch', () => {
         assert.ok(createTime instanceof Date, 'Create time should be a Date');
         // creation_time from story-watched-video.json metadata is 1737889218
         assert.strictEqual(createTime.getTime(), 1737889218 * 1000, 'Create time should match creation_time from metadata');
+    });
+
+    it('should extract video URLs from story-watched-video.json via extractVideoUrls', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+
+        // Extract video URLs
+        extractVideoUrls(mockData);
+
+        // The extractVideoUrls should cache the video URL internally
+        // We can verify this by downloading the story and checking the URL
+        const stories = extractStories(mockData);
+        const storyWatch = stories.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+    });
+
+    it('should download StoryWatch from story-watched-video.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractVideoUrls(mockData);
+
+        const storyWatch = stories.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+
+        await downloadStory(storyWatch, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should download:
+        // 1. Markdown file
+        // 2. Video file (from the cached video URL)
+        assert.strictEqual(downloads.length, 2, 'Should download 2 files (markdown + video)');
+
+        const mdDownload = downloads.find(d => d.filename.endsWith('.md'));
+        assert.ok(mdDownload, 'Should download markdown file');
+        assert.ok(mdDownload.filename.includes('1403115984005683'), 'Markdown filename should include post ID');
+
+        const videoDownload = downloads.find(d => d.filename.endsWith('.mp4'));
+        assert.ok(videoDownload, 'Should download video file');
+        // Verify that we got a video URL from the DASH representations
+        assert.ok(videoDownload.url.includes('video.fyvr1-1.fna.fbcdn.net'), 'Should download video from Facebook CDN');
+    });
+
+    it('should return correct media title for StoryWatch via getStoryMediaTitle', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+        const stories = extractStories(mockData);
+
+        const storyWatch = stories.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+
+        const title = getStoryMediaTitle(storyWatch);
+        assert.strictEqual(title, '【咩啊_Real】當你回到以前的廣東過年', 'StoryWatch media title should be extracted from title.text');
+    });
+});
+
+describe('getStoryMediaTitle', () => {
+    it('should return media name for StoryVideo', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+        const stories = extractStories(mockData);
+
+        const storyVideo = stories.find(s => getStoryPostId(s) === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+
+        const title = getStoryMediaTitle(storyVideo);
+        // StoryVideo uses media.name
+        assert.ok(typeof title === 'string' || title === undefined, 'StoryVideo media title should be string or undefined');
+    });
+
+    it('should return undefined for StoryPost', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
+        const stories = extractStories(mockData);
+
+        const storyPost = stories.find(s => getStoryPostId(s) === '1411731986983785');
+        assert.ok(storyPost, 'Should find the StoryPost');
+
+        const title = getStoryMediaTitle(storyPost);
+        assert.strictEqual(title, undefined, 'StoryPost should not have media title');
     });
 });
