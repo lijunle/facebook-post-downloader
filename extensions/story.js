@@ -219,6 +219,10 @@ function buildFolderName(story) {
 function renderStory(story, attachments, quoted_story) {
     const lines = [];
 
+    // URL
+    lines.push(`**URL:** ${story.wwwURL}`);
+    lines.push('');
+
     // Group
     const group = getGroup(story);
     if (group) {
@@ -500,15 +504,30 @@ function extractEmbeddedStories() {
     return stories;
 }
 
-// Facebook uses different GraphQL operation ("friendly") names depending on context.
-// - Home feed: CometModernHomeFeedQuery, CometNewsFeedPaginationQuery
-// - Group feed: GroupsCometFeedRegularStoriesPaginationQuery
-// - Cross-group feed (/groups/feed/): GroupsCometCrossGroupFeedPaginationQuery
+/**
+ * Facebook uses different GraphQL operation ("friendly") names depending on context.
+ * - CometGroupDiscussionRootSuccessQuery: Group discussion page
+ * - CometModernHomeFeedQuery: Home feed
+ * - CometNewsFeedPaginationQuery: Home feed pagination
+ * - GroupsCometCrossGroupFeedContainerQuery: Cross-group feed (/groups/feed/)
+ * - GroupsCometCrossGroupFeedPaginationQuery: Cross-group feed pagination
+ * - GroupsCometFeedRegularStoriesPaginationQuery: Group feed
+ * - ProfileCometContextualProfileGroupPostsFeedPaginationQuery: Group member profile feed
+ * - ProfileCometContextualProfileRootQuery: Contextual profile root
+ * - ProfileCometTimelineFeedQuery: User profile timeline
+ * - ProfileCometTimelineFeedRefetchQuery: User profile timeline refetch/pagination
+ */
 const TARGET_API_NAMES = new Set([
+    "CometGroupDiscussionRootSuccessQuery",
     "CometModernHomeFeedQuery",
     "CometNewsFeedPaginationQuery",
-    "GroupsCometFeedRegularStoriesPaginationQuery",
+    "GroupsCometCrossGroupFeedContainerQuery",
     "GroupsCometCrossGroupFeedPaginationQuery",
+    "GroupsCometFeedRegularStoriesPaginationQuery",
+    "ProfileCometContextualProfileGroupPostsFeedPaginationQuery",
+    "ProfileCometContextualProfileRootQuery",
+    "ProfileCometTimelineFeedQuery",
+    "ProfileCometTimelineFeedRefetchQuery",
 ]);
 
 /**
