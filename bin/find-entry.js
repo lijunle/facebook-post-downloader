@@ -33,6 +33,39 @@ function decodeContent(content) {
 }
 
 /**
+ * Convert a string to Facebook's JSON unicode escape format.
+ * Facebook encodes non-ASCII characters as \uXXXX in their JSON responses.
+ * This function converts a search string to match that format.
+ * 
+ * For example: "這不是王吧" becomes "\\u9019\\u4e0d\\u662f\\u738b\\u5427"
+ * 
+ * @param {string} str - The string to convert
+ * @returns {string} - The escaped string for searching in Facebook JSON
+ */
+function toFacebookJsonEscape(str) {
+    let result = '';
+    for (const char of str) {
+        const code = char.charCodeAt(0);
+        // Only escape non-ASCII characters (code > 127)
+        if (code > 127) {
+            // Handle surrogate pairs for characters outside BMP
+            if (code >= 0xD800 && code <= 0xDBFF) {
+                // High surrogate - just add it as escape
+                result += '\\u' + code.toString(16).padStart(4, '0');
+            } else if (code >= 0xDC00 && code <= 0xDFFF) {
+                // Low surrogate - just add it as escape
+                result += '\\u' + code.toString(16).padStart(4, '0');
+            } else {
+                result += '\\u' + code.toString(16).padStart(4, '0');
+            }
+        } else {
+            result += char;
+        }
+    }
+    return result;
+}
+
+/**
  * Recursively find post_id in an object
  * @param {unknown} obj
  * @returns {string | undefined}
@@ -75,7 +108,14 @@ if (args.length < 2) {
 const harPath = args[0];
 const keyword = args[1];
 
+// Create escaped version for CJK/non-ASCII character search
+const escapedKeyword = toFacebookJsonEscape(keyword);
+const hasNonAscii = keyword !== escapedKeyword;
+
 console.log(`Searching for "${keyword}" in ${harPath}...`);
+if (hasNonAscii) {
+    console.log(`Also searching for escaped form: ${escapedKeyword}`);
+}
 
 // Read and parse HAR file
 const har = JSON.parse(readFileSync(harPath, 'utf8'));
@@ -96,14 +136,19 @@ for (const entry of har.log.entries) {
     const responseText = decodeContent(entry.response?.content);
     if (!responseText) continue;
 
-    // Check if the response contains the keyword
-    if (!responseText.includes(keyword)) continue;
+    // Check if the response contains the keyword (original or escaped)
+    const containsKeyword = responseText.includes(keyword) ||
+        (hasNonAscii && responseText.includes(escapedKeyword));
+    if (!containsKeyword) continue;
 
     // Parse NDJSON lines
     const lines = responseText.split('\n').filter(l => l.trim().startsWith('{'));
 
     for (const line of lines) {
-        if (!line.includes(keyword)) continue;
+        // Check for keyword in line (original or escaped)
+        const lineContainsKeyword = line.includes(keyword) ||
+            (hasNonAscii && line.includes(escapedKeyword));
+        if (!lineContainsKeyword) continue;
 
         try {
             const parsed = JSON.parse(line);
