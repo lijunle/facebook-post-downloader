@@ -409,11 +409,8 @@ export function getStoryUrl(story) {
     if (isStoryPost(story)) {
         return story.wwwURL;
     }
-    if (isStoryVideo(story)) {
-        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
-    }
-    if (isStoryWatch(story)) {
-        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
+    if (isStoryVideo(story) || isStoryWatch(story)) {
+        return `https://www.facebook.com/watch/?v=${getStoryMediaId(story)}`;
     }
     return '';
 }
@@ -443,10 +440,34 @@ export function getStoryPostId(story) {
         return story.post_id;
     }
     if (isStoryWatch(story)) {
-        // StoryWatch uses video id as post_id
-        return story.attachments[0].media.id;
+        // StoryWatch uses media id as post_id
+        const mediaId = getStoryMediaId(story);
+        if (!mediaId) throw new Error('StoryWatch missing media id');
+        return mediaId;
     }
     throw new Error('Unknown story type: cannot get post_id');
+}
+
+/**
+ * Get the media id for a story (if it has media attachment).
+ * @param {Story} story
+ * @returns {string | null}
+ */
+export function getStoryMediaId(story) {
+    if (isStoryVideo(story)) {
+        return story.attachments[0].media.id;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.id;
+    }
+    // StoryPost might have a media attachment
+    if (isStoryPost(story)) {
+        const attachment = story.attachments[0]?.styles?.attachment;
+        if (attachment && 'media' in attachment && attachment.media?.id) {
+            return attachment.media.id;
+        }
+    }
+    return null;
 }
 
 /**
