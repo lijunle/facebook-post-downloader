@@ -3,7 +3,7 @@
     "private": true,
     "scripts": {
         "check": "tsc -b tsconfig.json",
-        "test": "node --experimental-test-module-mocks --test tests/*.test.js"
+        "test": "node --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=tests/lcov.info --experimental-test-module-mocks --test tests/*.test.js"
     },
     "dependencies": {
         "umd-react": "^19.2.1"
