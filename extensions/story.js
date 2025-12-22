@@ -354,9 +354,20 @@ export async function downloadStory(story, postAppMessage) {
  * @returns {Date | undefined}
  */
 export function getCreateTime(story) {
-    const createTime = storyCreateTimeCache.get(story.id);
-    if (createTime === undefined) return undefined;
-    return new Date(createTime * 1000);
+    // For StoryVideo, get publish_time directly from the media
+    if (isStoryVideo(story)) {
+        const publishTime = story.attachments[0].media.publish_time;
+        return new Date(publishTime * 1000);
+    }
+
+    // For StoryPost, use the cache
+    if (isStoryPost(story)) {
+        const createTime = storyCreateTimeCache.get(story.id);
+        if (createTime === undefined) return undefined;
+        return new Date(createTime * 1000);
+    }
+
+    return undefined;
 }
 
 /**
@@ -575,6 +586,8 @@ function extractEmbeddedStories() {
  * - CometGroupDiscussionRootSuccessQuery: Group discussion page
  * - CometModernHomeFeedQuery: Home feed
  * - CometNewsFeedPaginationQuery: Home feed pagination
+ * - CometVideoHomeFeedRootQuery: Video home feed root (Watch tab)
+ * - CometVideoHomeFeedSectionPaginationQuery: Video home feed pagination (Watch tab)
  * - GroupsCometCrossGroupFeedContainerQuery: Cross-group feed (/groups/feed/)
  * - GroupsCometCrossGroupFeedPaginationQuery: Cross-group feed pagination
  * - GroupsCometFeedRegularStoriesPaginationQuery: Group feed
@@ -587,6 +600,8 @@ const TARGET_API_NAMES = new Set([
     "CometGroupDiscussionRootSuccessQuery",
     "CometModernHomeFeedQuery",
     "CometNewsFeedPaginationQuery",
+    "CometVideoHomeFeedRootQuery",
+    "CometVideoHomeFeedSectionPaginationQuery",
     "GroupsCometCrossGroupFeedContainerQuery",
     "GroupsCometCrossGroupFeedPaginationQuery",
     "GroupsCometFeedRegularStoriesPaginationQuery",
