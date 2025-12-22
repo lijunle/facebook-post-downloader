@@ -666,10 +666,6 @@ function extractEmbeddedStories() {
         const content = script.textContent;
         if (!content) continue;
 
-        // Quick check to avoid parsing irrelevant scripts
-        // Look for story-related content
-        if (!content.includes('"post_id"') || !content.includes('"attachments"')) continue;
-
         try {
             const data = JSON.parse(content);
             extractStories(data, stories);
