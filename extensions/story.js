@@ -2,9 +2,9 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 
 /**
  * @typedef {import('./types').Story} Story
- * @typedef {import('./types').StoryMedia} StoryMedia
- * @typedef {import('./types').StoryVideo} StoryVideo
- * @typedef {import('./types').StoryGroup} StoryGroup
+ * @typedef {import('./types').Media} Media
+ * @typedef {import('./types').MediaVideo} MediaVideo
+ * @typedef {import('./types').Group} StoryGroup
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
@@ -26,7 +26,7 @@ function guessExt(url) {
 }
 
 /**
- * @param {StoryVideo} media
+ * @param {MediaVideo} media
  * @returns {string | undefined}
  */
 function pickBestProgressiveUrl(media) {
@@ -46,7 +46,7 @@ function pickBestProgressiveUrl(media) {
 
 /**
  * Get the download URL and extension for a media item.
- * @param {StoryMedia} media
+ * @param {Media} media
  * @returns {{ url: string, ext: string } | undefined}
  */
 function getDownloadUrl(media) {
@@ -73,7 +73,7 @@ export function getAttachmentCount(story) {
     return 1;
 }
 
-/** @type {WeakMap<Story, StoryMedia[]>} */
+/** @type {WeakMap<Story, Media[]>} */
 const attachmentsCache = new WeakMap();
 
 /** @type {Map<string, number>} */
@@ -86,7 +86,7 @@ const storyGroupCache = new Map();
  * Fetch navigation info for a media node.
  * @param {string} nodeId
  * @param {string} mediasetToken
- * @returns {Promise<{ currMedia: StoryMedia | undefined, nextId: string | undefined, prevId: string | undefined }>}
+ * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, prevId: string | undefined }>}
  */
 async function fetchMediaNav(nodeId, mediasetToken) {
     const objs = await sendGraphqlRequest({
@@ -99,7 +99,7 @@ async function fetchMediaNav(nodeId, mediasetToken) {
         },
     });
 
-    /** @type {StoryMedia | undefined} */
+    /** @type {Media | undefined} */
     let currMedia;
     /** @type {string | undefined} */
     let nextId;
@@ -120,7 +120,7 @@ async function fetchMediaNav(nodeId, mediasetToken) {
 /**
  * Fetch attachments for a story, calling the callback for each attachment as it's retrieved.
  * @param {Story} story
- * @param {(media: StoryMedia) => void} onAttachment
+ * @param {(media: Media) => void} onAttachment
  * @returns {Promise<void>}
  */
 async function fetchAttachments(story, onAttachment) {
@@ -148,7 +148,7 @@ async function fetchAttachments(story, onAttachment) {
     const totalCount = getAttachmentCount(story);
 
     // Walk from the seed to collect all media
-    /** @type {StoryMedia[]} */
+    /** @type {Media[]} */
     const result = [];
     /** @type {string | undefined} */
     let currentId = seedId;
@@ -212,7 +212,7 @@ function buildFolderName(story) {
 /**
  * Render a story to markdown content.
  * @param {Story} story
- * @param {Array<{ media: StoryMedia, filename: string }>} attachments
+ * @param {Array<{ media: Media, filename: string }>} attachments
  * @param {string} [quoted_story] - Pre-rendered quoted story content
  * @returns {string}
  */
@@ -289,7 +289,7 @@ function renderStory(story, attachments, quoted_story) {
 export async function downloadStory(story, postAppMessage) {
     const folder = buildFolderName(story);
 
-    /** @type {Array<{ media: StoryMedia, filename: string }>} */
+    /** @type {Array<{ media: Media, filename: string }>} */
     const downloadedAttachments = [];
     let mediaIndex = 0;
 
@@ -308,7 +308,7 @@ export async function downloadStory(story, postAppMessage) {
     /** @type {string | undefined} */
     let quotedStory;
     if (story.attached_story) {
-        /** @type {Array<{ media: StoryMedia, filename: string }>} */
+        /** @type {Array<{ media: Media, filename: string }>} */
         const attachedStoryAttachments = [];
         await fetchAttachments(story.attached_story, (media) => {
             const download = getDownloadUrl(media);
