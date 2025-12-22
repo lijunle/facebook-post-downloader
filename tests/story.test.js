@@ -7,6 +7,53 @@ import { dirname, join } from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * @typedef {{ id: string, nextId?: string }} MockMediaConfig
+ */
+
+/**
+ * Global mock configuration that test cases can set up
+ * @type {Map<string, MockMediaConfig>}
+ */
+const mockMediaConfig = new Map();
+
+/**
+ * Helper to set up mock media for a test case
+ * @param {string[]} photoIds - Array of photo IDs in navigation order
+ */
+function setupMockMedia(photoIds) {
+    mockMediaConfig.clear();
+    for (let i = 0; i < photoIds.length; i++) {
+        const id = photoIds[i];
+        const nextId = i + 1 < photoIds.length ? photoIds[i + 1] : undefined;
+        mockMediaConfig.set(id, { id, nextId });
+    }
+}
+
+/**
+ * Mock sendGraphqlRequest that returns media navigation data based on mockMediaConfig
+ * @param {{ apiName: string, variables: { nodeID?: string } }} params
+ */
+async function mockSendGraphqlRequest({ apiName, variables }) {
+    if (apiName === 'CometPhotoRootContentQuery' && variables.nodeID) {
+        const config = mockMediaConfig.get(variables.nodeID);
+        if (config) {
+            return [{
+                data: {
+                    currMedia: {
+                        __typename: 'Photo',
+                        id: config.id,
+                        image: { uri: `https://example.com/photo_${config.id}.jpg` }
+                    },
+                    nextMediaAfterNodeId: config.nextId ? { id: config.nextId } : null,
+                    prevMediaBeforeNodeId: null
+                }
+            }];
+        }
+    }
+    return [];
+}
+
 // Mock graphql.js before importing story.js
 mock.module('../extensions/graphql.js', {
     namedExports: {
@@ -15,13 +62,13 @@ mock.module('../extensions/graphql.js', {
             pathname: '/test'
         }),
         graphqlListener: () => { },
-        sendGraphqlRequest: () => { }
+        sendGraphqlRequest: mockSendGraphqlRequest
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory } = await import('../extensions/story.js');
 
-describe('extractStories with real data', () => {
+describe('extractStories', () => {
     it('should extract text-only story from mock-story-text-only.json', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
         const result = extractStories(mockData);
@@ -114,7 +161,7 @@ describe('extractStories with real data', () => {
     });
 });
 
-describe('extractStoryGroupMap with real data', () => {
+describe('extractStoryGroupMap', () => {
     it('should extract group from mock-story-with-group.json', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
 
@@ -156,7 +203,7 @@ describe('extractStoryGroupMap with real data', () => {
     });
 });
 
-describe('extractStoryCreateTime and getCreateTime with real data', () => {
+describe('extractStoryCreateTime and getCreateTime', () => {
     it('should extract create time from mock-story-text-only.json', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
 
@@ -234,5 +281,217 @@ describe('extractStoryCreateTime and getCreateTime with real data', () => {
 
         const createTime = getCreateTime(fakeStory);
         assert.strictEqual(createTime, undefined, 'Should return undefined for story without create time');
+    });
+});
+
+describe('downloadStory', () => {
+    it('should download text-only story from mock-story-text-only.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-text-only.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '1411731986983785');
+        assert.ok(story, 'Should find the story');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Text-only story should only have 1 download (the index.md file)
+        assert.strictEqual(downloads.length, 1, 'Should have 1 download for text-only story');
+
+        // Check the index.md file
+        const indexDownload = downloads[0];
+        assert.ok(indexDownload.filename.endsWith('/index.md'), 'Should have index.md file');
+        assert.ok(indexDownload.url.startsWith('data:text/markdown;charset=utf-8,'), 'Should be a data URL');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes('蔡正元'), 'Markdown should include the actor name');
+        assert.ok(markdownContent.includes('2025-12-13'), 'Markdown should include the date');
+
+        // Check folder name format
+        const folderName = indexDownload.filename.split('/')[0];
+        assert.ok(folderName.includes('2025-12-13'), 'Folder name should include date');
+        assert.ok(folderName.includes('蔡正元'), 'Folder name should include actor name');
+        assert.ok(folderName.includes('1411731986983785'), 'Folder name should include post_id');
+    });
+
+    it('should download story with attachments from mock-story-with-attachments.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attachments.json'), 'utf8'));
+
+        // Setup mock for 4 photos (seed is attachment.media.id)
+        const photoIds = ['10236779894211730', '10236779894131728', '10236779894291732', '10236779894371734'];
+        setupMockMedia(photoIds);
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '25550089621287122');
+        assert.ok(story, 'Should find the story');
+        assert.strictEqual(getAttachmentCount(story), 4, 'Story should have 4 attachments');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should have 5 downloads: 4 photos + 1 index.md
+        assert.strictEqual(downloads.length, 5, 'Should have 5 downloads (4 photos + index.md)');
+
+        // Check that 4 photo downloads exist
+        const photoDownloads = downloads.filter(d => d.filename.endsWith('.jpg'));
+        assert.strictEqual(photoDownloads.length, 4, 'Should have 4 photo downloads');
+
+        // Verify each photo has correct filename format with media id
+        for (const photoId of photoIds) {
+            const photoDownload = photoDownloads.find(d => d.filename.includes(photoId));
+            assert.ok(photoDownload, `Should have download for photo ${photoId}`);
+            assert.ok(photoDownload.url.includes(photoId), `URL should contain photo id ${photoId}`);
+        }
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes(story.wwwURL), 'Markdown should include the story URL');
+        assert.ok(markdownContent.includes('Kimi Cui'), 'Markdown should include the actor name');
+
+        // Markdown should include image references
+        assert.ok(markdownContent.includes('!['), 'Markdown should include image references');
+
+        // Check folder name format
+        const folderName = indexDownload.filename.split('/')[0];
+        assert.ok(folderName.includes('Kimi Cui'), 'Folder name should include actor name');
+        assert.ok(folderName.includes('25550089621287122'), 'Folder name should include post_id');
+    });
+
+    it('should download story with group from mock-story-with-group.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-group.json'), 'utf8'));
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '2282323118944469');
+        assert.ok(story, 'Should find the story');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Markdown should include the group name');
+        assert.ok(markdownContent.includes('Kyle Lim'), 'Markdown should include the actor name');
+
+        // Check folder name includes group name
+        const folderName = indexDownload.filename.split('/')[0];
+        assert.ok(folderName.includes('PS NINTENDO XBOX MALAYSIA CLUB'), 'Folder name should include group name');
+        assert.ok(folderName.includes('Kyle Lim'), 'Folder name should include actor name');
+        assert.ok(folderName.includes('2282323118944469'), 'Folder name should include post_id');
+    });
+
+    it('should download story with attached story from mock-story-with-attached-story.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story.json'), 'utf8'));
+
+        // Setup mock for attached story photo
+        const attachedPhotoId = '1284281187062002';
+        setupMockMedia([attachedPhotoId]);
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '1414037856753198');
+        assert.ok(story, 'Should find the story');
+        assert.ok(story.attached_story, 'Story should have attached_story');
+        assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
+        assert.strictEqual(getAttachmentCount(story.attached_story), 1, 'Attached story should have 1 attachment');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should have 2 downloads: 1 photo from attached_story + index.md
+        assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 photo + index.md)');
+
+        // Check that attached story photo was downloaded
+        const photoDownload = downloads.find(d => d.filename.includes(attachedPhotoId));
+        assert.ok(photoDownload, 'Should have download for attached story photo');
+        assert.ok(photoDownload.filename.endsWith('.jpg'), 'Photo should have .jpg extension');
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes('蔡正元'), 'Markdown should include the main actor name');
+
+        // Check that attached story is rendered as blockquote
+        assert.ok(markdownContent.includes('> '), 'Markdown should include blockquoted attached story');
+        assert.ok(markdownContent.includes('徐勝凌'), 'Markdown should include the attached story actor name');
+    });
+
+    it('should download story with attached story only from mock-story-with-attached-story-only.json', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'mock-story-with-attached-story-only.json'), 'utf8'));
+
+        // Setup mock for attached story photo
+        const attachedPhotoId = '1422788539419067';
+        setupMockMedia([attachedPhotoId]);
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => s.post_id === '2280345139142267');
+        assert.ok(story, 'Should find the story');
+        assert.ok(story.attached_story, 'Story should have attached_story');
+        assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
+        assert.strictEqual(getAttachmentCount(story.attached_story), 1, 'Attached story should have 1 attachment');
+
+        /** @type {Array<{ url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (url, filename) => {
+            downloads.push({ url, filename });
+        });
+
+        // Should have 2 downloads: 1 photo from attached_story + index.md
+        assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 photo + index.md)');
+
+        // Check that attached story photo was downloaded
+        const photoDownload = downloads.find(d => d.filename.includes(attachedPhotoId));
+        assert.ok(photoDownload, 'Should have download for attached story photo');
+        assert.ok(photoDownload.filename.endsWith('.jpg'), 'Photo should have .jpg extension');
+
+        // Find the index.md download
+        const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
+        assert.ok(indexDownload, 'Should have index.md file');
+
+        // Decode and check the markdown content
+        const markdownContent = decodeURIComponent(indexDownload.url.replace('data:text/markdown;charset=utf-8,', ''));
+        assert.ok(markdownContent.includes('Carol TianTian'), 'Markdown should include the outer story actor name');
+
+        // Check that attached story content is included as blockquote
+        assert.ok(markdownContent.includes('> '), 'Markdown should include blockquoted attached story');
+        assert.ok(markdownContent.includes('Anime Feels'), 'Markdown should include the attached story actor name');
     });
 });
