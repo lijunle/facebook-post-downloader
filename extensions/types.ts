@@ -111,4 +111,28 @@ export type StoryVideo = {
   ];
 };
 
-export type Story = StoryPost | StoryVideo;
+export type StoryWatch = {
+  attachments: [
+    {
+      media: {
+        __typename: "Video";
+        id: string;
+        title: { text: string };
+        owner: User;
+        creation_story: {
+          id: string;
+          comet_sections: {
+            id: string;
+            message: {
+              story: {
+                message: { text: string };
+              };
+            };
+          };
+        };
+      };
+    }
+  ];
+};
+
+export type Story = StoryPost | StoryVideo | StoryWatch;

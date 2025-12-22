@@ -1,4 +1,4 @@
-import { storyListener, downloadStory, getAttachmentCount, getCreateTime, isStoryPost } from './story.js';
+import { storyListener, downloadStory, getAttachmentCount, getCreateTime, isStoryPost, getStoryPostId, getStoryMessage, getStoryId } from './story.js';
 import { React, ReactDOM } from './react.js';
 import { useDownloadButtonInjection } from './download-button.js';
 
@@ -34,8 +34,8 @@ function StoryRow({ story, selected, onToggle }) {
             })
         ),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, story.post_id),
-        React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (story.message?.text ?? "").slice(0, 500)),
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getStoryPostId(story)),
+        React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (getStoryMessage(story) ?? "").slice(0, 500)),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, isStoryPost(story) && story.attached_story ? "true" : "false"),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
     );
@@ -45,7 +45,7 @@ function StoryRow({ story, selected, onToggle }) {
  * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void }} props
  */
 function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
-    const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(s.id));
+    const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(getStoryId(s)));
 
     const tableStyle = {
         width: "100%",
@@ -80,10 +80,10 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
         React.createElement("tbody", null,
             stories.map((story) =>
                 React.createElement(StoryRow, {
-                    key: story.id,
+                    key: getStoryId(story),
                     story,
-                    selected: selectedIds.has(story.id),
-                    onToggle: () => onToggleStory(story.id),
+                    selected: selectedIds.has(getStoryId(story)),
+                    onToggle: () => onToggleStory(getStoryId(story)),
                 })
             )
         )
@@ -111,11 +111,11 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
 
     const onToggleAll = useCallback(() => {
         setSelectedIds(prev => {
-            const allSelected = stories.every(s => prev.has(s.id));
+            const allSelected = stories.every(s => prev.has(getStoryId(s)));
             if (allSelected) {
                 return new Set();
             } else {
-                return new Set(stories.map(s => s.id));
+                return new Set(stories.map(s => getStoryId(s)));
             }
         });
     }, [stories]);
@@ -125,7 +125,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
 
         setDownloading(true);
         try {
-            const selectedStories = stories.filter(s => selectedIds.has(s.id));
+            const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
             for (let i = 0; i < selectedStories.length; i++) {
                 if (i > 0) await new Promise(r => setTimeout(r, 1000));
                 await downloadStory(selectedStories[i], onDownloadFile);

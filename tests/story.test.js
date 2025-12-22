@@ -87,7 +87,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl, getStoryPostId, getStoryActor, getStoryMessage } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
     it('should extract text-only story from story-text-only.json', () => {
@@ -98,10 +98,10 @@ describe('extractStories', () => {
         assert.ok(result.length > 0, 'Should extract at least one story');
 
         // Find the text-only story
-        const textOnlyStory = result.find(s => s.post_id === '1411731986983785');
+        const textOnlyStory = result.find(s => getStoryPostId(s) === '1411731986983785');
         assert.ok(textOnlyStory, 'Should find the text-only story');
         assert.strictEqual(getAttachmentCount(textOnlyStory), 0, 'Text-only story should have 0 attachments');
-        assert.strictEqual(textOnlyStory.actors[0].name, '蔡正元', 'Actor name should be 蔡正元');
+        assert.strictEqual(getStoryActor(textOnlyStory)?.name, '蔡正元', 'Actor name should be 蔡正元');
     });
 
     it('should extract story with photo attachments from story-attachment-photo.json', () => {
@@ -112,10 +112,10 @@ describe('extractStories', () => {
         assert.ok(result.length > 0, 'Should extract at least one story');
 
         // Find the story with attachments
-        const storyWithAttachments = result.find(s => s.post_id === '25550089621287122');
+        const storyWithAttachments = result.find(s => getStoryPostId(s) === '25550089621287122');
         assert.ok(storyWithAttachments, 'Should find the story with attachments');
         assert.strictEqual(getAttachmentCount(storyWithAttachments), 4, 'Story should have 4 attachments');
-        assert.strictEqual(storyWithAttachments.actors[0].name, 'Kimi Cui', 'Actor name should be Kimi Cui');
+        assert.strictEqual(getStoryActor(storyWithAttachments)?.name, 'Kimi Cui', 'Actor name should be Kimi Cui');
     });
 
     it('should extract story with attached story from story-attached-story.json', () => {
@@ -126,16 +126,16 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story
-        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '1414037856753198'));
+        const mainStory = /** @type {StoryPost} */ (result.find(s => getStoryPostId(s) === '1414037856753198'));
         assert.ok(mainStory, 'Main story should be extracted');
         assert.strictEqual(getAttachmentCount(mainStory), 0, 'Main story should have 0 attachments');
-        assert.strictEqual(mainStory.actors[0].name, '蔡正元', 'Main story actor name should be 蔡正元');
+        assert.strictEqual(getStoryActor(mainStory)?.name, '蔡正元', 'Main story actor name should be 蔡正元');
 
         // Main story should have attached_story
         assert.ok(mainStory.attached_story, 'Main story should have attached_story');
-        assert.strictEqual(mainStory.attached_story.post_id, '1284281217061999', 'Attached story should have correct post_id');
+        assert.strictEqual(getStoryPostId(mainStory.attached_story), '1284281217061999', 'Attached story should have correct post_id');
         assert.strictEqual(getAttachmentCount(mainStory.attached_story), 1, 'Attached story should have 1 attachment');
-        assert.strictEqual(mainStory.attached_story.actors[0].name, '徐勝凌', 'Attached story actor name should be 徐勝凌');
+        assert.strictEqual(getStoryActor(mainStory.attached_story)?.name, '徐勝凌', 'Attached story actor name should be 徐勝凌');
     });
 
     it('should extract story with attached story only from story-attached-story-only.json', () => {
@@ -146,23 +146,22 @@ describe('extractStories', () => {
         assert.strictEqual(result.length, 1, 'Should extract exactly 1 story');
 
         // Should extract the main story (outer story)
-        const mainStory = /** @type {StoryPost} */ (result.find(s => s.post_id === '2280345139142267'));
+        const mainStory = /** @type {StoryPost} */ (result.find(s => getStoryPostId(s) === '2280345139142267'));
         assert.ok(mainStory, 'Main story should be extracted');
 
         // Outer story has no message and no attachments
-        assert.ok(!mainStory.message, 'Outer story should have no message');
+        assert.ok(!getStoryMessage(mainStory), 'Outer story should have no message');
         assert.strictEqual(getAttachmentCount(mainStory), 0, 'Outer story should have 0 attachments');
-        assert.strictEqual(mainStory.actors[0].name, 'Carol TianTian', 'Outer story actor name should be Carol TianTian');
+        assert.strictEqual(getStoryActor(mainStory)?.name, 'Carol TianTian', 'Outer story actor name should be Carol TianTian');
 
         // Main story should have attached_story with the substory
         assert.ok(mainStory.attached_story, 'Main story should have attached_story');
-        assert.strictEqual(mainStory.attached_story.post_id, '1422788562752398', 'Attached story should have correct post_id');
+        assert.strictEqual(getStoryPostId(mainStory.attached_story), '1422788562752398', 'Attached story should have correct post_id');
 
         // Inner story (attached_story) has message and attachments
-        assert.ok(mainStory.attached_story.message, 'Attached story should have message');
-        assert.ok(mainStory.attached_story.message.text, 'Attached story message should have text');
+        assert.ok(getStoryMessage(mainStory.attached_story), 'Attached story should have message');
         assert.strictEqual(getAttachmentCount(mainStory.attached_story), 1, 'Attached story should have 1 attachment');
-        assert.strictEqual(mainStory.attached_story.actors[0].name, 'Anime Feels', 'Attached story actor name should be Anime Feels');
+        assert.strictEqual(getStoryActor(mainStory.attached_story)?.name, 'Anime Feels', 'Attached story actor name should be Anime Feels');
     });
 
     it('should deduplicate stories and prefer ones with wwwURL', () => {
@@ -170,12 +169,12 @@ describe('extractStories', () => {
         const result = extractStories(mockData);
 
         // Check that post_ids are unique
-        const postIds = result.map(s => s.post_id);
+        const postIds = result.map(s => getStoryPostId(s));
         const uniquePostIds = [...new Set(postIds)];
         assert.strictEqual(postIds.length, uniquePostIds.length, 'All post_ids should be unique');
 
         // Check that story with wwwURL is preferred
-        const storyWithUrl = /** @type {import('../extensions/types').StoryPost | undefined} */ (result.find(s => s.post_id === '1411731986983785'));
+        const storyWithUrl = /** @type {import('../extensions/types').StoryPost | undefined} */ (result.find(s => getStoryPostId(s) === '1411731986983785'));
         if (storyWithUrl) {
             assert.ok(storyWithUrl.wwwURL, 'Should prefer story with wwwURL');
         }
@@ -194,10 +193,10 @@ describe('extractStoryGroupMap', () => {
         extractStoryGroupMap(mockData);
 
         // Find the story
-        const story = stories.find(s => s.post_id === '2282323118944469');
+        const story = stories.find(s => getStoryPostId(s) === '2282323118944469');
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 1, 'Story should have 1 attachment');
-        assert.strictEqual(story.actors[0].name, 'Kyle Lim', 'Actor name should be Kyle Lim');
+        assert.strictEqual(getStoryActor(story)?.name, 'Kyle Lim', 'Actor name should be Kyle Lim');
 
         // Get the group for this story
         const group = getGroup(story);
@@ -214,10 +213,10 @@ describe('extractStoryGroupMap', () => {
         const stories = extractStories(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '1411731986983785');
+        const story = stories.find(s => getStoryPostId(s) === '1411731986983785');
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Story should have 0 attachments');
-        assert.strictEqual(story.actors[0].name, '蔡正元', 'Actor name should be 蔡正元');
+        assert.strictEqual(getStoryActor(story)?.name, '蔡正元', 'Actor name should be 蔡正元');
 
         const group = getGroup(story);
         assert.strictEqual(group, undefined, 'Text-only story should not have a group');
@@ -231,7 +230,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
 
-        const story = stories.find(s => s.post_id === '1411731986983785');
+        const story = stories.find(s => getStoryPostId(s) === '1411731986983785');
         assert.ok(story, 'Should find the story');
 
         const createTime = getCreateTime(story);
@@ -245,7 +244,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
 
-        const story = stories.find(s => s.post_id === '25550089621287122');
+        const story = stories.find(s => getStoryPostId(s) === '25550089621287122');
         assert.ok(story, 'Should find the story');
 
         const createTime = getCreateTime(story);
@@ -259,7 +258,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
 
-        const story = stories.find(s => s.post_id === '2282323118944469');
+        const story = stories.find(s => getStoryPostId(s) === '2282323118944469');
         assert.ok(story, 'Should find the story');
 
         const createTime = getCreateTime(story);
@@ -274,7 +273,7 @@ describe('extractStoryCreateTime and getCreateTime', () => {
         extractStoryCreateTime(mockData);
 
         // Main story
-        const mainStory = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
+        const mainStory = /** @type {StoryPost} */ (stories.find(s => getStoryPostId(s) === '1414037856753198'));
         assert.ok(mainStory, 'Should find the main story');
 
         const mainCreateTime = getCreateTime(mainStory);
@@ -313,7 +312,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '1411731986983785');
+        const story = stories.find(s => getStoryPostId(s) === '1411731986983785');
         assert.ok(story, 'Should find the story');
 
         /** @type {Array<{ url: string, filename: string }>} */
@@ -354,7 +353,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '25550089621287122');
+        const story = stories.find(s => getStoryPostId(s) === '25550089621287122');
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 4, 'Story should have 4 attachments');
 
@@ -403,7 +402,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '2282323118944469');
+        const story = stories.find(s => getStoryPostId(s) === '2282323118944469');
         assert.ok(story, 'Should find the story');
 
         /** @type {Array<{ url: string, filename: string }>} */
@@ -439,7 +438,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '1414037856753198'));
+        const story = /** @type {StoryPost} */ (stories.find(s => getStoryPostId(s) === '1414037856753198'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -483,7 +482,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = /** @type {StoryPost} */ (stories.find(s => s.post_id === '2280345139142267'));
+        const story = /** @type {StoryPost} */ (stories.find(s => getStoryPostId(s) === '2280345139142267'));
         assert.ok(story, 'Should find the story');
         assert.ok(story.attached_story, 'Story should have attached_story');
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
@@ -527,7 +526,7 @@ describe('downloadStory', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const story = stories.find(s => s.post_id === '2284744602035654');
+        const story = stories.find(s => getStoryPostId(s) === '2284744602035654');
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 1, 'Story should have 1 video attachment');
 
@@ -577,17 +576,17 @@ describe('StoryVideo', () => {
         assert.ok(result.length > 0, 'Should extract at least one story');
 
         // Find the StoryVideo
-        const storyVideo = result.find(s => s.post_id === '1140140214990654');
+        const storyVideo = result.find(s => getStoryPostId(s) === '1140140214990654');
         assert.ok(storyVideo, 'Should find the StoryVideo');
         assert.strictEqual(getAttachmentCount(storyVideo), 1, 'StoryVideo should have 1 attachment');
-        assert.strictEqual(storyVideo.actors[0].name, 'はじめてちゃれんじ', 'Actor name should be はじめてちゃれんじ');
+        assert.strictEqual(getStoryActor(storyVideo)?.name, 'はじめてちゃれんじ', 'Actor name should be はじめてちゃれんじ');
     });
 
     it('should return correct URL for StoryVideo via getStoryUrl', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
         const result = extractStories(mockData);
 
-        const storyVideo = result.find(s => s.post_id === '1140140214990654');
+        const storyVideo = result.find(s => getStoryPostId(s) === '1140140214990654');
         assert.ok(storyVideo, 'Should find the StoryVideo');
 
         const url = getStoryUrl(storyVideo);
@@ -601,7 +600,7 @@ describe('StoryVideo', () => {
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
 
-        const storyVideo = stories.find(s => s.post_id === '1140140214990654');
+        const storyVideo = stories.find(s => getStoryPostId(s) === '1140140214990654');
         assert.ok(storyVideo, 'Should find the StoryVideo');
 
         const createTime = getCreateTime(storyVideo);
@@ -617,7 +616,7 @@ describe('StoryVideo', () => {
         extractStoryCreateTime(mockData);
         extractStoryGroupMap(mockData);
 
-        const storyVideo = stories.find(s => s.post_id === '1140140214990654');
+        const storyVideo = stories.find(s => getStoryPostId(s) === '1140140214990654');
         assert.ok(storyVideo, 'Should find the StoryVideo');
         assert.strictEqual(getAttachmentCount(storyVideo), 1, 'StoryVideo should have 1 attachment');
 

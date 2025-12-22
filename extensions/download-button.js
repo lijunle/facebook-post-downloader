@@ -1,4 +1,4 @@
-import { downloadStory, getStoryUrl } from './story.js';
+import { downloadStory, getStoryUrl, getStoryId, getStoryPostId } from './story.js';
 import { React } from './react.js';
 
 const { useEffect } = React;
@@ -143,12 +143,12 @@ function injectDownloadButtons(stories, postAppMessage) {
 
         // Match by story.id
         const storyId = getValueFromReactFiber(actionBtn, p => p?.story?.id);
-        let story = storyId ? stories.find(s => s.id === storyId) : null;
+        let story = storyId ? stories.find(s => getStoryId(s) === storyId) : null;
 
         // Fall back to matching by storyPostID
         if (!story) {
             const postId = getValueFromReactFiber(actionBtn, p => p?.storyPostID);
-            story = postId ? stories.find(s => s.post_id === postId) : null;
+            story = postId ? stories.find(s => getStoryPostId(s) === postId) : null;
         }
 
         // Fall back to matching by permalink_url to story URL

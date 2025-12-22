@@ -4,9 +4,11 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').Story} Story
  * @typedef {import('./types').StoryPost} StoryPost
  * @typedef {import('./types').StoryVideo} StoryVideo
+ * @typedef {import('./types').StoryWatch} StoryWatch
  * @typedef {import('./types').Media} Media
  * @typedef {import('./types').MediaVideo} MediaVideo
- * @typedef {import('./types').Group} StoryGroup
+ * @typedef {import('./types').User} User
+ * @typedef {import('./types').Group} Group
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
@@ -87,7 +89,7 @@ const attachmentsCache = new WeakMap();
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 
-/** @type {Map<string, StoryGroup>} */
+/** @type {Map<string, Group>} */
 const storyGroupCache = new Map();
 
 /**
@@ -218,13 +220,13 @@ function buildFolderName(story) {
     }
 
     // Actor name part
-    const actor = story.actors?.[0];
+    const actor = getStoryActor(story);
     if (actor) {
         parts.push(sanitizeFilename(actor.name));
     }
 
     // Post ID part (always included)
-    parts.push(story.post_id);
+    parts.push(getStoryPostId(story));
 
     return parts.join('_');
 }
@@ -251,7 +253,7 @@ function renderStory(story, attachments, quoted_story) {
     }
 
     // Actor
-    const actor = story.actors?.[0];
+    const actor = getStoryActor(story);
     if (actor) {
         lines.push(`**Author:** ${actor.name}`);
         lines.push('');
@@ -276,10 +278,11 @@ function renderStory(story, attachments, quoted_story) {
     }
 
     // Message
-    if (story.message?.text) {
+    const message = getStoryMessage(story);
+    if (message) {
         lines.push('---');
         lines.push('');
-        lines.push(story.message.text);
+        lines.push(message);
         lines.push('');
     }
 
@@ -373,7 +376,7 @@ export function getCreateTime(story) {
 
     // For StoryPost, use the cache
     if (isStoryPost(story)) {
-        const createTime = storyCreateTimeCache.get(story.id);
+        const createTime = storyCreateTimeCache.get(getStoryId(story));
         if (createTime === undefined) return undefined;
         return new Date(createTime * 1000);
     }
@@ -384,10 +387,10 @@ export function getCreateTime(story) {
 /**
  * Get the group for a story.
  * @param {Story} story
- * @returns {StoryGroup | undefined}
+ * @returns {Group | undefined}
  */
 export function getGroup(story) {
-    return storyGroupCache.get(story.id);
+    return storyGroupCache.get(getStoryId(story));
 }
 
 /**
@@ -403,6 +406,67 @@ export function getStoryUrl(story) {
         return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
     }
     return '';
+}
+
+/**
+ * Get the message text for a story.
+ * @param {Story} story
+ * @returns {string | undefined}
+ */
+export function getStoryMessage(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.message?.text;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.creation_story.comet_sections.message?.story?.message?.text;
+    }
+    return undefined;
+}
+
+/**
+ * Get the post_id for a story.
+ * @param {Story} story
+ * @returns {string}
+ */
+export function getStoryPostId(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.post_id;
+    }
+    if (isStoryWatch(story)) {
+        // StoryWatch uses video id as post_id
+        return story.attachments[0].media.id;
+    }
+    throw new Error('Unknown story type: cannot get post_id');
+}
+
+/**
+ * Get the id for a story.
+ * @param {Story} story
+ * @returns {string}
+ */
+export function getStoryId(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.id;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.creation_story.id;
+    }
+    throw new Error('Unknown story type: cannot get id');
+}
+
+/**
+ * Get the primary actor for a story.
+ * @param {Story} story
+ * @returns {User | undefined}
+ */
+export function getStoryActor(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.actors?.[0];
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.owner;
+    }
+    return undefined;
 }
 
 /**
@@ -450,12 +514,39 @@ function isStoryVideo(obj) {
 }
 
 /**
- * Check if an object is a valid Story (StoryPost or StoryVideo).
+ * Check if an object is a valid StoryWatch.
+ * @param {unknown} obj
+ * @returns {obj is StoryWatch}
+ */
+function isStoryWatch(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Must have attachments array
+    if (!Array.isArray(o.attachments)) return false;
+    if (o.attachments.length === 0) return false;
+
+    const attachment = /** @type {Record<string, unknown>} */ (o.attachments[0]);
+    if (!attachment.media || typeof attachment.media !== 'object') return false;
+
+    const media = /** @type {Record<string, unknown>} */ (attachment.media);
+    if (media.__typename !== 'Video') return false;
+
+    // Must have creation_story with comet_sections
+    if (!media.creation_story || typeof media.creation_story !== 'object') return false;
+    const creationStory = /** @type {Record<string, unknown>} */ (media.creation_story);
+    if (!creationStory.comet_sections || typeof creationStory.comet_sections !== 'object') return false;
+
+    return true;
+}
+
+/**
+ * Check if an object is a valid Story (StoryPost, StoryVideo, or StoryWatch).
  * @param {unknown} obj
  * @returns {obj is Story}
  */
 function isStory(obj) {
-    return isStoryPost(obj) || isStoryVideo(obj);
+    return isStoryPost(obj) || isStoryVideo(obj) || isStoryWatch(obj);
 }
 
 /**
@@ -474,8 +565,8 @@ export function extractStories(obj, results = []) {
     const objIsStory = isStory(obj);
     if (objIsStory) {
         const story = /** @type {Story} */ (obj);
-        const postId = story.post_id;
-        const existingIndex = results.findIndex(s => s.post_id === postId);
+        const postId = getStoryPostId(story);
+        const existingIndex = results.findIndex(s => getStoryPostId(s) === postId);
 
         // Prefer story with wwwURL (the nested one has more complete data)
         if (existingIndex === -1) {
@@ -544,7 +635,7 @@ export function extractStoryGroupMap(obj) {
         if (to.__typename === 'Group' && typeof to.id === 'string' && typeof to.name === 'string') {
             // Only set if not already present (prefer first/most complete match)
             if (!storyGroupCache.has(o.id)) {
-                storyGroupCache.set(o.id, /** @type {StoryGroup} */(to));
+                storyGroupCache.set(o.id, /** @type {Group} */(to));
             }
         }
     }
@@ -639,8 +730,9 @@ export function storyListener(cb) {
 
         const embeddedStories = extractEmbeddedStories();
         for (const story of embeddedStories) {
-            if (emittedPostIds.has(story.post_id)) continue;
-            emittedPostIds.add(story.post_id);
+            const postId = getStoryPostId(story);
+            if (emittedPostIds.has(postId)) continue;
+            emittedPostIds.add(postId);
             try {
                 cb(story);
             } catch {
