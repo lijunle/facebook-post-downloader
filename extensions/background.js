@@ -23,7 +23,7 @@ let activeDownloads = 0;
 /**
  * Resets the download queue and active downloads counter (for testing).
  */
-export function resetQueue() {
+function resetQueue() {
     downloadQueue.length = 0;
     activeDownloads = 0;
 }
@@ -35,7 +35,7 @@ export function resetQueue() {
  * @param {string} filename - The filename to save as.
  * @param {number | undefined} tabId - The tab ID to notify on completion.
  */
-export function queueDownload(storyId, url, filename, tabId) {
+function queueDownload(storyId, url, filename, tabId) {
     downloadQueue.push({ storyId, url, filename, tabId });
     processQueue();
 }
@@ -122,3 +122,8 @@ chrome.action.onClicked.addListener((tab) => {
         chrome.tabs.sendMessage(tab.id, message);
     }
 });
+
+// Export for testing (Node.js environment)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { queueDownload, resetQueue };
+}

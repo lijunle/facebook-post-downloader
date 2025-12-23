@@ -1,5 +1,8 @@
 import { describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 // Mock chrome API before importing the module
 const downloadMock = mock.fn();
@@ -27,7 +30,7 @@ const mockChrome = {
 };
 globalThis.chrome = mockChrome;
 
-const { queueDownload, resetQueue } = await import('../extensions/background.js');
+const { queueDownload, resetQueue } = require('../extensions/background.js');
 
 describe('queueDownload', () => {
     beforeEach(() => {
