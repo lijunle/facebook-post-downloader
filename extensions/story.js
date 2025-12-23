@@ -144,14 +144,7 @@ async function fetchAttachments(story, onAttachment) {
 
     // For StoryPost, walk through the media set
     if (isStoryPost(story)) {
-        const attachment = story.attachments[0]?.styles.attachment;
-        /** @type {string | undefined} */
-        let seedId;
-        if (attachment && 'media' in attachment) {
-            seedId = attachment.media.id;
-        } else if (attachment && 'all_subattachments' in attachment) {
-            seedId = attachment.all_subattachments.nodes[0]?.media.id;
-        }
+        const seedId = getStoryMediaId(story);
         if (!seedId) return;
 
         const mediasetToken = `pcb.${story.post_id}`;
@@ -382,15 +375,8 @@ export function getCreateTime(story) {
         return new Date(publishTime * 1000);
     }
 
-    // For StoryPost, use the cache
-    if (isStoryPost(story)) {
-        const createTime = storyCreateTimeCache.get(getStoryId(story));
-        if (createTime === undefined) return undefined;
-        return new Date(createTime * 1000);
-    }
-
-    // For StoryWatch, use the cache (keyed by creation_story.id)
-    if (isStoryWatch(story)) {
+    // For StoryPost and StoryWatch, use the cache
+    if (isStoryPost(story) || isStoryWatch(story)) {
         const createTime = storyCreateTimeCache.get(getStoryId(story));
         if (createTime === undefined) return undefined;
         return new Date(createTime * 1000);
@@ -473,6 +459,9 @@ export function getStoryMediaId(story) {
         const attachment = story.attachments[0]?.styles?.attachment;
         if (attachment && 'media' in attachment && attachment.media?.id) {
             return attachment.media.id;
+        }
+        if (attachment && 'all_subattachments' in attachment) {
+            return attachment.all_subattachments.nodes[0]?.media.id ?? null;
         }
     }
     return null;
