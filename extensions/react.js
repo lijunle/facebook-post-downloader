@@ -10,7 +10,7 @@ await import('../node_modules/umd-react/dist/react-dom.production.min.js');
  * @param {number} delay
  * @returns {Promise<T>}
  */
-async function waitFor(getter, maxRetries = 5, delay = 200) {
+async function waitFor(getter, maxRetries = 50, delay = 200) {
     for (let i = 0; i < maxRetries; i++) {
         const value = getter();
         if (value) return value;

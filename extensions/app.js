@@ -294,7 +294,11 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
         for (let i = 0; i < selectedStories.length; i++) {
             if (i > 0) await new Promise(r => setTimeout(r, 500));
             const story = selectedStories[i];
-            await downloadStory(story, onDownloadFile);
+            try {
+                await downloadStory(story, onDownloadFile);
+            } catch (err) {
+                console.error('[fpdl] download failed for story', getStoryId(story), err);
+            }
         }
     }, [selectedIds, stories, onDownloadFile]);
 
@@ -324,6 +328,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
 function App({ initialStories, onStory }) {
     const [stories, setStories] = useState(initialStories);
     const [visible, setVisible] = useState(false);
+    const hasRendered = React.useRef(false);
 
     const onDownloadFile = useCallback(
         /** @param {string} storyId @param {string} url @param {string} filename */
@@ -335,8 +340,12 @@ function App({ initialStories, onStory }) {
         setVisible(false);
     }, []);
 
-    // Listen for toggle messages
+    // Listen for toggle messages - scroll to trigger load on first render
     useChromeMessage('FPDL_TOGGLE', useCallback(() => {
+        if (!hasRendered.current) {
+            hasRendered.current = true;
+            window.scrollBy(0, 1);
+        }
         setVisible(v => !v);
     }, []));
 
