@@ -169,13 +169,23 @@ function injectVideoFeedButtons(stories, onDownloadFile) {
         const moreButtonWrapper = actionBtn.parentElement;
         const buttonRow = moreButtonWrapper?.parentElement;
         if (!buttonRow) continue;
-        if (buttonRow.querySelector('.fpdl-download-btn')) continue;
+
+        // Get video ID from React fiber
+        const videoId = getValueFromReactFiber(actionBtn, p => p?.videoID);
+
+        // Check if existing button is for a different video, if so remove it
+        const existingBtn = buttonRow.querySelector('.fpdl-download-btn');
+        if (existingBtn) {
+            if (existingBtn.getAttribute('data-video-id') === videoId) continue;
+            existingBtn.remove();
+        }
 
         const story = findStoryForButton(actionBtn, stories);
         if (!story) continue;
 
         const downloadBtn = createDownloadButton(story, onDownloadFile);
         downloadBtn.classList.add('fpdl-download-btn--video');
+        downloadBtn.setAttribute('data-video-id', videoId ?? '');
         buttonRow.insertBefore(downloadBtn, moreButtonWrapper);
     }
 }
@@ -195,10 +205,21 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
         const buttonWrapper = actionBtn.parentElement;
         const buttonRow = buttonWrapper?.parentElement;
         if (!buttonRow) continue;
-        if (buttonRow.querySelector('.fpdl-download-btn')) continue;
 
-        // First try matching by videoID (specific to Watch video page)
-        const videoId = getValueFromReactFiber(actionBtn, p => p?.videoID);
+        // Get video ID from URL as primary source (React fiber can be stale during navigation)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlVideoId = urlParams.get('v');
+
+        // Fall back to React fiber videoID if URL doesn't have it
+        const videoId = urlVideoId || getValueFromReactFiber(actionBtn, p => p?.videoID);
+
+        // Check if existing button is for a different video, if so remove it
+        const existingWrapper = buttonWrapper.querySelector('.fpdl-download-btn-wrapper');
+        if (existingWrapper) {
+            if (existingWrapper.getAttribute('data-video-id') === videoId) continue;
+            existingWrapper.remove();
+        }
+
         let story = videoId ? stories.find(s => getStoryMediaId(s) === videoId) : null;
 
         // Fall back to common matching strategies
@@ -214,6 +235,7 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
         // Wrap in a container to match the "More options for video" button's parent structure
         const wrapper = document.createElement('div');
         wrapper.className = 'fpdl-download-btn-wrapper';
+        wrapper.setAttribute('data-video-id', videoId ?? '');
         wrapper.appendChild(downloadBtn);
 
         buttonWrapper.insertBefore(wrapper, actionBtn);
