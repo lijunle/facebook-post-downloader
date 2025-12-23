@@ -294,7 +294,11 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
         for (let i = 0; i < selectedStories.length; i++) {
             if (i > 0) await new Promise(r => setTimeout(r, 500));
             const story = selectedStories[i];
-            await downloadStory(story, onDownloadFile);
+            try {
+                await downloadStory(story, onDownloadFile);
+            } catch (err) {
+                console.error('[fpdl] download failed for story', getStoryId(story), err);
+            }
         }
     }, [selectedIds, stories, onDownloadFile]);
 
