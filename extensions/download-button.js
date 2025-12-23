@@ -216,7 +216,7 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
         wrapper.className = 'fpdl-download-btn-wrapper';
         wrapper.appendChild(downloadBtn);
 
-        buttonRow.insertBefore(wrapper, buttonWrapper);
+        buttonWrapper.insertBefore(wrapper, actionBtn);
     }
 }
 
@@ -283,7 +283,7 @@ function injectDownloadButtonStyles() {
             align-items: center;
             justify-content: center;
             width: 48px;
-            height: 46px;
+            margin-right: 8px;
         }
         .fpdl-download-btn--watch {
             width: 48px;
