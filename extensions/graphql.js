@@ -32,7 +32,10 @@ const GRAPHQL_URL = `${location.origin}/api/graphql/`;
  * @type {Record<string, string>}
  */
 const DOC_ID_MODULES = {
-    "CometPhotoRootContentQuery": "CometPhotoRootContentQuery_facebookRelayOperation",
+    CometPhotoRootContentQuery:
+        "CometPhotoRootContentQuery_facebookRelayOperation",
+    CometVideoRootMediaViewerQuery:
+        "CometVideoRootMediaViewerQuery_facebookRelayOperation",
 };
 
 /**
@@ -40,13 +43,32 @@ const DOC_ID_MODULES = {
  * @type {Record<string, Record<string, unknown>>}
  */
 const DEFAULT_VARIABLES = {
-    "CometPhotoRootContentQuery": {
+    CometPhotoRootContentQuery: {
         feedbackSource: 65,
         feedLocation: "COMET_MEDIA_VIEWER",
         focusCommentID: null,
+        isMediaset: true,
         privacySelectorRenderLocation: "COMET_MEDIA_VIEWER",
         renderLocation: "comet_media_viewer",
         shouldShowComments: true,
+        scale: 1,
+        useDefaultActor: false,
+        __relay_internal__pv__GHLShouldChangeSponsoredDataFieldNamerelayprovider: true,
+        __relay_internal__pv__TestPilotShouldIncludeDemoAdUseCaserelayprovider: false,
+        __relay_internal__pv__CometUFIShareActionMigrationrelayprovider: true,
+        __relay_internal__pv__CometUFICommentAvatarStickerAnimatedImagerelayprovider: false,
+        __relay_internal__pv__IsWorkUserrelayprovider: false,
+        __relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider: false,
+        __relay_internal__pv__CometImmersivePhotoCanUserDisable3DMotionrelayprovider: false,
+    },
+    CometVideoRootMediaViewerQuery: {
+        feedbackSource: 65,
+        feedLocation: "COMET_MEDIA_VIEWER",
+        focusCommentID: null,
+        isMediaset: true,
+        privacySelectorRenderLocation: "COMET_STREAM",
+        renderLocation: "permalink",
+        scale: 1,
         useDefaultActor: false,
         __relay_internal__pv__GHLShouldChangeSponsoredDataFieldNamerelayprovider: true,
         __relay_internal__pv__TestPilotShouldIncludeDemoAdUseCaserelayprovider: false,
@@ -182,7 +204,6 @@ function extractPageContext() {
         params.set("__spin_t", String(Math.floor(Date.now() / 1000)));
         params.set("fb_api_caller_class", "RelayModern");
         params.set("server_timestamps", "true");
-
     } catch {
         // ignore extraction errors
     }
@@ -237,7 +258,13 @@ const originalXhrSend = XMLHttpRequest.prototype.send;
  * @param {string | null} [username]
  * @param {string | null} [password]
  */
-XMLHttpRequest.prototype.open = function patchedOpen(method, url, async = true, username, password) {
+XMLHttpRequest.prototype.open = function patchedOpen(
+    method,
+    url,
+    async = true,
+    username,
+    password
+) {
     const u = typeof url === "string" ? url : url.href;
     if (method.toUpperCase() === "POST" && u.includes("/api/graphql")) {
         xhrUrl.set(this, u);
@@ -253,7 +280,9 @@ XMLHttpRequest.prototype.open = function patchedOpen(method, url, async = true, 
             for (const line of this.getAllResponseHeaders().trim().split(/\r?\n/)) {
                 const idx = line.indexOf(":");
                 if (idx > 0) {
-                    responseHeaders[line.slice(0, idx).toLowerCase()] = line.slice(idx + 1).trim();
+                    responseHeaders[line.slice(0, idx).toLowerCase()] = line
+                        .slice(idx + 1)
+                        .trim();
                 }
             }
 
@@ -275,7 +304,10 @@ XMLHttpRequest.prototype.open = function patchedOpen(method, url, async = true, 
  * @param {string} name
  * @param {string} value
  */
-XMLHttpRequest.prototype.setRequestHeader = function patchedSetRequestHeader(name, value) {
+XMLHttpRequest.prototype.setRequestHeader = function patchedSetRequestHeader(
+    name,
+    value
+) {
     const headers = xhrHeaders.get(this);
     if (headers) {
         headers[name.toLowerCase()] = value;
@@ -297,7 +329,9 @@ XMLHttpRequest.prototype.send = function patchedSend(body) {
         } else if (body instanceof FormData) {
             const parts = [];
             for (const [k, v] of body.entries()) {
-                parts.push(`${encodeURIComponent(String(k))}=${encodeURIComponent(String(v))}`);
+                parts.push(
+                    `${encodeURIComponent(String(k))}=${encodeURIComponent(String(v))}`
+                );
             }
             bodyText = parts.join("&");
         }
@@ -322,7 +356,10 @@ XMLHttpRequest.prototype.send = function patchedSend(body) {
  */
 export async function sendGraphqlRequest(input) {
     const docId = getDocId(input.apiName);
-    if (!docId) throw new Error(`doc_id not found for: ${input.apiName}. Module may not be loaded.`);
+    if (!docId)
+        throw new Error(
+            `doc_id not found for: ${input.apiName}. Module may not be loaded.`
+        );
 
     const { params, lsd } = extractPageContext();
 

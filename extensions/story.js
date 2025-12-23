@@ -13,6 +13,7 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
+const VIDEO_ROOT_QUERY = "CometVideoRootMediaViewerQuery";
 
 /**
  * @param {string} url
@@ -118,16 +119,16 @@ const videoUrlCache = new Map();
  * Fetch navigation info for a media node.
  * @param {string} nodeId
  * @param {string} mediasetToken
- * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, prevId: string | undefined }>}
+ * @param {boolean} [isVideo] - Whether the current node is a video (determines which API to use)
+ * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, nextIsVideo: boolean }>}
  */
-async function fetchMediaNav(nodeId, mediasetToken) {
+async function fetchMediaNav(nodeId, mediasetToken, isVideo = false) {
+    const apiName = isVideo ? VIDEO_ROOT_QUERY : PHOTO_ROOT_QUERY;
     const objs = await sendGraphqlRequest({
-        apiName: PHOTO_ROOT_QUERY,
+        apiName,
         variables: {
-            isMediaset: true,
             nodeID: nodeId,
             mediasetToken,
-            scale: 1,
         },
     });
 
@@ -135,18 +136,25 @@ async function fetchMediaNav(nodeId, mediasetToken) {
     let currMedia;
     /** @type {string | undefined} */
     let nextId;
-    /** @type {string | undefined} */
-    let prevId;
+    /** @type {boolean} */
+    let nextIsVideo = false;
 
     for (const obj of objs) {
         /** @type {any} */
-        const data = obj?.data;
-        if (data?.currMedia) currMedia = data.currMedia;
-        if (data?.nextMediaAfterNodeId?.id) nextId = data.nextMediaAfterNodeId.id;
-        if (data?.prevMediaBeforeNodeId?.id) prevId = data.prevMediaBeforeNodeId.id;
+        const data = (obj).data;
+        if (data?.nextMediaAfterNodeId) {
+            nextId = data.nextMediaAfterNodeId.id;
+            nextIsVideo = data.nextMediaAfterNodeId.__typename === 'Video';
+        }
+        if (data?.currMedia) {
+            currMedia = data.currMedia;
+        }
+        if (data?.mediaset?.currMedia?.edges?.[0]?.node) {
+            currMedia = data.mediaset.currMedia.edges[0].node;
+        }
     }
 
-    return { currMedia, nextId, prevId };
+    return { currMedia, nextId, nextIsVideo };
 }
 
 /**
@@ -171,12 +179,15 @@ async function fetchAttachments(story, onAttachment) {
         const result = [];
         /** @type {string | undefined} */
         let currentId = seedId;
+        /** @type {boolean} */
+        let currentIsVideo = false; // First media is typically determined by initial fetch
         while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
-            const nav = await fetchMediaNav(currentId, mediasetToken);
+            const nav = await fetchMediaNav(currentId, mediasetToken, currentIsVideo);
             if (!nav.currMedia) break;
             result.push(nav.currMedia);
             onAttachment(nav.currMedia);
             currentId = nav.nextId;
+            currentIsVideo = nav.nextIsVideo;
             if (currentId) await new Promise(r => setTimeout(r, 200));
         }
     }
