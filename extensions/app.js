@@ -40,15 +40,117 @@ function sendAppMessage(message) {
 }
 
 /**
+ * Inject the styles for the FPDL UI.
+ */
+function injectStyles() {
+    if (document.getElementById('fpdl-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'fpdl-styles';
+    style.textContent = `
+        .fpdl-container {
+            position: fixed;
+            left: 12px;
+            bottom: 12px;
+            z-index: 2147483647;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .fpdl-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .fpdl-title {
+            font-size: 12px;
+            font-weight: 700;
+            user-select: none;
+            flex: 1;
+            text-align: center;
+        }
+        .fpdl-btn {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            cursor: pointer;
+        }
+        .fpdl-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .fpdl-close-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+        .fpdl-close-btn:hover {
+            opacity: 1;
+        }
+        .fpdl-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .fpdl-th {
+            text-align: left;
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            white-space: nowrap;
+        }
+        .fpdl-th-checkbox {
+            width: 40px;
+            min-width: 40px;
+        }
+        .fpdl-th-message {
+            width: 50vw;
+        }
+        .fpdl-td {
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            vertical-align: middle;
+            height: 24px;
+            white-space: nowrap;
+        }
+        .fpdl-td-checkbox {
+            width: 40px;
+            min-width: 40px;
+        }
+        .fpdl-td-message {
+            width: 50vw;
+            max-width: 50vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fpdl-row-selected {
+            background: rgba(255,255,255,0.1);
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
  * @param {{ story: Story, selected: boolean, onToggle: () => void, downloadedCount: number | undefined }} props
  */
 function StoryRow({ story, selected, onToggle, downloadedCount }) {
-    const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "middle", height: "24px" };
-    const rowStyle = selected ? { background: "rgba(255,255,255,0.1)" } : {};
     const total = getDownloadCount(story);
 
-    return React.createElement("tr", { style: rowStyle },
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap", width: "40px", minWidth: "40px" } },
+    return React.createElement("tr", { className: selected ? "fpdl-row-selected" : undefined },
+        React.createElement("td", { className: "fpdl-td fpdl-td-checkbox" },
             downloadedCount !== undefined
                 ? `${downloadedCount}/${total}`
                 : React.createElement("input", {
@@ -57,11 +159,11 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
                     onChange: onToggle,
                 })
         ),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getStoryPostId(story)),
-        React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (getStoryMessage(story) ?? "").slice(0, 500)),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, isStoryPost(story) && story.attached_story ? "true" : "false"),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
+        React.createElement("td", { className: "fpdl-td" }, getCreateTime(story)?.toLocaleString() ?? ""),
+        React.createElement("td", { className: "fpdl-td" }, getStoryPostId(story)),
+        React.createElement("td", { className: "fpdl-td fpdl-td-message" }, (getStoryMessage(story) ?? "").slice(0, 500)),
+        React.createElement("td", { className: "fpdl-td" }, isStoryPost(story) && story.attached_story ? "true" : "false"),
+        React.createElement("td", { className: "fpdl-td" }, getAttachmentCount(story))
     );
 }
 
@@ -71,34 +173,21 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap }) {
     const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(getStoryId(s)));
 
-    const tableStyle = {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: "12px",
-    };
-
-    const thStyle = {
-        textAlign: "left",
-        padding: "4px 6px",
-        borderBottom: "1px solid rgba(255,255,255,0.2)",
-        whiteSpace: "nowrap",
-    };
-
-    return React.createElement("table", { style: tableStyle },
+    return React.createElement("table", { className: "fpdl-table" },
         React.createElement("thead", null,
             React.createElement("tr", null,
-                React.createElement("th", { style: { ...thStyle, width: "40px", minWidth: "40px" } },
+                React.createElement("th", { className: "fpdl-th fpdl-th-checkbox" },
                     React.createElement("input", {
                         type: "checkbox",
                         checked: allSelected,
                         onChange: onToggleAll,
                     })
                 ),
-                React.createElement("th", { style: thStyle }, "Created"),
-                React.createElement("th", { style: thStyle }, "Post ID"),
-                React.createElement("th", { style: { ...thStyle, width: "50vw" } }, "Message"),
-                React.createElement("th", { style: thStyle }, "Attached Story"),
-                React.createElement("th", { style: thStyle }, "Attachments")
+                React.createElement("th", { className: "fpdl-th" }, "Created"),
+                React.createElement("th", { className: "fpdl-th" }, "Post ID"),
+                React.createElement("th", { className: "fpdl-th fpdl-th-message" }, "Message"),
+                React.createElement("th", { className: "fpdl-th" }, "Attached Story"),
+                React.createElement("th", { className: "fpdl-th" }, "Attachments")
             )
         ),
         React.createElement("tbody", null,
@@ -173,70 +262,18 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
         }
     }, [selectedIds, stories, onDownloadFile]);
 
-    const containerStyle = {
-        position: "fixed",
-        left: "12px",
-        bottom: "12px",
-        zIndex: 2147483647,
-        maxWidth: "90vw",
-        maxHeight: "80vh",
-        overflow: "auto",
-        background: "rgba(0, 0, 0, 0.5)",
-        color: "#fff",
-        border: "1px solid rgba(255, 255, 255, 0.25)",
-        borderRadius: "6px",
-        padding: "8px",
-    };
-
-    const headerStyle = {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "6px",
-    };
-
-    const titleStyle = {
-        fontSize: "12px",
-        fontWeight: 700,
-        userSelect: "none",
-        flex: 1,
-        textAlign: "center",
-    };
-
-    const buttonStyle = {
-        fontSize: "11px",
-        padding: "2px 8px",
-        borderRadius: "4px",
-        border: "1px solid rgba(255,255,255,0.35)",
-        background: "rgba(255,255,255,0.12)",
-        color: "#fff",
-        cursor: selectedIds.size === 0 ? "not-allowed" : "pointer",
-        opacity: selectedIds.size === 0 ? 0.5 : 1,
-    };
-
-    const closeButtonStyle = {
-        background: "transparent",
-        border: "none",
-        color: "#fff",
-        fontSize: "16px",
-        cursor: "pointer",
-        padding: "0 4px",
-        lineHeight: 1,
-        opacity: 0.7,
-    };
-
-    return React.createElement("div", { style: containerStyle },
-        React.createElement("div", { style: headerStyle },
+    return React.createElement("div", { className: "fpdl-container" },
+        React.createElement("div", { className: "fpdl-header" },
             React.createElement("button", {
                 type: "button",
-                style: buttonStyle,
+                className: "fpdl-btn",
                 onClick: handleDownload,
                 disabled: selectedIds.size === 0,
             }, `Download (${selectedIds.size})`),
-            React.createElement("div", { style: titleStyle }, `Facebook Post Downloader (${stories.length})`),
+            React.createElement("div", { className: "fpdl-title" }, `Facebook Post Downloader (${stories.length})`),
             React.createElement("button", {
                 type: "button",
-                style: closeButtonStyle,
+                className: "fpdl-close-btn",
                 onClick: onClose,
                 title: "Close",
             }, "×")
@@ -288,6 +325,9 @@ function App({ initialStories, onStory }) {
 }
 
 function run() {
+    // Inject styles first
+    injectStyles();
+
     /** @type {Story[]} */
     const collectedStories = [];
     /** @type {((story: Story) => void) | null} */
