@@ -20,7 +20,8 @@
         }
     },
     "background": {
-        "service_worker": "extensions/background.js"
+        "service_worker": "extensions/background.js",
+        "type": "module"
     },
     "web_accessible_resources": [
         {
