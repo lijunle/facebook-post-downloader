@@ -161,7 +161,7 @@ async function fetchAttachments(story, onAttachment) {
             result.push(nav.currMedia);
             onAttachment(nav.currMedia);
             currentId = nav.nextId;
-            if (currentId) await new Promise(r => setTimeout(r, 500));
+            if (currentId) await new Promise(r => setTimeout(r, 200));
         }
     }
 
@@ -318,10 +318,10 @@ function renderStory(story, attachments, quoted_story) {
 /**
  * Download all attachments for a story.
  * @param {Story} story
- * @param {(storyId: string, url: string, filename: string) => void} postAppMessage
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  * @returns {Promise<void>}
  */
-export async function downloadStory(story, postAppMessage) {
+export async function downloadStory(story, onDownloadFile) {
     const folder = buildFolderName(story);
     const storyId = getStoryId(story);
 
@@ -336,7 +336,7 @@ export async function downloadStory(story, postAppMessage) {
         mediaIndex++;
         const indexPrefix = String(mediaIndex).padStart(4, '0');
         const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-        postAppMessage(storyId, download.url, filename);
+        onDownloadFile(storyId, download.url, filename);
         downloadedAttachments.push({ media, filename });
     });
 
@@ -353,7 +353,7 @@ export async function downloadStory(story, postAppMessage) {
             mediaIndex++;
             const indexPrefix = String(mediaIndex).padStart(4, '0');
             const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-            postAppMessage(storyId, download.url, filename);
+            onDownloadFile(storyId, download.url, filename);
             attachedStoryAttachments.push({ media, filename });
         });
         quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
@@ -361,7 +361,7 @@ export async function downloadStory(story, postAppMessage) {
 
     const indexMarkdown = renderStory(story, downloadedAttachments, quotedStory);
     const indexDataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(indexMarkdown);
-    postAppMessage(storyId, indexDataUrl, `${folder}/index.md`);
+    onDownloadFile(storyId, indexDataUrl, `${folder}/index.md`);
 }
 
 /**

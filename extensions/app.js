@@ -5,10 +5,31 @@ import { useDownloadButtonInjection } from './download-button.js';
 /**
  * @typedef {import('./types').Story} Story
  * @typedef {import('./types').AppMessage} AppMessage
- * @typedef {import('./types').ChromeMessageToggle} ChromeMessageToggle
+ * @typedef {import('./types').ChromeMessage} ChromeMessage
  */
 
 const { useState, useEffect, useCallback } = React;
+
+/**
+ * Hook to listen for Chrome extension messages of a specific type.
+ * @template {ChromeMessage['type']} T
+ * @param {T} type - The message type to listen for.
+ * @param {(message: Extract<ChromeMessage, { type: T }>) => void} callback - Callback invoked when a matching message is received.
+ */
+function useChromeMessage(type, callback) {
+    useEffect(() => {
+        /** @param {MessageEvent<ChromeMessage & { __fpdl?: boolean }>} event */
+        const listener = (event) => {
+            if (event.source !== window) return;
+            if (!event.data.__fpdl) return;
+            if (event.data.type === type) {
+                callback(/** @type {Extract<ChromeMessage, { type: T }>} */(event.data));
+            }
+        };
+        window.addEventListener('message', listener);
+        return () => window.removeEventListener('message', listener);
+    }, [type, callback]);
+}
 
 /**
  * Sends a message to the content script.
@@ -19,19 +40,22 @@ function sendAppMessage(message) {
 }
 
 /**
- * @param {{ story: Story, selected: boolean, onToggle: () => void }} props
+ * @param {{ story: Story, selected: boolean, onToggle: () => void, downloadedCount: number | undefined }} props
  */
-function StoryRow({ story, selected, onToggle }) {
-    const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
+function StoryRow({ story, selected, onToggle, downloadedCount }) {
+    const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "middle", height: "24px" };
     const rowStyle = selected ? { background: "rgba(255,255,255,0.1)" } : {};
+    const total = getAttachmentCount(story) + 1;
 
     return React.createElement("tr", { style: rowStyle },
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
-            React.createElement("input", {
-                type: "checkbox",
-                checked: selected,
-                onChange: onToggle,
-            })
+        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap", width: "40px", minWidth: "40px" } },
+            downloadedCount !== undefined
+                ? `${downloadedCount}/${total}`
+                : React.createElement("input", {
+                    type: "checkbox",
+                    checked: selected,
+                    onChange: onToggle,
+                })
         ),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getStoryPostId(story)),
@@ -42,9 +66,9 @@ function StoryRow({ story, selected, onToggle }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void }} props
+ * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedCountMap: { [storyId: string]: number } }} props
  */
-function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
+function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap }) {
     const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(getStoryId(s)));
 
     const tableStyle = {
@@ -63,7 +87,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
     return React.createElement("table", { style: tableStyle },
         React.createElement("thead", null,
             React.createElement("tr", null,
-                React.createElement("th", { style: thStyle },
+                React.createElement("th", { style: { ...thStyle, width: "40px", minWidth: "40px" } },
                     React.createElement("input", {
                         type: "checkbox",
                         checked: allSelected,
@@ -84,6 +108,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
                     story,
                     selected: selectedIds.has(getStoryId(story)),
                     onToggle: () => onToggleStory(getStoryId(story)),
+                    downloadedCount: downloadedCountMap[getStoryId(story)],
                 })
             )
         )
@@ -95,7 +120,14 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
  */
 function StoryDialog({ stories, onDownloadFile, onClose }) {
     const [selectedIds, setSelectedIds] = useState(/** @type {Set<string>} */(new Set()));
-    const [downloading, setDownloading] = useState(false);
+    const [downloadedCountMap, setDownloadedCountMap] = useState(/** @type {{ [storyId: string]: number }} */({}));
+
+    useChromeMessage('FPDL_DOWNLOAD_COMPLETE', useCallback((message) => {
+        setDownloadedCountMap(prev => ({
+            ...prev,
+            [message.storyId]: (prev[message.storyId] ?? 0) + 1,
+        }));
+    }, []));
 
     const onToggleStory = useCallback((/** @type {string} */ id) => {
         setSelectedIds(prev => {
@@ -121,21 +153,25 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
     }, [stories]);
 
     const handleDownload = useCallback(async () => {
-        if (selectedIds.size === 0 || downloading) return;
+        if (selectedIds.size === 0) return;
 
-        setDownloading(true);
-        try {
-            const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
-            for (let i = 0; i < selectedStories.length; i++) {
-                if (i > 0) await new Promise(r => setTimeout(r, 1000));
-                await downloadStory(selectedStories[i], onDownloadFile);
+        setDownloadedCountMap(prev => {
+            const next = { ...prev };
+            for (const storyId of selectedIds) {
+                next[storyId] = 0;
             }
-        } catch (err) {
-            console.warn("[fpdl] download failed", err);
-        } finally {
-            setDownloading(false);
+            return next;
+        });
+
+        const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
+        setSelectedIds(new Set());
+
+        for (let i = 0; i < selectedStories.length; i++) {
+            if (i > 0) await new Promise(r => setTimeout(r, 500));
+            const story = selectedStories[i];
+            await downloadStory(story, onDownloadFile);
         }
-    }, [selectedIds, stories, onDownloadFile, downloading]);
+    }, [selectedIds, stories, onDownloadFile]);
 
     const containerStyle = {
         position: "fixed",
@@ -174,8 +210,8 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
         border: "1px solid rgba(255,255,255,0.35)",
         background: "rgba(255,255,255,0.12)",
         color: "#fff",
-        cursor: downloading || selectedIds.size === 0 ? "not-allowed" : "pointer",
-        opacity: downloading || selectedIds.size === 0 ? 0.5 : 1,
+        cursor: selectedIds.size === 0 ? "not-allowed" : "pointer",
+        opacity: selectedIds.size === 0 ? 0.5 : 1,
     };
 
     const closeButtonStyle = {
@@ -195,8 +231,8 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
                 type: "button",
                 style: buttonStyle,
                 onClick: handleDownload,
-                disabled: downloading || selectedIds.size === 0,
-            }, downloading ? "Downloading…" : `Download (${selectedIds.size})`),
+                disabled: selectedIds.size === 0,
+            }, `Download (${selectedIds.size})`),
             React.createElement("div", { style: titleStyle }, `Facebook Post Downloader (${stories.length})`),
             React.createElement("button", {
                 type: "button",
@@ -205,7 +241,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
                 title: "Close",
             }, "×")
         ),
-        React.createElement(StoryTable, { stories, selectedIds, onToggleStory, onToggleAll })
+        React.createElement(StoryTable, { stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap })
     );
 }
 
@@ -227,18 +263,9 @@ function App({ initialStories, onStory }) {
     }, []);
 
     // Listen for toggle messages
-    useEffect(() => {
-        /** @param {MessageEvent<ChromeMessageToggle & { __fpdl?: boolean }>} event */
-        const listener = (event) => {
-            if (event.source !== window) return;
-            if (!event.data.__fpdl) return;
-            if (event.data.type === 'FPDL_TOGGLE') {
-                setVisible(v => !v);
-            }
-        };
-        window.addEventListener('message', listener);
-        return () => window.removeEventListener('message', listener);
-    }, []);
+    useChromeMessage('FPDL_TOGGLE', useCallback(() => {
+        setVisible(v => !v);
+    }, []));
 
     // Subscribe to new stories
     useEffect(() => {
