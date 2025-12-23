@@ -15,6 +15,14 @@ export type ChromeMessageToggle = {
   type: "FPDL_TOGGLE";
 };
 
+export type ChromeMessageDownloadComplete = {
+  type: "FPDL_DOWNLOAD_COMPLETE";
+  url: string;
+  filename: string;
+};
+
+export type ChromeMessage = ChromeMessageToggle | ChromeMessageDownloadComplete;
+
 export type GraphqlEvent = {
   url: string;
   requestHeaders: Record<string, string>;
