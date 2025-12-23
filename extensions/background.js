@@ -4,11 +4,47 @@
 
 /**
  * @typedef {import("./types").AppMessage} AppMessage
+ * @typedef {import("./types").AppMessageDownload} AppMessageDownload
  * @typedef {import("./types").ChromeMessageToggle} ChromeMessageToggle
  */
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+const MAX_CONCURRENT_DOWNLOADS = 5;
+
+/** @type {AppMessageDownload[]} */
+const downloadQueue = [];
+let activeDownloads = 0;
+
+/**
+ * Adds a download to the queue and processes it.
+ * @param {AppMessageDownload} message - The download message.
+ */
+function queueDownload(message) {
+    downloadQueue.push(message);
+    processQueue();
+}
+
+/**
+ * Processes the download queue, starting downloads up to the concurrency limit.
+ */
+function processQueue() {
+    while (activeDownloads < MAX_CONCURRENT_DOWNLOADS && downloadQueue.length > 0) {
+        const item = downloadQueue.shift();
+        if (item) {
+            activeDownloads++;
+            downloadWithRetry(item.url, item.filename);
+        }
+    }
+}
+
+/**
+ * Called when a download completes (success or final failure).
+ */
+function onDownloadComplete() {
+    activeDownloads--;
+    processQueue();
+}
 
 /**
  * Downloads a file with retry mechanism.
@@ -31,7 +67,10 @@ function downloadWithRetry(url, filename, attempt = 1) {
                     setTimeout(() => downloadWithRetry(url, filename, attempt + 1), RETRY_DELAY_MS);
                 } else {
                     console.error(`Download failed after ${MAX_RETRIES} attempts: ${filename}`);
+                    onDownloadComplete();
                 }
+            } else {
+                onDownloadComplete();
             }
         }
     );
@@ -46,8 +85,7 @@ chrome.runtime.onMessage.addListener(
                 chrome.action.setBadgeBackgroundColor({ color: "#4267B2", tabId: sender.tab.id });
             }
         } else if (msg.type === "FPDL_DOWNLOAD") {
-            const { url, filename } = msg;
-            downloadWithRetry(url, filename);
+            queueDownload(msg);
         }
     }
 );
