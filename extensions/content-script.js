@@ -45,10 +45,12 @@
 
     injectAppScript();
 
-    // Forward toggle messages from background to page context
-    chrome.runtime.onMessage.addListener((/** @type {import("./types").ChromeMessageToggle} */ message) => {
+    // Forward messages from background to page context
+    chrome.runtime.onMessage.addListener((/** @type {import("./types").ChromeMessage} */ message) => {
         if (message.type === 'FPDL_TOGGLE') {
             window.postMessage({ __fpdl: true, type: 'FPDL_TOGGLE' }, window.location.origin);
+        } else if (message.type === 'FPDL_DOWNLOAD_COMPLETE') {
+            window.postMessage({ __fpdl: true, type: 'FPDL_DOWNLOAD_COMPLETE', storyId: message.storyId, url: message.url, filename: message.filename }, window.location.origin);
         }
     });
 
@@ -62,8 +64,8 @@
 
             if (data.type === "FPDL_STORY_COUNT" && typeof data.count === "number") {
                 sendChromeMessage({ type: "FPDL_STORY_COUNT", count: data.count });
-            } else if (data.type === "FPDL_DOWNLOAD" && typeof data.url === "string" && typeof data.filename === "string") {
-                sendChromeMessage({ type: "FPDL_DOWNLOAD", url: data.url, filename: data.filename });
+            } else if (data.type === "FPDL_DOWNLOAD" && typeof data.storyId === "string" && typeof data.url === "string" && typeof data.filename === "string") {
+                sendChromeMessage({ type: "FPDL_DOWNLOAD", storyId: data.storyId, url: data.url, filename: data.filename });
             }
         } catch (err) {
             console.warn("[fpdl] download bridge failed", err);

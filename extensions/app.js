@@ -1,14 +1,35 @@
-import { storyListener, downloadStory, getAttachmentCount, getCreateTime, isStoryPost, getStoryPostId, getStoryMessage, getStoryId } from './story.js';
+import { storyListener, downloadStory, getAttachmentCount, getDownloadCount, getCreateTime, isStoryPost, getStoryPostId, getStoryMessage, getStoryId } from './story.js';
 import { React, ReactDOM } from './react.js';
 import { useDownloadButtonInjection } from './download-button.js';
 
 /**
  * @typedef {import('./types').Story} Story
  * @typedef {import('./types').AppMessage} AppMessage
- * @typedef {import('./types').ChromeMessageToggle} ChromeMessageToggle
+ * @typedef {import('./types').ChromeMessage} ChromeMessage
  */
 
 const { useState, useEffect, useCallback } = React;
+
+/**
+ * Hook to listen for Chrome extension messages of a specific type.
+ * @template {ChromeMessage['type']} T
+ * @param {T} type - The message type to listen for.
+ * @param {(message: Extract<ChromeMessage, { type: T }>) => void} callback - Callback invoked when a matching message is received.
+ */
+function useChromeMessage(type, callback) {
+    useEffect(() => {
+        /** @param {MessageEvent<ChromeMessage & { __fpdl?: boolean }>} event */
+        const listener = (event) => {
+            if (event.source !== window) return;
+            if (!event.data.__fpdl) return;
+            if (event.data.type === type) {
+                callback(/** @type {Extract<ChromeMessage, { type: T }>} */(event.data));
+            }
+        };
+        window.addEventListener('message', listener);
+        return () => window.removeEventListener('message', listener);
+    }, [type, callback]);
+}
 
 /**
  * Sends a message to the content script.
@@ -19,62 +40,190 @@ function sendAppMessage(message) {
 }
 
 /**
- * @param {{ story: Story, selected: boolean, onToggle: () => void }} props
+ * Inject the styles for the FPDL UI.
  */
-function StoryRow({ story, selected, onToggle }) {
-    const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "top" };
-    const rowStyle = selected ? { background: "rgba(255,255,255,0.1)" } : {};
+function injectStyles() {
+    if (document.getElementById('fpdl-styles')) return;
 
-    return React.createElement("tr", { style: rowStyle },
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } },
-            React.createElement("input", {
-                type: "checkbox",
-                checked: selected,
-                onChange: onToggle,
-            })
+    const style = document.createElement('style');
+    style.id = 'fpdl-styles';
+    style.textContent = `
+        .fpdl-container {
+            position: fixed;
+            left: 12px;
+            bottom: 12px;
+            z-index: 2147483647;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .fpdl-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .fpdl-title {
+            font-size: 12px;
+            font-weight: 700;
+            user-select: none;
+            flex: 1;
+            text-align: center;
+        }
+        .fpdl-btn {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            cursor: pointer;
+        }
+        .fpdl-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .fpdl-close-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+        .fpdl-close-btn:hover {
+            opacity: 1;
+        }
+        .fpdl-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .fpdl-th {
+            text-align: left;
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            white-space: nowrap;
+        }
+        .fpdl-th-checkbox {
+            width: 40px;
+            min-width: 40px;
+        }
+        .fpdl-th-message {
+            width: 50vw;
+        }
+        .fpdl-td {
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            vertical-align: middle;
+            height: 24px;
+            white-space: nowrap;
+        }
+        .fpdl-td-checkbox {
+            width: 40px;
+            min-width: 40px;
+        }
+        .fpdl-td-message {
+            width: 50vw;
+            max-width: 50vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fpdl-row-selected {
+            background: rgba(255,255,255,0.1);
+        }
+        .fpdl-row-pending {
+            background: rgba(128, 128, 128, 0.3);
+        }
+        .fpdl-row-downloading {
+            animation: fpdl-blink 1s ease-in-out infinite;
+        }
+        @keyframes fpdl-blink {
+            0%, 100% { background: rgba(255, 200, 0, 0.2); }
+            50% { background: rgba(255, 200, 0, 0.4); }
+        }
+        .fpdl-row-downloaded {
+            background: rgba(0, 200, 0, 0.2);
+        }
+        .fpdl-table tbody tr:hover {
+            outline: 1px solid rgba(255, 255, 255, 0.5);
+            outline-offset: -1px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
+ * @param {{ story: Story, selected: boolean, onToggle: () => void, downloadedCount: number | undefined }} props
+ */
+function StoryRow({ story, selected, onToggle, downloadedCount }) {
+    const total = getDownloadCount(story);
+    const isPending = downloadedCount === 0;
+    const isDownloading = downloadedCount !== undefined && downloadedCount > 0 && downloadedCount < total;
+    const isDownloaded = downloadedCount !== undefined && downloadedCount >= total;
+
+    let className = undefined;
+    if (isDownloaded) {
+        className = "fpdl-row-downloaded";
+    } else if (isDownloading) {
+        className = "fpdl-row-downloading";
+    } else if (isPending) {
+        className = "fpdl-row-pending";
+    } else if (selected) {
+        className = "fpdl-row-selected";
+    }
+
+    return React.createElement("tr", {
+        className,
+        onClick: downloadedCount === undefined ? onToggle : undefined,
+        style: downloadedCount === undefined ? { cursor: "pointer" } : undefined,
+    },
+        React.createElement("td", { className: "fpdl-td fpdl-td-checkbox" },
+            downloadedCount !== undefined
+                ? `${downloadedCount}/${total}`
+                : React.createElement("input", {
+                    type: "checkbox",
+                    checked: selected,
+                    onChange: onToggle,
+                    onClick: (/** @type {MouseEvent} */ e) => e.stopPropagation(),
+                })
         ),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getCreateTime(story)?.toLocaleString() ?? ""),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getStoryPostId(story)),
-        React.createElement("td", { style: { ...cellStyle, width: "50vw", maxWidth: "50vw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (getStoryMessage(story) ?? "").slice(0, 500)),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, isStoryPost(story) && story.attached_story ? "true" : "false"),
-        React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap" } }, getAttachmentCount(story))
+        React.createElement("td", { className: "fpdl-td" }, getCreateTime(story)?.toLocaleString() ?? ""),
+        React.createElement("td", { className: "fpdl-td" }, getStoryPostId(story)),
+        React.createElement("td", { className: "fpdl-td fpdl-td-message" }, (getStoryMessage(story) ?? "").slice(0, 500)),
+        React.createElement("td", { className: "fpdl-td" }, isStoryPost(story) && story.attached_story ? "true" : "false"),
+        React.createElement("td", { className: "fpdl-td" }, getAttachmentCount(story))
     );
 }
 
 /**
- * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void }} props
+ * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedCountMap: { [storyId: string]: number } }} props
  */
-function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
+function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap }) {
     const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(getStoryId(s)));
 
-    const tableStyle = {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: "12px",
-    };
-
-    const thStyle = {
-        textAlign: "left",
-        padding: "4px 6px",
-        borderBottom: "1px solid rgba(255,255,255,0.2)",
-        whiteSpace: "nowrap",
-    };
-
-    return React.createElement("table", { style: tableStyle },
+    return React.createElement("table", { className: "fpdl-table" },
         React.createElement("thead", null,
             React.createElement("tr", null,
-                React.createElement("th", { style: thStyle },
+                React.createElement("th", { className: "fpdl-th fpdl-th-checkbox" },
                     React.createElement("input", {
                         type: "checkbox",
                         checked: allSelected,
                         onChange: onToggleAll,
                     })
                 ),
-                React.createElement("th", { style: thStyle }, "Created"),
-                React.createElement("th", { style: thStyle }, "Post ID"),
-                React.createElement("th", { style: { ...thStyle, width: "50vw" } }, "Message"),
-                React.createElement("th", { style: thStyle }, "Attached Story"),
-                React.createElement("th", { style: thStyle }, "Attachments")
+                React.createElement("th", { className: "fpdl-th" }, "Created"),
+                React.createElement("th", { className: "fpdl-th" }, "Post ID"),
+                React.createElement("th", { className: "fpdl-th fpdl-th-message" }, "Message"),
+                React.createElement("th", { className: "fpdl-th" }, "Attached Story"),
+                React.createElement("th", { className: "fpdl-th" }, "Attachments")
             )
         ),
         React.createElement("tbody", null,
@@ -84,6 +233,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
                     story,
                     selected: selectedIds.has(getStoryId(story)),
                     onToggle: () => onToggleStory(getStoryId(story)),
+                    downloadedCount: downloadedCountMap[getStoryId(story)],
                 })
             )
         )
@@ -91,11 +241,18 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (url: string, filename: string) => void, onClose: () => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void }} props
  */
 function StoryDialog({ stories, onDownloadFile, onClose }) {
     const [selectedIds, setSelectedIds] = useState(/** @type {Set<string>} */(new Set()));
-    const [downloading, setDownloading] = useState(false);
+    const [downloadedCountMap, setDownloadedCountMap] = useState(/** @type {{ [storyId: string]: number }} */({}));
+
+    useChromeMessage('FPDL_DOWNLOAD_COMPLETE', useCallback((message) => {
+        setDownloadedCountMap(prev => ({
+            ...prev,
+            [message.storyId]: (prev[message.storyId] ?? 0) + 1,
+        }));
+    }, []));
 
     const onToggleStory = useCallback((/** @type {string} */ id) => {
         setSelectedIds(prev => {
@@ -121,91 +278,43 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
     }, [stories]);
 
     const handleDownload = useCallback(async () => {
-        if (selectedIds.size === 0 || downloading) return;
+        if (selectedIds.size === 0) return;
 
-        setDownloading(true);
-        try {
-            const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
-            for (let i = 0; i < selectedStories.length; i++) {
-                if (i > 0) await new Promise(r => setTimeout(r, 1000));
-                await downloadStory(selectedStories[i], onDownloadFile);
+        setDownloadedCountMap(prev => {
+            const next = { ...prev };
+            for (const storyId of selectedIds) {
+                next[storyId] = 0;
             }
-        } catch (err) {
-            console.warn("[fpdl] download failed", err);
-        } finally {
-            setDownloading(false);
+            return next;
+        });
+
+        const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
+        setSelectedIds(new Set());
+
+        for (let i = 0; i < selectedStories.length; i++) {
+            if (i > 0) await new Promise(r => setTimeout(r, 500));
+            const story = selectedStories[i];
+            await downloadStory(story, onDownloadFile);
         }
-    }, [selectedIds, stories, onDownloadFile, downloading]);
+    }, [selectedIds, stories, onDownloadFile]);
 
-    const containerStyle = {
-        position: "fixed",
-        left: "12px",
-        bottom: "12px",
-        zIndex: 2147483647,
-        maxWidth: "90vw",
-        maxHeight: "80vh",
-        overflow: "auto",
-        background: "rgba(0, 0, 0, 0.5)",
-        color: "#fff",
-        border: "1px solid rgba(255, 255, 255, 0.25)",
-        borderRadius: "6px",
-        padding: "8px",
-    };
-
-    const headerStyle = {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "6px",
-    };
-
-    const titleStyle = {
-        fontSize: "12px",
-        fontWeight: 700,
-        userSelect: "none",
-        flex: 1,
-        textAlign: "center",
-    };
-
-    const buttonStyle = {
-        fontSize: "11px",
-        padding: "2px 8px",
-        borderRadius: "4px",
-        border: "1px solid rgba(255,255,255,0.35)",
-        background: "rgba(255,255,255,0.12)",
-        color: "#fff",
-        cursor: downloading || selectedIds.size === 0 ? "not-allowed" : "pointer",
-        opacity: downloading || selectedIds.size === 0 ? 0.5 : 1,
-    };
-
-    const closeButtonStyle = {
-        background: "transparent",
-        border: "none",
-        color: "#fff",
-        fontSize: "16px",
-        cursor: "pointer",
-        padding: "0 4px",
-        lineHeight: 1,
-        opacity: 0.7,
-    };
-
-    return React.createElement("div", { style: containerStyle },
-        React.createElement("div", { style: headerStyle },
+    return React.createElement("div", { className: "fpdl-container" },
+        React.createElement("div", { className: "fpdl-header" },
             React.createElement("button", {
                 type: "button",
-                style: buttonStyle,
+                className: "fpdl-btn",
                 onClick: handleDownload,
-                disabled: downloading || selectedIds.size === 0,
-            }, downloading ? "Downloading…" : `Download (${selectedIds.size})`),
-            React.createElement("div", { style: titleStyle }, `Facebook Post Downloader (${stories.length})`),
+                disabled: selectedIds.size === 0,
+            }, `Download (${selectedIds.size})`),
+            React.createElement("div", { className: "fpdl-title" }, `Facebook Post Downloader (${stories.length})`),
             React.createElement("button", {
                 type: "button",
-                style: closeButtonStyle,
+                className: "fpdl-close-btn",
                 onClick: onClose,
                 title: "Close",
             }, "×")
         ),
-        React.createElement(StoryTable, { stories, selectedIds, onToggleStory, onToggleAll })
+        React.createElement(StoryTable, { stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap })
     );
 }
 
@@ -217,9 +326,9 @@ function App({ initialStories, onStory }) {
     const [visible, setVisible] = useState(false);
 
     const onDownloadFile = useCallback(
-        /** @param {string} url @param {string} filename */
-        (url, filename) => {
-            sendAppMessage({ type: "FPDL_DOWNLOAD", url, filename });
+        /** @param {string} storyId @param {string} url @param {string} filename */
+        (storyId, url, filename) => {
+            sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
         }, []);
 
     const onClose = useCallback(() => {
@@ -227,18 +336,9 @@ function App({ initialStories, onStory }) {
     }, []);
 
     // Listen for toggle messages
-    useEffect(() => {
-        /** @param {MessageEvent<ChromeMessageToggle & { __fpdl?: boolean }>} event */
-        const listener = (event) => {
-            if (event.source !== window) return;
-            if (!event.data.__fpdl) return;
-            if (event.data.type === 'FPDL_TOGGLE') {
-                setVisible(v => !v);
-            }
-        };
-        window.addEventListener('message', listener);
-        return () => window.removeEventListener('message', listener);
-    }, []);
+    useChromeMessage('FPDL_TOGGLE', useCallback(() => {
+        setVisible(v => !v);
+    }, []));
 
     // Subscribe to new stories
     useEffect(() => {
@@ -261,6 +361,9 @@ function App({ initialStories, onStory }) {
 }
 
 function run() {
+    // Inject styles first
+    injectStyles();
+
     /** @type {Story[]} */
     const collectedStories = [];
     /** @type {((story: Story) => void) | null} */

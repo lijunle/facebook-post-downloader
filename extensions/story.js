@@ -89,6 +89,22 @@ export function getAttachmentCount(story) {
     return 0;
 }
 
+/**
+ * Get the total number of files to download for a story.
+ * This includes attachments + index.md + attached_story attachments (if any).
+ * @param {Story} story
+ * @returns {number}
+ */
+export function getDownloadCount(story) {
+    let count = getAttachmentCount(story) + 1; // +1 for index.md
+    if (isStoryPost(story) && story.attached_story) {
+        count += getAttachmentCount(story.attached_story);
+    }
+    return count;
+}
+
+
+
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 
@@ -161,7 +177,7 @@ async function fetchAttachments(story, onAttachment) {
             result.push(nav.currMedia);
             onAttachment(nav.currMedia);
             currentId = nav.nextId;
-            if (currentId) await new Promise(r => setTimeout(r, 500));
+            if (currentId) await new Promise(r => setTimeout(r, 200));
         }
     }
 
@@ -318,11 +334,12 @@ function renderStory(story, attachments, quoted_story) {
 /**
  * Download all attachments for a story.
  * @param {Story} story
- * @param {(url: string, filename: string) => void} postAppMessage
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  * @returns {Promise<void>}
  */
-export async function downloadStory(story, postAppMessage) {
+export async function downloadStory(story, onDownloadFile) {
     const folder = buildFolderName(story);
+    const storyId = getStoryId(story);
 
     /** @type {Array<{ media: Media, filename: string }>} */
     const downloadedAttachments = [];
@@ -335,7 +352,7 @@ export async function downloadStory(story, postAppMessage) {
         mediaIndex++;
         const indexPrefix = String(mediaIndex).padStart(4, '0');
         const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-        postAppMessage(download.url, filename);
+        onDownloadFile(storyId, download.url, filename);
         downloadedAttachments.push({ media, filename });
     });
 
@@ -352,7 +369,7 @@ export async function downloadStory(story, postAppMessage) {
             mediaIndex++;
             const indexPrefix = String(mediaIndex).padStart(4, '0');
             const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-            postAppMessage(download.url, filename);
+            onDownloadFile(storyId, download.url, filename);
             attachedStoryAttachments.push({ media, filename });
         });
         quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
@@ -360,7 +377,7 @@ export async function downloadStory(story, postAppMessage) {
 
     const indexMarkdown = renderStory(story, downloadedAttachments, quotedStory);
     const indexDataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(indexMarkdown);
-    postAppMessage(indexDataUrl, `${folder}/index.md`);
+    onDownloadFile(storyId, indexDataUrl, `${folder}/index.md`);
 }
 
 /**
