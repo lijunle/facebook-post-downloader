@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Facebook Post Downloader",
-    "version": "0.1.0",
+    "version": "0.0.0",
     "description": "Download Facebook posts, including text, images, and videos.",
     "icons": {
         "16": "images/logo.png",
