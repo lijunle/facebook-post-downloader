@@ -3,11 +3,21 @@
     "name": "Facebook Post Downloader",
     "version": "0.1.0",
     "description": "Download Facebook posts, including text, images, and videos.",
+    "icons": {
+        "16": "images/logo.png",
+        "48": "images/logo.png",
+        "128": "images/logo.png"
+    },
     "permissions": [
         "downloads"
     ],
     "action": {
-        "default_title": "Facebook Post Downloader"
+        "default_title": "Facebook Post Downloader",
+        "default_icon": {
+            "16": "images/logo.png",
+            "48": "images/logo.png",
+            "128": "images/logo.png"
+        }
     },
     "background": {
         "service_worker": "extensions/background.js"
