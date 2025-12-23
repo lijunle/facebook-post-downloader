@@ -1,4 +1,4 @@
-import { storyListener, downloadStory, getAttachmentCount, getCreateTime, isStoryPost, getStoryPostId, getStoryMessage, getStoryId } from './story.js';
+import { storyListener, downloadStory, getAttachmentCount, getDownloadCount, getCreateTime, isStoryPost, getStoryPostId, getStoryMessage, getStoryId } from './story.js';
 import { React, ReactDOM } from './react.js';
 import { useDownloadButtonInjection } from './download-button.js';
 
@@ -45,7 +45,7 @@ function sendAppMessage(message) {
 function StoryRow({ story, selected, onToggle, downloadedCount }) {
     const cellStyle = { padding: "4px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", verticalAlign: "middle", height: "24px" };
     const rowStyle = selected ? { background: "rgba(255,255,255,0.1)" } : {};
-    const total = getAttachmentCount(story) + 1;
+    const total = getDownloadCount(story);
 
     return React.createElement("tr", { style: rowStyle },
         React.createElement("td", { style: { ...cellStyle, whiteSpace: "nowrap", width: "40px", minWidth: "40px" } },

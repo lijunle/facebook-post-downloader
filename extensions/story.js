@@ -89,6 +89,22 @@ export function getAttachmentCount(story) {
     return 0;
 }
 
+/**
+ * Get the total number of files to download for a story.
+ * This includes attachments + index.md + attached_story attachments (if any).
+ * @param {Story} story
+ * @returns {number}
+ */
+export function getDownloadCount(story) {
+    let count = getAttachmentCount(story) + 1; // +1 for index.md
+    if (isStoryPost(story) && story.attached_story) {
+        count += getAttachmentCount(story.attached_story);
+    }
+    return count;
+}
+
+
+
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 

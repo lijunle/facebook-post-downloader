@@ -88,7 +88,7 @@ mock.module('../extensions/graphql.js', {
     }
 });
 
-const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, downloadStory, getStoryUrl, getStoryPostId, getStoryActor, getStoryMessage, extractVideoUrls, getStoryMediaTitle } = await import('../extensions/story.js');
+const { extractStories, extractStoryGroupMap, getGroup, extractStoryCreateTime, getCreateTime, getAttachmentCount, getDownloadCount, downloadStory, getStoryUrl, getStoryPostId, getStoryActor, getStoryMessage, extractVideoUrls, getStoryMediaTitle } = await import('../extensions/story.js');
 
 describe('extractStories', () => {
     it('should extract text-only StoryPost from story-text-only.json', () => {
@@ -166,7 +166,68 @@ describe('extractStories', () => {
             assert.ok(storyWithUrl.wwwURL, 'Should prefer story with wwwURL');
         }
     });
+});
 
+describe('getDownloadCount', () => {
+    it('should return 1 for text-only story (index.md only)', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-text-only.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const textOnlyStory = result.find(s => getStoryPostId(s) === '1411731986983785');
+        assert.ok(textOnlyStory, 'Should find the text-only story');
+        assert.strictEqual(getDownloadCount(textOnlyStory), 1, 'Text-only story should have download count of 1 (index.md only)');
+    });
+
+    it('should return attachments + 1 for story with photo attachments', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyWithAttachments = result.find(s => getStoryPostId(s) === '25550089621287122');
+        assert.ok(storyWithAttachments, 'Should find the story with attachments');
+        assert.strictEqual(getDownloadCount(storyWithAttachments), 5, 'Story with 4 attachments should have download count of 5 (4 photos + index.md)');
+    });
+
+    it('should include attached_story attachments in count', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const mainStory = /** @type {StoryPost} */ (result.find(s => getStoryPostId(s) === '1414037856753198'));
+        assert.ok(mainStory, 'Should find the main story');
+        assert.ok(mainStory.attached_story, 'Main story should have attached_story');
+        // 0 attachments + 1 index.md + 1 attached_story attachment = 2
+        assert.strictEqual(getDownloadCount(mainStory), 2, 'Story with attached_story should include attached_story attachments in count');
+    });
+
+    it('should include attached_story attachments for story-attached-story-only', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story-only.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const mainStory = /** @type {StoryPost} */ (result.find(s => getStoryPostId(s) === '2280345139142267'));
+        assert.ok(mainStory, 'Should find the main story');
+        // 0 attachments + 1 index.md + 1 attached_story attachment = 2
+        assert.strictEqual(getDownloadCount(mainStory), 2, 'Story with only attached_story should have download count of 2');
+    });
+
+    it('should return 2 for StoryVideo (1 video + index.md)', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyVideo = result.find(s => getStoryPostId(s) === '1140140214990654');
+        assert.ok(storyVideo, 'Should find the StoryVideo');
+        assert.strictEqual(getDownloadCount(storyVideo), 2, 'StoryVideo should have download count of 2 (1 video + index.md)');
+    });
+
+    it('should return 2 for StoryWatch (1 video + index.md)', () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-watched-video.json'), 'utf8'));
+        const result = extractStories(mockData);
+
+        const storyWatch = result.find(s => getStoryPostId(s) === '1403115984005683');
+        assert.ok(storyWatch, 'Should find the StoryWatch');
+        assert.strictEqual(getDownloadCount(storyWatch), 2, 'StoryWatch should have download count of 2 (1 video + index.md)');
+    });
+});
+
+describe('extractStories continued', () => {
     it('should extract StoryVideo from story-video.json', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-video.json'), 'utf8'));
         const result = extractStories(mockData);
