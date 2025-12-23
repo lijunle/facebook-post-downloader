@@ -49,7 +49,13 @@ export type MediaVideo = {
   };
 };
 
-export type Media = MediaPhoto | MediaVideo;
+export type MediaWatch = {
+  __typename: "Video";
+  id: string;
+  url: string;
+};
+
+export type Media = MediaPhoto | MediaVideo | MediaWatch;
 
 export type Group = {
   __typename: "Group";
@@ -102,6 +108,7 @@ export type StoryVideo = {
       media: MediaVideo & {
         name: string;
         publish_time: number;
+        title: { text: string };
         owner: {
           __typename: "User";
           id: string;
@@ -111,4 +118,28 @@ export type StoryVideo = {
   ];
 };
 
-export type Story = StoryPost | StoryVideo;
+export type StoryWatch = {
+  attachments: [
+    {
+      media: {
+        __typename: "Video";
+        id: string;
+        title: { text: string };
+        owner: User;
+        creation_story: {
+          id: string;
+          comet_sections: {
+            id: string;
+            message: {
+              story: {
+                message: { text: string };
+              };
+            };
+          };
+        };
+      };
+    }
+  ];
+};
+
+export type Story = StoryPost | StoryVideo | StoryWatch;

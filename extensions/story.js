@@ -4,9 +4,12 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').Story} Story
  * @typedef {import('./types').StoryPost} StoryPost
  * @typedef {import('./types').StoryVideo} StoryVideo
+ * @typedef {import('./types').StoryWatch} StoryWatch
  * @typedef {import('./types').Media} Media
  * @typedef {import('./types').MediaVideo} MediaVideo
- * @typedef {import('./types').Group} StoryGroup
+ * @typedef {import('./types').MediaWatch} MediaWatch
+ * @typedef {import('./types').User} User
+ * @typedef {import('./types').Group} Group
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
@@ -53,9 +56,14 @@ function pickBestProgressiveUrl(media) {
  */
 function getDownloadUrl(media) {
     if (media.__typename === "Video") {
-        const url = pickBestProgressiveUrl(media);
-        if (!url) return undefined;
-        return { url, ext: "mp4" };
+        // Try progressive URL first (MediaVideo)
+        const progressiveUrl = pickBestProgressiveUrl(/** @type {MediaVideo} */(media));
+        if (progressiveUrl) return { url: progressiveUrl, ext: "mp4" };
+
+        // Fall back to direct URL (MediaWatch)
+        if (media.url) return { url: media.url, ext: "mp4" };
+
+        return undefined;
     }
 
     const url = media.image?.uri;
@@ -75,20 +83,20 @@ export function getAttachmentCount(story) {
         if ('all_subattachments' in attachment) return attachment.all_subattachments.count;
         return 1;
     }
-    if (isStoryVideo(story)) {
+    if (isStoryVideo(story) || isStoryWatch(story)) {
         return 1;
     }
     return 0;
 }
 
-/** @type {WeakMap<Story, Media[]>} */
-const attachmentsCache = new WeakMap();
-
 /** @type {Map<string, number>} */
 const storyCreateTimeCache = new Map();
 
-/** @type {Map<string, StoryGroup>} */
+/** @type {Map<string, Group>} */
 const storyGroupCache = new Map();
+
+/** @type {Map<string, string>} */
+const videoUrlCache = new Map();
 
 /**
  * Fetch navigation info for a media node.
@@ -132,56 +140,53 @@ async function fetchMediaNav(nodeId, mediasetToken) {
  * @returns {Promise<void>}
  */
 async function fetchAttachments(story, onAttachment) {
-    const cached = attachmentsCache.get(story);
-    if (cached) {
-        for (let i = 0; i < cached.length; i++) {
-            if (i > 0) await new Promise(r => setTimeout(r, 500));
-            onAttachment(cached[i]);
-        }
-        return;
-    }
-
     if (story.attachments.length === 0) return;
+
+    // For StoryPost, walk through the media set
+    if (isStoryPost(story)) {
+        const seedId = getStoryMediaId(story);
+        if (!seedId) return;
+
+        const mediasetToken = `pcb.${story.post_id}`;
+        const totalCount = getAttachmentCount(story);
+
+        // Walk from the seed to collect all media
+        /** @type {Media[]} */
+        const result = [];
+        /** @type {string | undefined} */
+        let currentId = seedId;
+        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
+            const nav = await fetchMediaNav(currentId, mediasetToken);
+            if (!nav.currMedia) break;
+            result.push(nav.currMedia);
+            onAttachment(nav.currMedia);
+            currentId = nav.nextId;
+            if (currentId) await new Promise(r => setTimeout(r, 500));
+        }
+    }
 
     // For StoryVideo, directly use the media from the attachment
     if (isStoryVideo(story)) {
         const media = story.attachments[0].media;
         onAttachment(media);
-        attachmentsCache.set(story, [media]);
         return;
     }
 
-    // For StoryPost, walk through the media set
-    if (!isStoryPost(story)) return;
-
-    const attachment = story.attachments[0]?.styles.attachment;
-    /** @type {string | undefined} */
-    let seedId;
-    if (attachment && 'media' in attachment) {
-        seedId = attachment.media.id;
-    } else if (attachment && 'all_subattachments' in attachment) {
-        seedId = attachment.all_subattachments.nodes[0]?.media.id;
+    // For StoryWatch, use cached video URL
+    if (isStoryWatch(story)) {
+        const videoId = story.attachments[0].media.id;
+        const videoUrl = videoUrlCache.get(videoId);
+        if (videoUrl) {
+            /** @type {MediaWatch} */
+            const media = {
+                __typename: 'Video',
+                id: videoId,
+                url: videoUrl,
+            };
+            onAttachment(media);
+        }
+        return;
     }
-    if (!seedId) return;
-
-    const mediasetToken = `pcb.${story.post_id}`;
-    const totalCount = getAttachmentCount(story);
-
-    // Walk from the seed to collect all media
-    /** @type {Media[]} */
-    const result = [];
-    /** @type {string | undefined} */
-    let currentId = seedId;
-    while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
-        const nav = await fetchMediaNav(currentId, mediasetToken);
-        if (!nav.currMedia) break;
-        result.push(nav.currMedia);
-        onAttachment(nav.currMedia);
-        currentId = nav.nextId;
-        if (currentId) await new Promise(r => setTimeout(r, 500));
-    }
-
-    attachmentsCache.set(story, result);
 }
 
 /**
@@ -218,13 +223,13 @@ function buildFolderName(story) {
     }
 
     // Actor name part
-    const actor = story.actors?.[0];
+    const actor = getStoryActor(story);
     if (actor) {
         parts.push(sanitizeFilename(actor.name));
     }
 
     // Post ID part (always included)
-    parts.push(story.post_id);
+    parts.push(getStoryPostId(story));
 
     return parts.join('_');
 }
@@ -251,7 +256,7 @@ function renderStory(story, attachments, quoted_story) {
     }
 
     // Actor
-    const actor = story.actors?.[0];
+    const actor = getStoryActor(story);
     if (actor) {
         lines.push(`**Author:** ${actor.name}`);
         lines.push('');
@@ -264,22 +269,21 @@ function renderStory(story, attachments, quoted_story) {
         lines.push('');
     }
 
-    // Video title (for StoryVideo with media.name)
-    if (isStoryVideo(story)) {
-        const mediaName = story.attachments[0].media.name;
-        if (mediaName) {
-            lines.push('---');
-            lines.push('');
-            lines.push(`**${mediaName}**`);
-            lines.push('');
-        }
+    // Video title (for StoryVideo/StoryWatch with media title)
+    const mediaTitle = getStoryMediaTitle(story);
+    if (mediaTitle) {
+        lines.push('---');
+        lines.push('');
+        lines.push(`**${mediaTitle}**`);
+        lines.push('');
     }
 
     // Message
-    if (story.message?.text) {
+    const message = getStoryMessage(story);
+    if (message) {
         lines.push('---');
         lines.push('');
-        lines.push(story.message.text);
+        lines.push(message);
         lines.push('');
     }
 
@@ -371,9 +375,9 @@ export function getCreateTime(story) {
         return new Date(publishTime * 1000);
     }
 
-    // For StoryPost, use the cache
-    if (isStoryPost(story)) {
-        const createTime = storyCreateTimeCache.get(story.id);
+    // For StoryPost and StoryWatch, use the cache
+    if (isStoryPost(story) || isStoryWatch(story)) {
+        const createTime = storyCreateTimeCache.get(getStoryId(story));
         if (createTime === undefined) return undefined;
         return new Date(createTime * 1000);
     }
@@ -384,10 +388,10 @@ export function getCreateTime(story) {
 /**
  * Get the group for a story.
  * @param {Story} story
- * @returns {StoryGroup | undefined}
+ * @returns {Group | undefined}
  */
 export function getGroup(story) {
-    return storyGroupCache.get(story.id);
+    return storyGroupCache.get(getStoryId(story));
 }
 
 /**
@@ -399,10 +403,113 @@ export function getStoryUrl(story) {
     if (isStoryPost(story)) {
         return story.wwwURL;
     }
-    if (isStoryVideo(story)) {
-        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
+    if (isStoryVideo(story) || isStoryWatch(story)) {
+        return `https://www.facebook.com/watch/?v=${getStoryMediaId(story)}`;
     }
     return '';
+}
+
+/**
+ * Get the message text for a story.
+ * @param {Story} story
+ * @returns {string | undefined}
+ */
+export function getStoryMessage(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.message?.text;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.creation_story.comet_sections.message?.story?.message?.text;
+    }
+    return undefined;
+}
+
+/**
+ * Get the post_id for a story.
+ * @param {Story} story
+ * @returns {string}
+ */
+export function getStoryPostId(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.post_id;
+    }
+    if (isStoryWatch(story)) {
+        // StoryWatch uses media id as post_id
+        const mediaId = getStoryMediaId(story);
+        if (!mediaId) throw new Error('StoryWatch missing media id');
+        return mediaId;
+    }
+    throw new Error('Unknown story type: cannot get post_id');
+}
+
+/**
+ * Get the media id for a story (if it has media attachment).
+ * @param {Story} story
+ * @returns {string | null}
+ */
+export function getStoryMediaId(story) {
+    if (isStoryVideo(story)) {
+        return story.attachments[0].media.id;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.id;
+    }
+    // StoryPost might have a media attachment
+    if (isStoryPost(story)) {
+        const attachment = story.attachments[0]?.styles?.attachment;
+        if (attachment && 'media' in attachment && attachment.media?.id) {
+            return attachment.media.id;
+        }
+        if (attachment && 'all_subattachments' in attachment) {
+            return attachment.all_subattachments.nodes[0]?.media.id ?? null;
+        }
+    }
+    return null;
+}
+
+/**
+ * Get the id for a story.
+ * @param {Story} story
+ * @returns {string}
+ */
+export function getStoryId(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.id;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.creation_story.id;
+    }
+    throw new Error('Unknown story type: cannot get id');
+}
+
+/**
+ * Get the primary actor for a story.
+ * @param {Story} story
+ * @returns {User | undefined}
+ */
+export function getStoryActor(story) {
+    if (isStoryPost(story) || isStoryVideo(story)) {
+        return story.actors?.[0];
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.owner;
+    }
+    return undefined;
+}
+
+/**
+ * Get the media title for a story (video name/title).
+ * @param {Story} story
+ * @returns {string | undefined}
+ */
+export function getStoryMediaTitle(story) {
+    if (isStoryVideo(story)) {
+        return story.attachments[0].media.name;
+    }
+    if (isStoryWatch(story)) {
+        return story.attachments[0].media.title?.text;
+    }
+    return undefined;
 }
 
 /**
@@ -450,12 +557,39 @@ function isStoryVideo(obj) {
 }
 
 /**
- * Check if an object is a valid Story (StoryPost or StoryVideo).
+ * Check if an object is a valid StoryWatch.
+ * @param {unknown} obj
+ * @returns {obj is StoryWatch}
+ */
+function isStoryWatch(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Must have attachments array
+    if (!Array.isArray(o.attachments)) return false;
+    if (o.attachments.length === 0) return false;
+
+    const attachment = /** @type {Record<string, unknown>} */ (o.attachments[0]);
+    if (!attachment.media || typeof attachment.media !== 'object') return false;
+
+    const media = /** @type {Record<string, unknown>} */ (attachment.media);
+    if (media.__typename !== 'Video') return false;
+
+    // Must have creation_story with comet_sections
+    if (!media.creation_story || typeof media.creation_story !== 'object') return false;
+    const creationStory = /** @type {Record<string, unknown>} */ (media.creation_story);
+    if (!creationStory.comet_sections || typeof creationStory.comet_sections !== 'object') return false;
+
+    return true;
+}
+
+/**
+ * Check if an object is a valid Story (StoryPost, StoryVideo, or StoryWatch).
  * @param {unknown} obj
  * @returns {obj is Story}
  */
 function isStory(obj) {
-    return isStoryPost(obj) || isStoryVideo(obj);
+    return isStoryPost(obj) || isStoryVideo(obj) || isStoryWatch(obj);
 }
 
 /**
@@ -474,8 +608,8 @@ export function extractStories(obj, results = []) {
     const objIsStory = isStory(obj);
     if (objIsStory) {
         const story = /** @type {Story} */ (obj);
-        const postId = story.post_id;
-        const existingIndex = results.findIndex(s => s.post_id === postId);
+        const postId = getStoryPostId(story);
+        const existingIndex = results.findIndex(s => getStoryPostId(s) === postId);
 
         // Prefer story with wwwURL (the nested one has more complete data)
         if (existingIndex === -1) {
@@ -544,7 +678,7 @@ export function extractStoryGroupMap(obj) {
         if (to.__typename === 'Group' && typeof to.id === 'string' && typeof to.name === 'string') {
             // Only set if not already present (prefer first/most complete match)
             if (!storyGroupCache.has(o.id)) {
-                storyGroupCache.set(o.id, /** @type {StoryGroup} */(to));
+                storyGroupCache.set(o.id, /** @type {Group} */(to));
             }
         }
     }
@@ -557,6 +691,66 @@ export function extractStoryGroupMap(obj) {
     } else {
         for (const key of Object.keys(o)) {
             extractStoryGroupMap(o[key]);
+        }
+    }
+}
+
+/**
+ * Extract video URLs from all_video_dash_prefetch_representations in extensions field
+ * and populate videoUrlCache directly.
+ * @param {unknown} obj
+ */
+export function extractVideoUrls(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const o = /** @type {Record<string, unknown>} */ (obj);
+
+    // Check if this object has all_video_dash_prefetch_representations
+    if (Array.isArray(o.all_video_dash_prefetch_representations)) {
+        for (const prefetch of o.all_video_dash_prefetch_representations) {
+            if (!prefetch || typeof prefetch !== 'object') continue;
+            const p = /** @type {Record<string, unknown>} */ (prefetch);
+            const videoId = p.video_id;
+            if (typeof videoId !== 'string') continue;
+            if (videoUrlCache.has(videoId)) continue;
+
+            // Find the best video representation (highest bandwidth, excluding audio-only)
+            const representations = p.representations;
+            if (!Array.isArray(representations)) continue;
+
+            /** @type {{ base_url: string, bandwidth: number } | null} */
+            let best = null;
+            for (const rep of representations) {
+                if (!rep || typeof rep !== 'object') continue;
+                const r = /** @type {Record<string, unknown>} */ (rep);
+                const baseUrl = r.base_url;
+                const bandwidth = r.bandwidth;
+                const mimeType = r.mime_type;
+
+                // Skip audio-only tracks
+                if (typeof mimeType === 'string' && mimeType.startsWith('audio/')) continue;
+
+                if (typeof baseUrl === 'string' && typeof bandwidth === 'number') {
+                    if (!best || bandwidth > best.bandwidth) {
+                        best = { base_url: baseUrl, bandwidth };
+                    }
+                }
+            }
+
+            if (best) {
+                videoUrlCache.set(videoId, best.base_url);
+            }
+        }
+    }
+
+    // Recurse into arrays and objects
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            extractVideoUrls(item);
+        }
+    } else {
+        for (const key of Object.keys(o)) {
+            extractVideoUrls(o[key]);
         }
     }
 }
@@ -575,15 +769,12 @@ function extractEmbeddedStories() {
         const content = script.textContent;
         if (!content) continue;
 
-        // Quick check to avoid parsing irrelevant scripts
-        // Look for story-related content
-        if (!content.includes('"post_id"') || !content.includes('"attachments"')) continue;
-
         try {
             const data = JSON.parse(content);
             extractStories(data, stories);
             extractStoryCreateTime(data);
             extractStoryGroupMap(data);
+            extractVideoUrls(data);
         } catch {
             // ignore parse errors
         }
@@ -639,8 +830,9 @@ export function storyListener(cb) {
 
         const embeddedStories = extractEmbeddedStories();
         for (const story of embeddedStories) {
-            if (emittedPostIds.has(story.post_id)) continue;
-            emittedPostIds.add(story.post_id);
+            const postId = getStoryPostId(story);
+            if (emittedPostIds.has(postId)) continue;
+            emittedPostIds.add(postId);
             try {
                 cb(story);
             } catch {
@@ -661,6 +853,7 @@ export function storyListener(cb) {
         const stories = extractStories(ev.responseBody);
         extractStoryCreateTime(ev.responseBody);
         extractStoryGroupMap(ev.responseBody);
+        extractVideoUrls(ev.responseBody);
 
         for (const story of stories) {
             try {

@@ -1,5 +1,9 @@
-import { downloadStory, getStoryUrl } from './story.js';
+import { downloadStory, getStoryUrl, getStoryId, getStoryPostId, getStoryMediaId } from './story.js';
 import { React } from './react.js';
+
+/**
+ * @typedef {import('./types').Story} Story
+ */
 
 const { useEffect } = React;
 
@@ -34,11 +38,11 @@ function getValueFromReactFiber(element, accessor) {
 
 /**
  * Create a download button element styled to match Facebook's action buttons.
- * @param {import('./types').Story} story
- * @param {(url: string, filename: string) => void} postAppMessage
+ * @param {Story} story
+ * @param {(url: string, filename: string) => void} onDownloadFile
  * @returns {HTMLButtonElement}
  */
-function createDownloadButton(story, postAppMessage) {
+function createDownloadButton(story, onDownloadFile) {
     const btn = document.createElement('button');
     btn.className = 'fpdl-download-btn';
     btn.setAttribute('aria-label', 'Download Facebook post');
@@ -62,7 +66,7 @@ function createDownloadButton(story, postAppMessage) {
         btn.style.cursor = 'wait';
 
         try {
-            await downloadStory(story, postAppMessage);
+            await downloadStory(story, onDownloadFile);
         } catch (err) {
             console.warn('[fpdl] download failed', err);
         } finally {
@@ -94,82 +98,159 @@ function debounce(fn, delay) {
 }
 
 /**
- * Find the button row and insert position for a given action button.
- * Returns null if unable to determine proper position.
+ * Find a matching story for an action button using common matching strategies.
  * @param {Element} actionBtn
- * @returns {{ buttonRow: Element, insertBefore: Element | null } | null}
+ * @param {Story[]} stories
+ * @returns {Story | null}
  */
-function findButtonRowAndPosition(actionBtn) {
-    const ariaLabel = actionBtn.getAttribute('aria-label');
-
-    if (ariaLabel === 'Actions for this post') {
-        // Regular feed: button -> parent -> parent = overflowContainer
-        // Insert before the overflowContainer in its parent (buttonRow)
-        const overflowContainer = actionBtn.parentElement?.parentElement;
-        const buttonRow = overflowContainer?.parentElement;
-        if (!buttonRow) return null;
-        return { buttonRow, insertBefore: overflowContainer };
+function findStoryForButton(actionBtn, stories) {
+    // Match by story.id
+    const storyId = getValueFromReactFiber(actionBtn, p => p?.story?.id);
+    if (storyId) {
+        const story = stories.find(s => getStoryId(s) === storyId);
+        if (story) return story;
     }
 
-    if (ariaLabel === 'More') {
-        // Watch page: button -> parent = moreButtonWrapper (32x32 container)
-        // parent.parent = buttonRow (flex row with user info, post text, More button)
-        // Insert before the moreButtonWrapper
-        const moreButtonWrapper = actionBtn.parentElement;
-        const buttonRow = moreButtonWrapper?.parentElement;
-        if (!buttonRow) return null;
-        return { buttonRow, insertBefore: moreButtonWrapper };
+    // Fall back to matching by storyPostID
+    const postId = getValueFromReactFiber(actionBtn, p => p?.storyPostID);
+    if (postId) {
+        const story = stories.find(s => getStoryPostId(s) === postId);
+        if (story) return story;
+    }
+
+    // Fall back to matching by permalink_url to story URL
+    const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
+    if (permalinkUrl) {
+        const story = stories.find(s => getStoryUrl(s) === permalinkUrl);
+        if (story) return story;
     }
 
     return null;
 }
 
 /**
- * Inject download buttons into posts that match captured stories.
- * @param {import('./types').Story[]} stories
- * @param {(url: string, filename: string) => void} postAppMessage
+ * Inject download buttons into regular post feed posts.
+ * Targets the "Actions for this post" overflow button.
+ * @param {Story[]} stories
+ * @param {(url: string, filename: string) => void} onDownloadFile
  */
-function injectDownloadButtons(stories, postAppMessage) {
-    // Look for action buttons - "Actions for this post" is used in regular feeds,
-    // "More" is used in the Watch (video) page
-    const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"], [aria-label="More"]');
+function injectPostFeedButtons(stories, onDownloadFile) {
+    const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"]');
 
     for (const actionBtn of actionButtons) {
-        const position = findButtonRowAndPosition(actionBtn);
-        if (!position) continue;
-
-        const { buttonRow, insertBefore } = position;
+        // Regular feed: button -> parent -> parent = overflowContainer
+        // Insert before the overflowContainer in its parent (buttonRow)
+        const overflowContainer = actionBtn.parentElement?.parentElement;
+        const buttonRow = overflowContainer?.parentElement;
+        if (!buttonRow) continue;
         if (buttonRow.querySelector('.fpdl-download-btn')) continue;
 
-        // Match by story.id
-        const storyId = getValueFromReactFiber(actionBtn, p => p?.story?.id);
-        let story = storyId ? stories.find(s => s.id === storyId) : null;
+        const story = findStoryForButton(actionBtn, stories);
+        if (!story) continue;
 
-        // Fall back to matching by storyPostID
-        if (!story) {
-            const postId = getValueFromReactFiber(actionBtn, p => p?.storyPostID);
-            story = postId ? stories.find(s => s.post_id === postId) : null;
+        const downloadBtn = createDownloadButton(story, onDownloadFile);
+        buttonRow.insertBefore(downloadBtn, overflowContainer);
+    }
+}
+
+/**
+ * Inject download buttons into video feed page posts.
+ * Targets the "More" button in the video feed.
+ * @param {Story[]} stories
+ * @param {(url: string, filename: string) => void} onDownloadFile
+ */
+function injectVideoFeedButtons(stories, onDownloadFile) {
+    const actionButtons = document.querySelectorAll('[aria-label="More"]');
+
+    for (const actionBtn of actionButtons) {
+        // Watch feed: button -> parent = moreButtonWrapper (32x32 container)
+        // parent.parent = buttonRow (flex row with user info, post text, More button)
+        // Insert before the moreButtonWrapper
+        const moreButtonWrapper = actionBtn.parentElement;
+        const buttonRow = moreButtonWrapper?.parentElement;
+        if (!buttonRow) continue;
+
+        // Get video ID from React fiber
+        const videoId = getValueFromReactFiber(actionBtn, p => p?.videoID);
+
+        // Check if existing button is for a different video, if so remove it
+        const existingBtn = buttonRow.querySelector('.fpdl-download-btn');
+        if (existingBtn) {
+            if (existingBtn.getAttribute('data-video-id') === videoId) continue;
+            existingBtn.remove();
         }
 
-        // Fall back to matching by permalink_url to story URL
+        const story = findStoryForButton(actionBtn, stories);
+        if (!story) continue;
+
+        const downloadBtn = createDownloadButton(story, onDownloadFile);
+        downloadBtn.classList.add('fpdl-download-btn--video');
+        downloadBtn.setAttribute('data-video-id', videoId ?? '');
+        buttonRow.insertBefore(downloadBtn, moreButtonWrapper);
+    }
+}
+
+/**
+ * Inject download buttons into Watch video page (facebook.com/watch/?v=...).
+ * Targets the "More options for video" button.
+ * @param {Story[]} stories
+ * @param {(url: string, filename: string) => void} onDownloadFile
+ */
+function injectWatchVideoButtons(stories, onDownloadFile) {
+    const actionButtons = document.querySelectorAll('[aria-label="More options for video"]');
+
+    for (const actionBtn of actionButtons) {
+        // Watch video page: button -> wrapper div -> flex container with buttons
+        // Insert before this button's wrapper
+        const buttonWrapper = actionBtn.parentElement;
+        const buttonRow = buttonWrapper?.parentElement;
+        if (!buttonRow) continue;
+
+        // Get video ID from URL as primary source (React fiber can be stale during navigation)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlVideoId = urlParams.get('v');
+
+        // Fall back to React fiber videoID if URL doesn't have it
+        const videoId = urlVideoId || getValueFromReactFiber(actionBtn, p => p?.videoID);
+
+        // Check if existing button is for a different video, if so remove it
+        const existingWrapper = buttonWrapper.querySelector('.fpdl-download-btn-wrapper');
+        if (existingWrapper) {
+            if (existingWrapper.getAttribute('data-video-id') === videoId) continue;
+            existingWrapper.remove();
+        }
+
+        let story = videoId ? stories.find(s => getStoryMediaId(s) === videoId) : null;
+
+        // Fall back to common matching strategies
         if (!story) {
-            const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
-            story = permalinkUrl ? stories.find(s => getStoryUrl(s) === permalinkUrl) : null;
+            story = findStoryForButton(actionBtn, stories);
         }
 
         if (!story) continue;
 
-        const isWatchPage = actionBtn.getAttribute('aria-label') === 'More';
-        const downloadBtn = createDownloadButton(story, postAppMessage);
-        if (isWatchPage) {
-            downloadBtn.classList.add('fpdl-download-btn--watch');
-        }
-        if (insertBefore) {
-            buttonRow.insertBefore(downloadBtn, insertBefore);
-        } else {
-            buttonRow.appendChild(downloadBtn);
-        }
+        const downloadBtn = createDownloadButton(story, onDownloadFile);
+        downloadBtn.classList.add('fpdl-download-btn--watch');
+
+        // Wrap in a container to match the "More options for video" button's parent structure
+        const wrapper = document.createElement('div');
+        wrapper.className = 'fpdl-download-btn-wrapper';
+        wrapper.setAttribute('data-video-id', videoId ?? '');
+        wrapper.appendChild(downloadBtn);
+
+        buttonWrapper.insertBefore(wrapper, actionBtn);
     }
+}
+
+/**
+ * Inject download buttons into all supported page types.
+ * @param {Story[]} stories
+ * @param {(url: string, filename: string) => void} onDownloadFile
+ */
+function injectDownloadButtons(stories, onDownloadFile) {
+    injectPostFeedButtons(stories, onDownloadFile);
+    injectVideoFeedButtons(stories, onDownloadFile);
+    injectWatchVideoButtons(stories, onDownloadFile);
 }
 
 /**
@@ -194,18 +275,18 @@ function injectDownloadButtonStyles() {
         .fpdl-download-btn:hover {
             background: var(--hover-overlay);
         }
-        .fpdl-download-btn--watch,
-        .fpdl-download-btn--watch:hover {
+        .fpdl-download-btn--video,
+        .fpdl-download-btn--video:hover {
             background: transparent;
         }
-        .fpdl-download-btn--watch {
+        .fpdl-download-btn--video {
             position: relative;
             align-self: flex-start;
             width: 32px;
             height: 32px;
             margin-right: 8px;
         }
-        .fpdl-download-btn--watch::before {
+        .fpdl-download-btn--video::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -216,16 +297,27 @@ function injectDownloadButtonStyles() {
             border-radius: 50%;
             z-index: -1;
         }
-        .fpdl-download-btn--watch:hover::before {
+        .fpdl-download-btn--video:hover::before {
+            background: var(--hover-overlay);
+        }
+        .fpdl-download-btn-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            margin-right: 8px;
+        }
+        .fpdl-download-btn--watch {
+            width: 48px;
+            height: 36px;
+            border-radius: 8px;
+        }
+        .fpdl-download-btn--watch:hover {
             background: var(--hover-overlay);
         }
     `;
     document.head.appendChild(style);
 }
-
-/**
- * @typedef {import('./types').Story} Story
- */
 
 /**
  * React hook to inject download buttons into posts.
