@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
  * @typedef {import('../extensions/types').StoryPost} StoryPost
  * @typedef {import('../extensions/types').StoryVideo} StoryVideo
  * @typedef {import('../extensions/types').Story} Story
- * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video' }} MockMediaConfig
+ * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video', useMediasetFormat?: boolean }} MockMediaConfig
  */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,13 +24,14 @@ const mockMediaConfig = new Map();
  * Helper to set up mock media for a test case
  * @param {string[]} mediaIds - Array of media IDs in navigation order
  * @param {'Photo' | 'Video'} [type='Photo'] - Type of media
+ * @param {{ useMediasetFormat?: boolean }} [options] - Additional options
  */
-function setupMockMedia(mediaIds, type = 'Photo') {
+function setupMockMedia(mediaIds, type = 'Photo', options = {}) {
     mockMediaConfig.clear();
     for (let i = 0; i < mediaIds.length; i++) {
         const id = mediaIds[i];
         const nextId = i + 1 < mediaIds.length ? mediaIds[i + 1] : undefined;
-        mockMediaConfig.set(id, { id, nextId, type });
+        mockMediaConfig.set(id, { id, nextId, type, useMediasetFormat: options.useMediasetFormat });
     }
 }
 
@@ -63,6 +64,20 @@ async function mockSendGraphqlRequest({ apiName, variables }) {
                     id: config.id,
                     image: { uri: `https://example.com/photo_${config.id}.jpg` }
                 };
+            }
+            // Return data in mediaset format if useMediasetFormat is set
+            if (config.useMediasetFormat) {
+                return [{
+                    data: {
+                        mediaset: {
+                            currMedia: {
+                                edges: [{ node: currMedia }]
+                            }
+                        },
+                        nextMediaAfterNodeId: config.nextId ? { id: config.nextId } : null,
+                        prevMediaBeforeNodeId: null
+                    }
+                }];
             }
             return [{
                 data: {
@@ -578,6 +593,38 @@ describe('downloadStory', () => {
         const folderName = indexDownload.filename.split('/')[0];
         assert.ok(folderName.includes('Kimi Cui'), 'Folder name should include actor name');
         assert.ok(folderName.includes('25550089621287122'), 'Folder name should include post_id');
+    });
+
+    it('should download StoryPost with photo attachments using mediaset response format', async () => {
+        const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
+
+        const photoIds = ['10236779894211730', '10236779894131728', '10236779894291732', '10236779894371734'];
+        setupMockMedia(photoIds, 'Photo', { useMediasetFormat: true });
+
+        const stories = extractStories(mockData);
+        extractStoryCreateTime(mockData);
+        extractStoryGroupMap(mockData);
+
+        const story = stories.find(s => getStoryPostId(s) === '25550089621287122');
+        assert.ok(story, 'Should find the story');
+        assert.strictEqual(getAttachmentCount(story), 4, 'Story should have 4 attachments');
+
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
+        });
+
+        assert.strictEqual(downloads.length, 5, 'Should have 5 downloads (4 photos + index.md)');
+
+        const photoDownloads = downloads.filter(d => d.filename.endsWith('.jpg'));
+        assert.strictEqual(photoDownloads.length, 4, 'Should have 4 photo downloads');
+
+        for (const photoId of photoIds) {
+            const photoDownload = photoDownloads.find(d => d.filename.includes(photoId));
+            assert.ok(photoDownload, `Should have download for photo ${photoId}`);
+            assert.ok(photoDownload.url.includes(photoId), `URL should contain photo id ${photoId}`);
+        }
     });
 
     it('should download StoryPost with group from story-user-group.json', async () => {
