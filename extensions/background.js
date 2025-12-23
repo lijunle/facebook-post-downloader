@@ -17,10 +17,18 @@ const downloadQueue = [];
 let activeDownloads = 0;
 
 /**
+ * Resets the download queue and active downloads counter (for testing).
+ */
+export function resetQueue() {
+    downloadQueue.length = 0;
+    activeDownloads = 0;
+}
+
+/**
  * Adds a download to the queue and processes it.
  * @param {AppMessageDownload} message - The download message.
  */
-function queueDownload(message) {
+export function queueDownload(message) {
     downloadQueue.push(message);
     processQueue();
 }
