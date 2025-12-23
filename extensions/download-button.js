@@ -39,7 +39,7 @@ function getValueFromReactFiber(element, accessor) {
 /**
  * Create a download button element styled to match Facebook's action buttons.
  * @param {Story} story
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  * @returns {HTMLButtonElement}
  */
 function createDownloadButton(story, onDownloadFile) {
@@ -132,7 +132,7 @@ function findStoryForButton(actionBtn, stories) {
  * Inject download buttons into regular post feed posts.
  * Targets the "Actions for this post" overflow button.
  * @param {Story[]} stories
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectPostFeedButtons(stories, onDownloadFile) {
     const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"]');
@@ -157,7 +157,7 @@ function injectPostFeedButtons(stories, onDownloadFile) {
  * Inject download buttons into video feed page posts.
  * Targets the "More" button in the video feed.
  * @param {Story[]} stories
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectVideoFeedButtons(stories, onDownloadFile) {
     const actionButtons = document.querySelectorAll('[aria-label="More"]');
@@ -194,7 +194,7 @@ function injectVideoFeedButtons(stories, onDownloadFile) {
  * Inject download buttons into Watch video page (facebook.com/watch/?v=...).
  * Targets the "More options for video" button.
  * @param {Story[]} stories
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectWatchVideoButtons(stories, onDownloadFile) {
     const actionButtons = document.querySelectorAll('[aria-label="More options for video"]');
@@ -245,7 +245,7 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
 /**
  * Inject download buttons into all supported page types.
  * @param {Story[]} stories
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectDownloadButtons(stories, onDownloadFile) {
     injectPostFeedButtons(stories, onDownloadFile);
@@ -322,7 +322,7 @@ function injectDownloadButtonStyles() {
 /**
  * React hook to inject download buttons into posts.
  * @param {Story[]} stories
- * @param {(url: string, filename: string) => void} onDownloadFile
+ * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 export function useDownloadButtonInjection(stories, onDownloadFile) {
     // Inject styles once

@@ -91,7 +91,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll }) {
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (url: string, filename: string) => void, onClose: () => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void }} props
  */
 function StoryDialog({ stories, onDownloadFile, onClose }) {
     const [selectedIds, setSelectedIds] = useState(/** @type {Set<string>} */(new Set()));
@@ -217,9 +217,9 @@ function App({ initialStories, onStory }) {
     const [visible, setVisible] = useState(false);
 
     const onDownloadFile = useCallback(
-        /** @param {string} url @param {string} filename */
-        (url, filename) => {
-            sendAppMessage({ type: "FPDL_DOWNLOAD", url, filename });
+        /** @param {string} storyId @param {string} url @param {string} filename */
+        (storyId, url, filename) => {
+            sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
         }, []);
 
     const onClose = useCallback(() => {

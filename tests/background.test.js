@@ -42,7 +42,7 @@ describe('queueDownload', () => {
             callback(12345); // downloadId
         });
 
-        queueDownload('https://example.com/file.jpg', 'test.jpg', undefined);
+        queueDownload('story1', 'https://example.com/file.jpg', 'test.jpg', undefined);
 
         assert.strictEqual(downloadMock.mock.callCount(), 1);
         const [options] = downloadMock.mock.calls[0].arguments;
@@ -58,7 +58,7 @@ describe('queueDownload', () => {
 
         // Queue 7 downloads
         for (let i = 0; i < 7; i++) {
-            queueDownload(`https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
+            queueDownload(`story${i}`, `https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
         }
 
         // Only 5 should have started (MAX_CONCURRENT_DOWNLOADS = 5)
@@ -74,7 +74,7 @@ describe('queueDownload', () => {
 
         // Queue 7 downloads
         for (let i = 0; i < 7; i++) {
-            queueDownload(`https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
+            queueDownload(`story${i}`, `https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
         }
 
         // Initially 5 downloads started
@@ -106,7 +106,7 @@ describe('queueDownload', () => {
 
         // Queue 6 downloads (5 will start immediately, 1 will be queued)
         for (let i = 0; i < 6; i++) {
-            queueDownload(`https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
+            queueDownload(`story${i}`, `https://example.com/file${i}.jpg`, `test${i}.jpg`, undefined);
         }
 
         assert.strictEqual(downloadMock.mock.callCount(), 5);

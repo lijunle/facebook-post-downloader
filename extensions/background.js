@@ -13,7 +13,7 @@ const RETRY_DELAY_MS = 1000;
 const MAX_CONCURRENT_DOWNLOADS = 5;
 
 /**
- * @typedef {{ url: string, filename: string, tabId: number | undefined }} DownloadItem
+ * @typedef {{ storyId: string, url: string, filename: string, tabId: number | undefined }} DownloadItem
  */
 
 /** @type {DownloadItem[]} */
@@ -30,12 +30,13 @@ export function resetQueue() {
 
 /**
  * Adds a download to the queue and processes it.
+ * @param {string} storyId - The story ID.
  * @param {string} url - The URL to download.
  * @param {string} filename - The filename to save as.
  * @param {number | undefined} tabId - The tab ID to notify on completion.
  */
-export function queueDownload(url, filename, tabId) {
-    downloadQueue.push({ url, filename, tabId });
+export function queueDownload(storyId, url, filename, tabId) {
+    downloadQueue.push({ storyId, url, filename, tabId });
     processQueue();
 }
 
@@ -62,6 +63,7 @@ function onDownloadComplete(item) {
         /** @type {ChromeMessageDownloadComplete} */
         const message = {
             type: "FPDL_DOWNLOAD_COMPLETE",
+            storyId: item.storyId,
             url: item.url,
             filename: item.filename,
         };
@@ -108,7 +110,7 @@ chrome.runtime.onMessage.addListener(
                 chrome.action.setBadgeBackgroundColor({ color: "#4267B2", tabId: sender.tab.id });
             }
         } else if (msg.type === "FPDL_DOWNLOAD") {
-            queueDownload(msg.url, msg.filename, sender.tab?.id);
+            queueDownload(msg.storyId, msg.url, msg.filename, sender.tab?.id);
         }
     }
 );

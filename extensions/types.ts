@@ -1,5 +1,6 @@
 export type AppMessageDownload = {
   type: "FPDL_DOWNLOAD";
+  storyId: string;
   url: string;
   filename: string;
 };
@@ -17,6 +18,7 @@ export type ChromeMessageToggle = {
 
 export type ChromeMessageDownloadComplete = {
   type: "FPDL_DOWNLOAD_COMPLETE";
+  storyId: string;
   url: string;
   filename: string;
 };

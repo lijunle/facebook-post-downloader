@@ -452,10 +452,10 @@ describe('downloadStory', () => {
         const story = stories.find(s => getStoryPostId(s) === '1411731986983785');
         assert.ok(story, 'Should find the story');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 1, 'Should have 1 download for text-only story');
@@ -489,10 +489,10 @@ describe('downloadStory', () => {
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 4, 'Story should have 4 attachments');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 5, 'Should have 5 downloads (4 photos + index.md)');
@@ -529,10 +529,10 @@ describe('downloadStory', () => {
         const story = stories.find(s => getStoryPostId(s) === '2282323118944469');
         assert.ok(story, 'Should find the story');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
@@ -564,10 +564,10 @@ describe('downloadStory', () => {
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
         assert.strictEqual(getAttachmentCount(story.attached_story), 1, 'Attached story should have 1 attachment');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 photo + index.md)');
@@ -601,10 +601,10 @@ describe('downloadStory', () => {
         assert.strictEqual(getAttachmentCount(story), 0, 'Main story should have 0 attachments');
         assert.strictEqual(getAttachmentCount(story.attached_story), 1, 'Attached story should have 1 attachment');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 photo + index.md)');
@@ -636,10 +636,10 @@ describe('downloadStory', () => {
         assert.ok(story, 'Should find the story');
         assert.strictEqual(getAttachmentCount(story), 1, 'Story should have 1 video attachment');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(story, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 video + index.md)');
@@ -676,10 +676,10 @@ describe('downloadStory', () => {
         assert.ok(storyVideo, 'Should find the StoryVideo');
         assert.strictEqual(getAttachmentCount(storyVideo), 1, 'StoryVideo should have 1 attachment');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
-        await downloadStory(storyVideo, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(storyVideo, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 2, 'Should have 2 downloads (1 video + index.md)');
@@ -714,11 +714,11 @@ describe('downloadStory', () => {
         const storyWatch = stories.find(s => getStoryPostId(s) === '1403115984005683');
         assert.ok(storyWatch, 'Should find the StoryWatch');
 
-        /** @type {Array<{ url: string, filename: string }>} */
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
         const downloads = [];
 
-        await downloadStory(storyWatch, (url, filename) => {
-            downloads.push({ url, filename });
+        await downloadStory(storyWatch, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
         });
 
         assert.strictEqual(downloads.length, 2, 'Should download 2 files (markdown + video)');
