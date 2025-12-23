@@ -328,6 +328,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
 function App({ initialStories, onStory }) {
     const [stories, setStories] = useState(initialStories);
     const [visible, setVisible] = useState(false);
+    const hasRendered = React.useRef(false);
 
     const onDownloadFile = useCallback(
         /** @param {string} storyId @param {string} url @param {string} filename */
@@ -339,10 +340,10 @@ function App({ initialStories, onStory }) {
         setVisible(false);
     }, []);
 
-    // Listen for toggle messages - trigger load more posts when toggling on
+    // Listen for toggle messages - scroll to trigger load on first render
     useChromeMessage('FPDL_TOGGLE', useCallback(() => {
-        // Trigger loading more posts by scrolling
-        if (document.documentElement.scrollTop === 0) {
+        if (!hasRendered.current) {
+            hasRendered.current = true;
             window.scrollBy(0, 1);
         }
         setVisible(v => !v);
