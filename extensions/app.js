@@ -139,6 +139,23 @@ function injectStyles() {
         .fpdl-row-selected {
             background: rgba(255,255,255,0.1);
         }
+        .fpdl-row-pending {
+            background: rgba(128, 128, 128, 0.3);
+        }
+        .fpdl-row-downloading {
+            animation: fpdl-blink 1s ease-in-out infinite;
+        }
+        @keyframes fpdl-blink {
+            0%, 100% { background: rgba(255, 200, 0, 0.2); }
+            50% { background: rgba(255, 200, 0, 0.4); }
+        }
+        .fpdl-row-downloaded {
+            background: rgba(0, 200, 0, 0.2);
+        }
+        .fpdl-table tbody tr:hover {
+            outline: 1px solid rgba(255, 255, 255, 0.5);
+            outline-offset: -1px;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -148,8 +165,26 @@ function injectStyles() {
  */
 function StoryRow({ story, selected, onToggle, downloadedCount }) {
     const total = getDownloadCount(story);
+    const isPending = downloadedCount === 0;
+    const isDownloading = downloadedCount !== undefined && downloadedCount > 0 && downloadedCount < total;
+    const isDownloaded = downloadedCount !== undefined && downloadedCount >= total;
 
-    return React.createElement("tr", { className: selected ? "fpdl-row-selected" : undefined },
+    let className = undefined;
+    if (isDownloaded) {
+        className = "fpdl-row-downloaded";
+    } else if (isDownloading) {
+        className = "fpdl-row-downloading";
+    } else if (isPending) {
+        className = "fpdl-row-pending";
+    } else if (selected) {
+        className = "fpdl-row-selected";
+    }
+
+    return React.createElement("tr", {
+        className,
+        onClick: downloadedCount === undefined ? onToggle : undefined,
+        style: downloadedCount === undefined ? { cursor: "pointer" } : undefined,
+    },
         React.createElement("td", { className: "fpdl-td fpdl-td-checkbox" },
             downloadedCount !== undefined
                 ? `${downloadedCount}/${total}`
@@ -157,6 +192,7 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
                     type: "checkbox",
                     checked: selected,
                     onChange: onToggle,
+                    onClick: (/** @type {MouseEvent} */ e) => e.stopPropagation(),
                 })
         ),
         React.createElement("td", { className: "fpdl-td" }, getCreateTime(story)?.toLocaleString() ?? ""),
