@@ -339,8 +339,12 @@ function App({ initialStories, onStory }) {
         setVisible(false);
     }, []);
 
-    // Listen for toggle messages
+    // Listen for toggle messages - trigger load more posts when toggling on
     useChromeMessage('FPDL_TOGGLE', useCallback(() => {
+        // Trigger loading more posts by scrolling
+        if (document.documentElement.scrollTop === 0) {
+            window.scrollBy(0, 1);
+        }
         setVisible(v => !v);
     }, []));
 
