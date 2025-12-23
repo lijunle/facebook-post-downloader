@@ -814,6 +814,8 @@ function extractEmbeddedStories() {
  * - ProfileCometContextualProfileRootQuery: Contextual profile root
  * - ProfileCometTimelineFeedQuery: User profile timeline
  * - ProfileCometTimelineFeedRefetchQuery: User profile timeline refetch/pagination
+ * - SearchCometResultsInitialResultsQuery: Search results
+ * - SearchCometResultsPaginatedResultsQuery: Search results pagination
  */
 const TARGET_API_NAMES = new Set([
     "CometGroupDiscussionRootSuccessQuery",
@@ -828,6 +830,8 @@ const TARGET_API_NAMES = new Set([
     "ProfileCometContextualProfileRootQuery",
     "ProfileCometTimelineFeedQuery",
     "ProfileCometTimelineFeedRefetchQuery",
+    "SearchCometResultsInitialResultsQuery",
+    "SearchCometResultsPaginatedResultsQuery",
 ]);
 
 /**
