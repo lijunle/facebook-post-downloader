@@ -45,9 +45,11 @@ Facebook's DOM is obfuscated. We don't scrape HTML. We scrape **Data**.
 ## 🛠 Development Workflow
 
 1.  **Setup**: `npm install`
-2.  **Type Check**: `npm run check` (Essential before committing)
-3.  **Test**: `npm test` (Runs `node:test` suite in `tests/`)
-4.  **Load in Browser**:
+2.  **Format**: `npm run format` (Formats all files with Prettier)
+3.  **Format Check**: `npm run format:check` (Validates formatting, used in CI)
+4.  **Type Check**: `npm run check` (Essential before committing)
+5.  **Test**: `npm test` (Runs `node:test` suite in `tests/`)
+6.  **Load in Browser**:
     - Go to `chrome://extensions`
     - "Load unpacked" -> Select this folder.
 
