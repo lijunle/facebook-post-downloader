@@ -39,13 +39,19 @@ export type MediaId = {
   id: string;
 };
 
+export type MediaPhotoUrl = {
+  uri: string;
+  height: number;
+  width: number;
+};
+
 export type MediaPhoto = MediaId & {
   __typename: "Photo";
   url: string;
   created_time: number;
-  image: {
-    uri: string;
-  };
+  image?: MediaPhotoUrl;
+  viewer_image?: MediaPhotoUrl;
+  photo_image?: MediaPhotoUrl;
 };
 
 export type MediaVideo = MediaId & {

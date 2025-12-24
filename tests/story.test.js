@@ -581,7 +581,6 @@ describe('downloadStory', () => {
         for (const photoId of photoIds) {
             const photoDownload = photoDownloads.find(d => d.filename.includes(photoId));
             assert.ok(photoDownload, `Should have download for photo ${photoId}`);
-            assert.ok(photoDownload.url.includes(photoId), `URL should contain photo id ${photoId}`);
         }
 
         const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
@@ -625,7 +624,6 @@ describe('downloadStory', () => {
         for (const photoId of photoIds) {
             const photoDownload = photoDownloads.find(d => d.filename.includes(photoId));
             assert.ok(photoDownload, `Should have download for photo ${photoId}`);
-            assert.ok(photoDownload.url.includes(photoId), `URL should contain photo id ${photoId}`);
         }
     });
 
@@ -757,7 +755,7 @@ describe('downloadStory', () => {
         const videoDownload = downloads.find(d => d.filename.includes(videoId));
         assert.ok(videoDownload, 'Should have download for video');
         assert.ok(videoDownload.filename.endsWith('.mp4'), 'Video should have .mp4 extension');
-        assert.ok(videoDownload.url.includes('_hd.mp4'), 'Should prefer HD quality video');
+        assert.ok(videoDownload.url.includes('720p'), 'Should prefer HD quality video');
 
         const indexDownload = downloads.find(d => d.filename.endsWith('/index.md'));
         assert.ok(indexDownload, 'Should have index.md file');

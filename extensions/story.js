@@ -9,6 +9,7 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').MediaId} MediaId
  * @typedef {import('./types').MediaVideo} MediaVideo
  * @typedef {import('./types').MediaWatch} MediaWatch
+ * @typedef {import('./types').MediaPhotoUrl} MediaPhotoUrl
  * @typedef {import('./types').User} User
  * @typedef {import('./types').Group} Group
  */
@@ -77,9 +78,22 @@ function getDownloadUrl(media) {
         return undefined;
     }
 
-    const url = media.image?.uri;
-    if (typeof url !== "string" || !url) return undefined;
-    return { url, ext: guessExt(url) };
+    if (media.__typename === "Photo") {
+        // Pick the best image by comparing dimensions (width * height)
+        /** @type {MediaPhotoUrl | undefined} */
+        let best;
+        for (const img of [media.image, media.viewer_image, media.photo_image]) {
+            if (!img?.uri) continue;
+            const size = img.width * img.height;
+            if (!best || size > best.width * best.height) {
+                best = img;
+            }
+        }
+        if (!best) return undefined;
+        return { url: best.uri, ext: guessExt(best.uri) };
+    }
+
+    return undefined;
 }
 
 /**
@@ -176,24 +190,45 @@ async function fetchAttachments(story, onAttachment) {
 
     // For StoryPost, walk through the media set
     if (isStoryPost(story)) {
-        const seedId = getStoryMediaId(story);
-        if (!seedId) return;
-
-        const mediasetToken = `pcb.${story.post_id}`;
         const totalCount = getAttachmentCount(story);
-
-        // Walk from the seed to collect all media
-        /** @type {Media[]} */
-        const result = [];
+        let downloadedCount = 0;
         /** @type {MediaId | undefined} */
-        let currentId = seedId;
-        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId?.id)) {
-            const nav = await fetchMediaNav(currentId, mediasetToken);
-            if (!nav.currMedia) break;
-            result.push(nav.currMedia);
-            onAttachment(nav.currMedia);
+        let currentId;
+
+        // First, use media directly from the story attachment
+        const attachment = story.attachments[0]?.styles?.attachment;
+        if (attachment && 'all_subattachments' in attachment) {
+            // Multiple media - use all_subattachments
+            for (const node of attachment.all_subattachments.nodes) {
+                if (node?.media) {
+                    onAttachment(node.media);
+                    downloadedCount++;
+                    currentId = node.media;
+                }
+            }
+        } else if (attachment && 'media' in attachment && attachment.media) {
+            // Single media
+            onAttachment(attachment.media);
+            downloadedCount++;
+            currentId = attachment.media;
+        }
+
+        // If we still need more, use media navigation starting from the last downloaded media
+        if (downloadedCount < totalCount && currentId) {
+            const mediasetToken = `pcb.${story.post_id}`;
+
+            // Get the nextId from the last downloaded media
+            let nav = await fetchMediaNav(currentId, mediasetToken);
             currentId = nav.nextId;
-            if (currentId) await new Promise(r => setTimeout(r, 200));
+
+            while (currentId && downloadedCount < totalCount) {
+                await new Promise(r => setTimeout(r, 200));
+                nav = await fetchMediaNav(currentId, mediasetToken);
+                if (!nav.currMedia) break;
+                downloadedCount++;
+                onAttachment(nav.currMedia);
+                currentId = nav.nextId;
+            }
         }
     }
 
