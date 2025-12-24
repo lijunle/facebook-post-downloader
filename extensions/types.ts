@@ -34,34 +34,49 @@ export type GraphqlEvent = {
   status: number;
 };
 
-export type MediaPhoto = {
-  __typename: "Photo";
+export type MediaId = {
+  __typename: "Video" | "Photo";
   id: string;
+};
+
+export type MediaPhotoUrl = {
+  uri: string;
+  height: number;
+  width: number;
+};
+
+export type MediaPhoto = MediaId & {
+  __typename: "Photo";
   url: string;
   created_time: number;
-  image: {
-    uri: string;
+  image?: MediaPhotoUrl;
+  viewer_image?: MediaPhotoUrl;
+  photo_image?: MediaPhotoUrl;
+};
+
+export type MediaVideoUrl = {
+  videoDeliveryResponseResult: {
+    progressive_urls: Array<{
+      progressive_url: string;
+      metadata: { quality: "HD" | "SD" };
+    }>;
   };
 };
 
-export type MediaVideo = {
+export type MediaVideo = MediaId & {
   __typename: "Video";
-  id: string;
   url: string;
   created_time: number;
-  videoDeliveryResponseFragment: {
-    videoDeliveryResponseResult: {
-      progressive_urls: Array<{
-        progressive_url: string;
-        metadata: { quality: "HD" | "SD" };
-      }>;
+  videoDeliveryResponseFragment?: MediaVideoUrl;
+  video_grid_renderer?: {
+    video: {
+      videoDeliveryResponseFragment: MediaVideoUrl;
     };
   };
 };
 
-export type MediaWatch = {
+export type MediaWatch = MediaId & {
   __typename: "Video";
-  id: string;
   url: string;
 };
 

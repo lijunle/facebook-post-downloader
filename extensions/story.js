@@ -6,8 +6,11 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').StoryVideo} StoryVideo
  * @typedef {import('./types').StoryWatch} StoryWatch
  * @typedef {import('./types').Media} Media
+ * @typedef {import('./types').MediaId} MediaId
  * @typedef {import('./types').MediaVideo} MediaVideo
  * @typedef {import('./types').MediaWatch} MediaWatch
+ * @typedef {import('./types').MediaPhoto} MediaPhoto
+ * @typedef {import('./types').MediaPhotoUrl} MediaPhotoUrl
  * @typedef {import('./types').User} User
  * @typedef {import('./types').Group} Group
  */
@@ -15,39 +18,52 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
 const VIDEO_ROOT_QUERY = "CometVideoRootMediaViewerQuery";
 
+/** @type {Map<string, number>} */
+const storyCreateTimeCache = new Map();
+
+/** @type {Map<string, Group>} */
+const storyGroupCache = new Map();
+
+/** @type {Map<string, string>} */
+const videoUrlCache = new Map();
+
 /**
- * @param {string} url
- * @returns {string}
+ * Check if an object is a MediaPhoto.
+ * @param {unknown} obj
+ * @returns {obj is MediaPhoto}
  */
-function guessExt(url) {
-    try {
-        if (/\.png(\?|$)/i.test(url)) return "png";
-        const u = new URL(url);
-        const fmt = u.searchParams.get("format");
-        if (fmt && /^png$/i.test(fmt)) return "png";
-        return "jpg";
-    } catch {
-        return /\.png(\?|$)/i.test(url) ? "png" : "jpg";
-    }
+function isMediaPhoto(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Photo') return false;
+    if (typeof o.id !== 'string' || !o.id) return false;
+    return true;
 }
 
 /**
- * @param {MediaVideo} media
- * @returns {string | undefined}
+ * Check if an object is a MediaVideo (has videoDeliveryResponseFragment or video_grid_renderer).
+ * @param {unknown} obj
+ * @returns {obj is MediaVideo}
  */
-function pickBestProgressiveUrl(media) {
-    const list = media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
-    if (!Array.isArray(list) || list.length === 0) return undefined;
+function isMediaVideo(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video') return false;
+    // MediaVideo has videoDeliveryResponseFragment or video_grid_renderer
+    return 'videoDeliveryResponseFragment' in o || 'video_grid_renderer' in o;
+}
 
-    const hd = list.find(
-        /** @param {any} x */(x) => x?.metadata?.quality === "HD" && typeof x?.progressive_url === "string" && x.progressive_url,
-    );
-    if (hd && typeof hd.progressive_url === "string") return hd.progressive_url;
-
-    const first = list.find(
-        /** @param {any} x */(x) => typeof x?.progressive_url === "string" && x.progressive_url,
-    );
-    return first ? String(first.progressive_url) : undefined;
+/**
+ * Check if an object is a MediaWatch (Video with url but no videoDeliveryResponseFragment).
+ * @param {unknown} obj
+ * @returns {obj is MediaWatch}
+ */
+function isMediaWatch(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video') return false;
+    // MediaWatch has url but no videoDeliveryResponseFragment or video_grid_renderer
+    return typeof o.url === 'string' && !('videoDeliveryResponseFragment' in o) && !('video_grid_renderer' in o);
 }
 
 /**
@@ -56,20 +72,54 @@ function pickBestProgressiveUrl(media) {
  * @returns {{ url: string, ext: string } | undefined}
  */
 function getDownloadUrl(media) {
-    if (media.__typename === "Video") {
-        // Try progressive URL first (MediaVideo)
-        const progressiveUrl = pickBestProgressiveUrl(/** @type {MediaVideo} */(media));
-        if (progressiveUrl) return { url: progressiveUrl, ext: "mp4" };
+    if (isMediaPhoto(media)) {
+        // Pick the best image by comparing dimensions (width * height)
+        /** @type {MediaPhotoUrl | undefined} */
+        let best;
+        for (const img of [media.image, media.viewer_image, media.photo_image]) {
+            if (!img?.uri) continue;
+            const size = img.width * img.height;
+            if (!best || size > best.width * best.height) {
+                best = img;
+            }
+        }
+        if (!best) return undefined;
 
-        // Fall back to direct URL (MediaWatch)
-        if (media.url) return { url: media.url, ext: "mp4" };
+        const url = best.uri;
+        let ext = "jpg";
+        try {
+            if (/\.png(\?|$)/i.test(url)) ext = "png";
+            else {
+                const u = new URL(url);
+                const fmt = u.searchParams.get("format");
+                if (fmt && /^png$/i.test(fmt)) ext = "png";
+            }
+        } catch {
+            if (/\.png(\?|$)/i.test(url)) ext = "png";
+        }
+        return { url, ext };
+    }
 
+    if (isMediaVideo(media)) {
+        const list =
+            media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls ??
+            media?.video_grid_renderer?.video?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
+
+        if (Array.isArray(list) && list.length > 0) {
+            const hd = list.find((x) => x?.metadata?.quality === "HD" && x?.progressive_url);
+            if (hd?.progressive_url) return { url: hd.progressive_url, ext: "mp4" };
+
+            const first = list.find((x) => x?.progressive_url);
+            if (first?.progressive_url) return { url: first.progressive_url, ext: "mp4" };
+        }
         return undefined;
     }
 
-    const url = media.image?.uri;
-    if (typeof url !== "string" || !url) return undefined;
-    return { url, ext: guessExt(url) };
+    if (isMediaWatch(media)) {
+        return { url: media.url, ext: "mp4" };
+    }
+
+    return undefined;
 }
 
 /**
@@ -104,47 +154,45 @@ export function getDownloadCount(story) {
     return count;
 }
 
-
-
-/** @type {Map<string, number>} */
-const storyCreateTimeCache = new Map();
-
-/** @type {Map<string, Group>} */
-const storyGroupCache = new Map();
-
-/** @type {Map<string, string>} */
-const videoUrlCache = new Map();
+/**
+ * Check if an object is a valid MediaId.
+ * @param {unknown} obj
+ * @returns {obj is MediaId}
+ */
+function isMediaId(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video' && o.__typename !== 'Photo') return false;
+    if (typeof o.id !== 'string' || !o.id) return false;
+    return true;
+}
 
 /**
  * Fetch navigation info for a media node.
- * @param {string} nodeId
+ * @param {MediaId} currentId
  * @param {string} mediasetToken
- * @param {boolean} [isVideo] - Whether the current node is a video (determines which API to use)
- * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, nextIsVideo: boolean }>}
+ * @returns {Promise<{ currMedia: Media | undefined, nextId: MediaId | undefined }>}
  */
-async function fetchMediaNav(nodeId, mediasetToken, isVideo = false) {
-    const apiName = isVideo ? VIDEO_ROOT_QUERY : PHOTO_ROOT_QUERY;
+async function fetchMediaNav(currentId, mediasetToken) {
+    const apiName = currentId.__typename === 'Video' ? VIDEO_ROOT_QUERY : PHOTO_ROOT_QUERY;
     const objs = await sendGraphqlRequest({
         apiName,
         variables: {
-            nodeID: nodeId,
+            nodeID: currentId.id,
             mediasetToken,
         },
     });
 
     /** @type {Media | undefined} */
     let currMedia;
-    /** @type {string | undefined} */
+    /** @type {MediaId | undefined} */
     let nextId;
-    /** @type {boolean} */
-    let nextIsVideo = false;
 
     for (const obj of objs) {
         /** @type {any} */
         const data = (obj).data;
-        if (data?.nextMediaAfterNodeId) {
-            nextId = data.nextMediaAfterNodeId.id;
-            nextIsVideo = data.nextMediaAfterNodeId.__typename === 'Video';
+        if (isMediaId(data?.nextMediaAfterNodeId)) {
+            nextId = data.nextMediaAfterNodeId;
         }
         if (data?.currMedia) {
             currMedia = data.currMedia;
@@ -154,7 +202,7 @@ async function fetchMediaNav(nodeId, mediasetToken, isVideo = false) {
         }
     }
 
-    return { currMedia, nextId, nextIsVideo };
+    return { currMedia, nextId };
 }
 
 /**
@@ -168,27 +216,45 @@ async function fetchAttachments(story, onAttachment) {
 
     // For StoryPost, walk through the media set
     if (isStoryPost(story)) {
-        const seedId = getStoryMediaId(story);
-        if (!seedId) return;
-
-        const mediasetToken = `pcb.${story.post_id}`;
         const totalCount = getAttachmentCount(story);
+        let downloadedCount = 0;
+        /** @type {MediaId | undefined} */
+        let currentId;
 
-        // Walk from the seed to collect all media
-        /** @type {Media[]} */
-        const result = [];
-        /** @type {string | undefined} */
-        let currentId = seedId;
-        /** @type {boolean} */
-        let currentIsVideo = false; // First media is typically determined by initial fetch
-        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
-            const nav = await fetchMediaNav(currentId, mediasetToken, currentIsVideo);
-            if (!nav.currMedia) break;
-            result.push(nav.currMedia);
-            onAttachment(nav.currMedia);
+        // First, use media directly from the story attachment
+        const attachment = story.attachments[0]?.styles?.attachment;
+        if (attachment && 'all_subattachments' in attachment) {
+            // Multiple media - use all_subattachments
+            for (const node of attachment.all_subattachments.nodes) {
+                if (node?.media) {
+                    onAttachment(node.media);
+                    downloadedCount++;
+                    currentId = node.media;
+                }
+            }
+        } else if (attachment && 'media' in attachment && attachment.media) {
+            // Single media
+            onAttachment(attachment.media);
+            downloadedCount++;
+            currentId = attachment.media;
+        }
+
+        // If we still need more, use media navigation starting from the last downloaded media
+        if (downloadedCount < totalCount && currentId) {
+            const mediasetToken = `pcb.${story.post_id}`;
+
+            // Get the nextId from the last downloaded media
+            let nav = await fetchMediaNav(currentId, mediasetToken);
             currentId = nav.nextId;
-            currentIsVideo = nav.nextIsVideo;
-            if (currentId) await new Promise(r => setTimeout(r, 200));
+
+            while (currentId && downloadedCount < totalCount) {
+                await new Promise(r => setTimeout(r, 200));
+                nav = await fetchMediaNav(currentId, mediasetToken);
+                if (!nav.currMedia) break;
+                downloadedCount++;
+                onAttachment(nav.currMedia);
+                currentId = nav.nextId;
+            }
         }
     }
 
@@ -432,7 +498,7 @@ export function getStoryUrl(story) {
         return story.wwwURL;
     }
     if (isStoryVideo(story) || isStoryWatch(story)) {
-        return `https://www.facebook.com/watch/?v=${getStoryMediaId(story)}`;
+        return `https://www.facebook.com/watch/?v=${story.attachments[0].media.id}`;
     }
     return '';
 }
@@ -462,37 +528,9 @@ export function getStoryPostId(story) {
         return story.post_id;
     }
     if (isStoryWatch(story)) {
-        // StoryWatch uses media id as post_id
-        const mediaId = getStoryMediaId(story);
-        if (!mediaId) throw new Error('StoryWatch missing media id');
-        return mediaId;
+        return story.attachments[0].media.id;
     }
     throw new Error('Unknown story type: cannot get post_id');
-}
-
-/**
- * Get the media id for a story (if it has media attachment).
- * @param {Story} story
- * @returns {string | null}
- */
-export function getStoryMediaId(story) {
-    if (isStoryVideo(story)) {
-        return story.attachments[0].media.id;
-    }
-    if (isStoryWatch(story)) {
-        return story.attachments[0].media.id;
-    }
-    // StoryPost might have a media attachment
-    if (isStoryPost(story)) {
-        const attachment = story.attachments[0]?.styles?.attachment;
-        if (attachment && 'media' in attachment && attachment.media?.id) {
-            return attachment.media.id;
-        }
-        if (attachment && 'all_subattachments' in attachment) {
-            return attachment.all_subattachments.nodes[0]?.media.id ?? null;
-        }
-    }
-    return null;
 }
 
 /**
@@ -635,15 +673,7 @@ export function extractStories(obj, results = []) {
     // Check if this object is a valid story
     const objIsStory = isStory(obj);
     if (objIsStory) {
-        const story = /** @type {Story} */ (obj);
-        const postId = getStoryPostId(story);
-        const existingIndex = results.findIndex(s => getStoryPostId(s) === postId);
-
-        // Prefer story with wwwURL (the nested one has more complete data)
-        if (existingIndex === -1) {
-            results.push(story);
-        }
-        // Continue recursing - there might be better nested stories
+        results.push(obj);
     }
 
     // Recurse into arrays and objects
@@ -852,7 +882,8 @@ const TARGET_API_NAMES = new Set([
 export function storyListener(cb) {
     // Poll for embedded stories every 500ms for 10 seconds
     /** @type {Set<string>} */
-    const emittedPostIds = new Set();
+    const emittedStoryIds = new Set();
+
     let elapsed = 0;
     const pollInterval = 500;
     const maxDuration = 10000;
@@ -862,9 +893,9 @@ export function storyListener(cb) {
 
         const embeddedStories = extractEmbeddedStories();
         for (const story of embeddedStories) {
-            const postId = getStoryPostId(story);
-            if (emittedPostIds.has(postId)) continue;
-            emittedPostIds.add(postId);
+            const storyId = getStoryId(story);
+            if (emittedStoryIds.has(storyId)) continue;
+            emittedStoryIds.add(storyId);
             try {
                 cb(story);
             } catch {
@@ -888,6 +919,9 @@ export function storyListener(cb) {
         extractVideoUrls(ev.responseBody);
 
         for (const story of stories) {
+            const storyId = getStoryId(story);
+            if (emittedStoryIds.has(storyId)) continue;
+            emittedStoryIds.add(storyId);
             try {
                 cb(story);
             } catch {
