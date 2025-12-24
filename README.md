@@ -15,13 +15,7 @@ A powerful browser extension that allows you to download Facebook posts, includi
 
 ## Installation
 
-Since this extension is currently in development (or not yet on the Chrome Web Store), you can install it in "Developer Mode":
-
-1.  Clone or download this repository to your computer.
-2.  Open Google Chrome (or Edge/Brave) and navigate to `chrome://extensions`.
-3.  Enable **Developer mode** in the top right corner.
-4.  Click **Load unpacked**.
-5.  Select the folder where you cloned this repository (the folder containing `manifest.json`).
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/facebook-post-downloader/dmfnmobeodidnfdkkfcpobhjlpeameef).
 
 ## How to Use
 
