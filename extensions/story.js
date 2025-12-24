@@ -673,15 +673,7 @@ export function extractStories(obj, results = []) {
     // Check if this object is a valid story
     const objIsStory = isStory(obj);
     if (objIsStory) {
-        const story = /** @type {Story} */ (obj);
-        const postId = getStoryPostId(story);
-        const existingIndex = results.findIndex(s => getStoryPostId(s) === postId);
-
-        // Prefer story with wwwURL (the nested one has more complete data)
-        if (existingIndex === -1) {
-            results.push(story);
-        }
-        // Continue recursing - there might be better nested stories
+        results.push(obj);
     }
 
     // Recurse into arrays and objects
