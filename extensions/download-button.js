@@ -1,4 +1,4 @@
-import { downloadStory, getStoryUrl, getStoryId, getStoryPostId, getStoryMediaId } from './story.js';
+import { downloadStory, getStoryUrl, getStoryId, getStoryPostId } from './story.js';
 import { React } from './react.js';
 
 /**
@@ -220,7 +220,10 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
             existingWrapper.remove();
         }
 
-        let story = videoId ? stories.find(s => getStoryMediaId(s)?.id === videoId) : null;
+        let story = videoId ? stories.find(s => {
+            const attachment = /** @type {any} */ (s.attachments?.[0]);
+            return attachment?.media?.id === videoId;
+        }) : null;
 
         // Fall back to common matching strategies
         if (!story) {
