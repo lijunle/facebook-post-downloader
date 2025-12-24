@@ -207,7 +207,8 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
  * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedCountMap: { [storyId: string]: number } }} props
  */
 function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll, downloadedCountMap }) {
-    const allSelected = stories.length > 0 && stories.every(s => selectedIds.has(getStoryId(s)));
+    const selectableStories = stories.filter(s => !(getStoryId(s) in downloadedCountMap));
+    const allSelected = selectableStories.length > 0 && selectableStories.every(s => selectedIds.has(getStoryId(s)));
 
     return React.createElement("table", { className: "fpdl-table" },
         React.createElement("thead", null,
@@ -217,6 +218,7 @@ function StoryTable({ stories, selectedIds, onToggleStory, onToggleAll, download
                         type: "checkbox",
                         checked: allSelected,
                         onChange: onToggleAll,
+                        disabled: selectableStories.length === 0,
                     })
                 ),
                 React.createElement("th", { className: "fpdl-th" }, "Created"),
@@ -280,16 +282,19 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
     const handleDownload = useCallback(async () => {
         if (selectedIds.size === 0) return;
 
+        const selectedStories = stories
+            .filter(s => selectedIds.has(getStoryId(s)))
+            .filter(s => !(getStoryId(s) in downloadedCountMap));
+        if (selectedStories.length === 0) return;
+
+        setSelectedIds(new Set());
         setDownloadedCountMap(prev => {
             const next = { ...prev };
-            for (const storyId of selectedIds) {
-                next[storyId] = 0;
+            for (const story of selectedStories) {
+                next[getStoryId(story)] = 0;
             }
             return next;
         });
-
-        const selectedStories = stories.filter(s => selectedIds.has(getStoryId(s)));
-        setSelectedIds(new Set());
 
         for (let i = 0; i < selectedStories.length; i++) {
             if (i > 0) await new Promise(r => setTimeout(r, 500));
