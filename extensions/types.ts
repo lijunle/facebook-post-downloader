@@ -65,7 +65,6 @@ export type MediaVideoUrl = {
 
 export type MediaVideo = MediaId & {
   __typename: "Video";
-  url: string;
   created_time: number;
   videoDeliveryResponseFragment?: MediaVideoUrl;
   video_grid_renderer?: {
@@ -115,6 +114,15 @@ export type StoryPost = {
                     count: number;
                     nodes: Array<{ media: Media }>;
                   };
+                }
+              | {
+                  style_infos: [
+                    {
+                      fb_shorts_story: {
+                        attachments: [{ media: MediaVideo }];
+                      };
+                    },
+                  ];
                 };
           };
         },

@@ -142,7 +142,13 @@ export function getAttachmentCount(story) {
     if (!attachment) return 0;
     if ("all_subattachments" in attachment)
       return attachment.all_subattachments.count;
-    return 1;
+    // Check for shorts video (fb_shorts_story with attachments)
+    const shortsAttachments = /** @type {any} */ (attachment).style_infos?.[0]
+      ?.fb_shorts_story?.attachments;
+    if (Array.isArray(shortsAttachments) && shortsAttachments.length > 0)
+      return shortsAttachments.length;
+    if ("media" in attachment && attachment.media) return 1;
+    return 0;
   }
   if (isStoryVideo(story) || isStoryWatch(story)) {
     return 1;
@@ -248,6 +254,19 @@ async function fetchAttachments(story, onAttachment) {
       onAttachment(attachment.media);
       downloadedCount++;
       currentId = attachment.media;
+    } else {
+      // Check for shorts video (fb_shorts_story with attachments)
+      const shortsAttachments = /** @type {any} */ (attachment)
+        ?.style_infos?.[0]?.fb_shorts_story?.attachments;
+      if (Array.isArray(shortsAttachments) && shortsAttachments.length > 0) {
+        for (const shortsNode of shortsAttachments) {
+          if (shortsNode?.media) {
+            onAttachment(shortsNode.media);
+            downloadedCount++;
+            currentId = shortsNode.media;
+          }
+        }
+      }
     }
 
     // If we still need more, use media navigation starting from the last downloaded media
