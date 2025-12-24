@@ -890,7 +890,8 @@ const TARGET_API_NAMES = new Set([
 export function storyListener(cb) {
     // Poll for embedded stories every 500ms for 10 seconds
     /** @type {Set<string>} */
-    const emittedPostIds = new Set();
+    const emittedStoryIds = new Set();
+
     let elapsed = 0;
     const pollInterval = 500;
     const maxDuration = 10000;
@@ -900,9 +901,9 @@ export function storyListener(cb) {
 
         const embeddedStories = extractEmbeddedStories();
         for (const story of embeddedStories) {
-            const postId = getStoryPostId(story);
-            if (emittedPostIds.has(postId)) continue;
-            emittedPostIds.add(postId);
+            const storyId = getStoryId(story);
+            if (emittedStoryIds.has(storyId)) continue;
+            emittedStoryIds.add(storyId);
             try {
                 cb(story);
             } catch {
@@ -926,6 +927,9 @@ export function storyListener(cb) {
         extractVideoUrls(ev.responseBody);
 
         for (const story of stories) {
+            const storyId = getStoryId(story);
+            if (emittedStoryIds.has(storyId)) continue;
+            emittedStoryIds.add(storyId);
             try {
                 cb(story);
             } catch {
