@@ -1,11 +1,6 @@
 {
   "label": "CometNewsFeed_viewerConnection$stream$CometNewsFeed_viewer_news_feed",
-  "path": [
-    "viewer",
-    "news_feed",
-    "edges",
-    4
-  ],
+  "path": ["viewer", "news_feed", "edges", 4],
   "data": {
     "brs_content_label": 90,
     "cat_sensitive": {
@@ -2785,10 +2780,7 @@
       "trackingdata": {
         "id": "AZaS1-eoKwvwm5WR8i0ljbbLxdbejskDyEVhB9QmMi-IxAy02hskwn4c5DUFkkpucRQU04k3ePDe1L8tWgfoB2SIEMsA31dlbPhzI_fYH4W0SDidBT4KnflRlZVEWETZ1gg80QpexyL_Suox0BjalELbx423_zYmXeb8nhdDj9DcfZE8O00BuoB_LzcX_nuAAo0IqS9JFYTfTezexQgZweJTJ4v0VTYKHdAJJRz1Fw7wCsYT6Rv4CAJravOLV65KATM8qRTyD6mUzWhzFZs2ccQnHDHxyh1yugcygiSluxq1cpcNaF11CxLh8Qd7ki8HkMV2Es7x4kHehtokAHX_MUI3Zm9kXF9Wpb73Kj1Bb_-oLsVjsIRDday7FyOGaAt24iePhSe0uBqIA8ihwZ2pzgkgVHrEmski2DC-qUBnMe_wOWQUotsBSb8TbzzvuEoWlbE68QDHQI8O1g03Y3POfRCN1IqjgP3OhhVTNFXWl4Xt430dUbvONLdn3W_qpYNrsJx28ZCZ5mtjQohuMZrAiAfiCQaBRZJaoHf3teRaAqgTUs3_IOSDkOhnpKhjl7Cj3NGaQluuUzkQN80HrckR6eTXPfRAITKsbGehmTzldQ8ekJHIAotVjKvmVWqBvG1gYX4BtttINEbstm4toj9ri7HZjrlJJ03CStljDvR0poMFknPxSalsnPsYqZUjtk7JIZQ5-reQgpYBirCbI8XAfbXtxXGLWva7Jkf0ZYmEZi_fJdKdAkc8dSZXzjGE7lVc6bYK0i0N4G3nnF5f1e4Ffs7LIzrqgS15HDCdTMo60_OlXwe4irokpjaHdCYK5X3A13Okntm1vifOiwgCD4x1WW1Ig3Oj2kOvLHc5VMt28Azk2pS6-62AT3y5DC3aHB_H3EKnrX1r0iH3nMcjQ158z_-wXHG92TTK4FVCYplqm_Od0ZdBHRs6UOA_BOmUbiB4ZeUjuOjXMCduBamuyu73M8PeZss2hTfDeYE2B3JmRiSaZ0ulywAUgpADsoDxXVei9Pj8R2zH1eExEZb1aH4S2JgcDq4sPXZ-CeUbBxdDISClQTQ1dKVBZH2aTHkb73Yx81TiWDk3tpBKjlCg4P0OJ1Co4_dbP3esIU7owcpk1zOlFDbO3OWXF4pjbHvUQQiEaFCxxuqc9QR_MRmtL7cpMkUKgvbVeM-JR8jrpwuFymxPPfdrS6YtolqKz2DHS-SUgr8vQzu4Mi9Fwg8vDalXB48UJjO-_6-Pq1yW3DnSS2TGfGwHbZEKWjuCTIEYiVZ0IpdzqnUibb23sYQI4DOk1cSqwiuLkhbczLefPum7OX06nBrV30n4y7xPz6kiit6FH2IEGM58CCtX_58hkEGHmwLgEGFNZtmu1MTN2U_1ho2YTQpXHAd3u2oryqBd5HD3JwZZseB-Khrjf4de68F3fIMM0fW31WtAR_BkwwcP-4ylvAt-GySLf0gkcDRxQ1H8kRqASkRaFCP3RnJC5fwNf92hewbo4oCWydIW72-F0ZFq1NTuO6YRQcGR7tlIDs9FOranOiE9in1rXG7K2lFEtrtEFhLa0SLEghbxKc6pgy1rjiN_rZRyZN_BtGg9twb3qWJ3ZbbQpbZzP0hCOQadrBbCvdo1pJewxspQ2JU7YRZu7Yb-gGxR-CurY9ROpWx5BNeFfLMilWU22ksIZtygj0p15Pu9xCbrC_ZWLG1ldDOCYq-RxIof0KGBBWm4y1DrwwJ2dk1VUFjrJGWC9rBaYCqjMbcMKu9Hj4DpX7fwIdQmrUMZTeGie8EacXHRtJCv6tUcKFYzW9XHttNvgI7rNvdkzAAGxwd-yb1SX7ZR2Oddema13RIDQc7exndk72FuOTKnhOJcaflcQ-NOJymDfsxi9suVNmsCRj67p-jcC53deHyJKBtV3CH1XQCko46xCJPL4C14sAPxEmK8ZXoU4Ge2a7hFijrKPJlUN-Ptk2NWXZ1ToFd9ut59KZ-UNKu3X3e8Q6GJHZd0NnPNXFBYgxXpJAFoS5ow6U6PtT-btqyvzJ1I-cl1oR1eL5_uYUhd6b7ruWqR6itRmQuY5ofcDCMgu8LCHoqeC_9A2xTU66x23A"
       },
-      "viewability_config": [
-        8,
-        5
-      ],
+      "viewability_config": [8, 5],
       "client_view_config": {
         "can_delay_log_impression": false,
         "use_banzai_signal_imp": true,
@@ -3713,12 +3705,7 @@
             },
             "compMap": {
               "CometMessengerResharesUpdatedDialog.react": {
-                "r": [
-                  "fvNWpTP",
-                  "fo5JDBI",
-                  "CR8/rAA",
-                  "csr:_2d_h_AP"
-                ],
+                "r": ["fvNWpTP", "fo5JDBI", "CR8/rAA", "csr:_2d_h_AP"],
                 "rdfds": {
                   "m": [
                     "FDSTooltipDeferredImpl.react",
@@ -3728,9 +3715,7 @@
                     "SecuredActionTriggerWithAccountID.react",
                     "SecuredActionTriggerWithEncryptedContext.react"
                   ],
-                  "r": [
-                    "csr:_2d_i_LV"
-                  ]
+                  "r": ["csr:_2d_i_LV"]
                 },
                 "rds": {
                   "m": [
@@ -3771,10 +3756,7 @@
                     "MAWThreadCutover",
                     "MAWMiActOnMiThreadExistsForJid__DO_NOT_USE"
                   ],
-                  "r": [
-                    "jGYAxle",
-                    "csr:_2d_j_4Q"
-                  ]
+                  "r": ["jGYAxle", "csr:_2d_j_4Q"]
                 },
                 "be": 1
               }
@@ -3790,51 +3772,33 @@
             [
               "CometFeedStoryUnifiedLightweightVideoAttachmentStyle_styleTypeRenderer$normalization.graphql"
             ],
-            [
-              "CometFeedStoryUnifiedLightweightVideoAttachmentStyle.react"
-            ],
+            ["CometFeedStoryUnifiedLightweightVideoAttachmentStyle.react"],
             [
               "CometFeedStoryActorCommunityAttributionStrategy_actorPhoto$normalization.graphql"
             ],
-            [
-              "CometFeedStoryActorCommunityAttributionStrategy.react"
-            ],
+            ["CometFeedStoryActorCommunityAttributionStrategy.react"],
             [
               "CometFeedStoryCommunityAttributionGroupPostByStrategy_strategy$normalization.graphql"
             ],
-            [
-              "CometFeedStoryCommunityAttributionGroupPostByStrategy.react"
-            ],
+            ["CometFeedStoryCommunityAttributionGroupPostByStrategy.react"],
             [
               "CometFeedStoryCommunityAttributionTitleStrategy_contextTitle$normalization.graphql"
             ],
-            [
-              "CometFeedStoryCommunityAttributionTitleStrategy.react"
-            ],
-            [
-              "CometUFISendActionRenderer_message_action$normalization.graphql"
-            ],
-            [
-              "CometUFISendActionRenderer.react"
-            ],
+            ["CometFeedStoryCommunityAttributionTitleStrategy.react"],
+            ["CometUFISendActionRenderer_message_action$normalization.graphql"],
+            ["CometUFISendActionRenderer.react"],
             [
               "cometUFIComposerGroupMentionsPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerGroupMentionsPlugin"
-            ],
+            ["cometUFIComposerGroupMentionsPlugin"],
             [
               "CometFeedStoryTitleGroupMemberActor_groupMemberProfileActionLink$normalization.graphql"
             ],
-            [
-              "CometFeedStoryTitleGroupMemberActor.react"
-            ],
+            ["CometFeedStoryTitleGroupMemberActor.react"],
             [
               "emptyFunction",
               "thatReturns",
-              [
-                "RequireDeferredReference"
-              ],
+              ["RequireDeferredReference"],
               [
                 [
                   {
@@ -3882,9 +3846,7 @@
                 ]
               ]
             ],
-            [
-              "FbSharingEventFalcoEvent"
-            ],
+            ["FbSharingEventFalcoEvent"],
             [
               "RequireDeferredReference",
               "unblock",
@@ -3966,18 +3928,11 @@
           ],
           "phd2_indexes": ":251,250,303,302"
         },
-        "allResources": [
-          "csr:_2d_f_Ix",
-          "csr:_2d_g_aU"
-        ],
+        "allResources": ["csr:_2d_f_Ix", "csr:_2d_g_aU"],
         "tieredResources": {
-          "r": [
-            "csr:_2d_f_Ix"
-          ],
+          "r": ["csr:_2d_f_Ix"],
           "rdfds": [],
-          "rds": [
-            "csr:_2d_g_aU"
-          ]
+          "rds": ["csr:_2d_g_aU"]
         }
       }
     }
