@@ -1,14 +1,14 @@
 {
-    "files": [],
-    "references": [
-        {
-            "path": "./bin"
-        },
-        {
-            "path": "./extensions"
-        },
-        {
-            "path": "./tests"
-        }
-    ]
+  "files": [],
+  "references": [
+    {
+      "path": "./bin"
+    },
+    {
+      "path": "./extensions"
+    },
+    {
+      "path": "./tests"
+    }
+  ]
 }

@@ -117,7 +117,7 @@ export type StoryPost = {
                   };
                 };
           };
-        }
+        },
       ];
   attached_story: null | StoryPost;
 };
@@ -139,7 +139,7 @@ export type StoryVideo = {
           id: string;
         };
       };
-    }
+    },
   ];
 };
 
@@ -163,7 +163,7 @@ export type StoryWatch = {
           };
         };
       };
-    }
+    },
   ];
 };
 

@@ -1,11 +1,6 @@
 {
   "label": "CometVideoHomeFeedSectionPagination_section$stream$CometVideoHomeFeedSection_section_components",
-  "path": [
-    "node",
-    "section_components",
-    "edges",
-    2
-  ],
+  "path": ["node", "section_components", "edges", 2],
   "data": {
     "node": {
       "__typename": "VideoHomeFeedUnitSectionComponent",
@@ -979,10 +974,7 @@
         "fact_check_details": null,
         "click_tracking_linkshim_cb": "AT0nQDxX-7QEEZcaP-HYspXouCjQA_mAl5S9tkz_Vy2PLpZxgQgil3pV5-4BgqoSUpee2EzLxfr4zpSU2_UZ0s3vIIccPFEbSb970iO5UFvo5ZBrCP82_-bCxAgsEalU0SrdTanO-A2ejFbjHedZN5O1c5yUjJGYSg3BJTXmqWIr8ZYJvqAYxQE9DcXS7-8DK7jaZ2sOWX3973JK6TnHEqj-gzpd1-DOwGU",
         "encrypted_click_tracking": "AZaZK35pM7n3dSdGU0pJUdkqDZnpc_waQ_3VRmwO9pnjcoi-Wd1o4j--k_l2Hix1tMGIgFlf4Os5WFt6LptZiSzfBs5oaLE9qAQkqADZ-AGMW_Dti2rmGx_cHHCUQsgmNTqzxx33iSmi7qZKIHNABOSskxr4_N2a7N3K_C3U8DxeJsYt6GFQsKO8BqLzG6MgX2RzzSMnlLSuoK8cT9lQYm5a",
-        "viewability_config": [
-          8,
-          5
-        ],
+        "viewability_config": [8, 5],
         "client_view_config": {
           "can_delay_log_impression": false,
           "use_banzai_signal_imp": true,
@@ -1371,40 +1363,25 @@
           "define": [
             [
               "cr:310",
-              [
-                "RunWWW"
-              ],
+              ["RunWWW"],
               {
-                "__rc": [
-                  "RunWWW",
-                  null
-                ]
+                "__rc": ["RunWWW", null]
               },
               -1
             ],
             [
               "cr:564",
-              [
-                "ClickIDDomainBlacklistSVConfigJSModuleWrapper"
-              ],
+              ["ClickIDDomainBlacklistSVConfigJSModuleWrapper"],
               {
-                "__rc": [
-                  "ClickIDDomainBlacklistSVConfigJSModuleWrapper",
-                  null
-                ]
+                "__rc": ["ClickIDDomainBlacklistSVConfigJSModuleWrapper", null]
               },
               -1
             ],
             [
               "cr:619",
-              [
-                "setTimeoutCometLoggingPriWWW"
-              ],
+              ["setTimeoutCometLoggingPriWWW"],
               {
-                "__rc": [
-                  "setTimeoutCometLoggingPriWWW",
-                  null
-                ]
+                "__rc": ["setTimeoutCometLoggingPriWWW", null]
               },
               -1
             ],
@@ -1412,10 +1389,7 @@
               "cr:686",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1423,23 +1397,15 @@
               "cr:734",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:755",
-              [
-                "warningWWW"
-              ],
+              ["warningWWW"],
               {
-                "__rc": [
-                  "warningWWW",
-                  null
-                ]
+                "__rc": ["warningWWW", null]
               },
               -1
             ],
@@ -1447,49 +1413,31 @@
               "cr:1078",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:1080",
-              [
-                "unexpectedUseInComet"
-              ],
+              ["unexpectedUseInComet"],
               {
-                "__rc": [
-                  "unexpectedUseInComet",
-                  null
-                ]
+                "__rc": ["unexpectedUseInComet", null]
               },
               -1
             ],
             [
               "cr:1126",
-              [
-                "TimeSliceSham"
-              ],
+              ["TimeSliceSham"],
               {
-                "__rc": [
-                  "TimeSliceSham",
-                  null
-                ]
+                "__rc": ["TimeSliceSham", null]
               },
               -1
             ],
             [
               "cr:1293",
-              [
-                "ReactDOM.classic"
-              ],
+              ["ReactDOM.classic"],
               {
-                "__rc": [
-                  "ReactDOM.classic",
-                  null
-                ]
+                "__rc": ["ReactDOM.classic", null]
               },
               -1
             ],
@@ -1497,49 +1445,31 @@
               "cr:2866",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:3725",
-              [
-                "clearTimeoutWWWOrMobile"
-              ],
+              ["clearTimeoutWWWOrMobile"],
               {
-                "__rc": [
-                  "clearTimeoutWWWOrMobile",
-                  null
-                ]
+                "__rc": ["clearTimeoutWWWOrMobile", null]
               },
               -1
             ],
             [
               "cr:4344",
-              [
-                "setTimeoutWWWOrMobile"
-              ],
+              ["setTimeoutWWWOrMobile"],
               {
-                "__rc": [
-                  "setTimeoutWWWOrMobile",
-                  null
-                ]
+                "__rc": ["setTimeoutWWWOrMobile", null]
               },
               -1
             ],
             [
               "cr:4852",
-              [
-                "ClickIDURLBlocklistSVConfigJSModuleWrapper"
-              ],
+              ["ClickIDURLBlocklistSVConfigJSModuleWrapper"],
               {
-                "__rc": [
-                  "ClickIDURLBlocklistSVConfigJSModuleWrapper",
-                  null
-                ]
+                "__rc": ["ClickIDURLBlocklistSVConfigJSModuleWrapper", null]
               },
               -1
             ],
@@ -1547,10 +1477,7 @@
               "cr:5128",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1558,205 +1485,127 @@
               "cr:6640",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:7063",
-              [
-                "CometErrorBoundary.react"
-              ],
+              ["CometErrorBoundary.react"],
               {
-                "__rc": [
-                  "CometErrorBoundary.react",
-                  null
-                ]
+                "__rc": ["CometErrorBoundary.react", null]
               },
               -1
             ],
             [
               "cr:7162",
-              [
-                "ReactDOMCompatibilityLayer"
-              ],
+              ["ReactDOMCompatibilityLayer"],
               {
-                "__rc": [
-                  "ReactDOMCompatibilityLayer",
-                  null
-                ]
+                "__rc": ["ReactDOMCompatibilityLayer", null]
               },
               -1
             ],
             [
               "cr:7383",
-              [
-                "BanzaiWWW"
-              ],
+              ["BanzaiWWW"],
               {
-                "__rc": [
-                  "BanzaiWWW",
-                  null
-                ]
+                "__rc": ["BanzaiWWW", null]
               },
               -1
             ],
             [
               "cr:7385",
-              [
-                "clearIntervalWWW"
-              ],
+              ["clearIntervalWWW"],
               {
-                "__rc": [
-                  "clearIntervalWWW",
-                  null
-                ]
+                "__rc": ["clearIntervalWWW", null]
               },
               -1
             ],
             [
               "cr:7388",
-              [
-                "setIntervalWWW"
-              ],
+              ["setIntervalWWW"],
               {
-                "__rc": [
-                  "setIntervalWWW",
-                  null
-                ]
+                "__rc": ["setIntervalWWW", null]
               },
               -1
             ],
             [
               "cr:7389",
-              [
-                "setIntervalAcrossTransitionsWWW"
-              ],
+              ["setIntervalAcrossTransitionsWWW"],
               {
-                "__rc": [
-                  "setIntervalAcrossTransitionsWWW",
-                  null
-                ]
+                "__rc": ["setIntervalAcrossTransitionsWWW", null]
               },
               -1
             ],
             [
               "cr:7391",
-              [
-                "setTimeoutAcrossTransitionsWWW"
-              ],
+              ["setTimeoutAcrossTransitionsWWW"],
               {
-                "__rc": [
-                  "setTimeoutAcrossTransitionsWWW",
-                  null
-                ]
+                "__rc": ["setTimeoutAcrossTransitionsWWW", null]
               },
               -1
             ],
             [
               "cr:7422",
-              [
-                "ImageDownloadTrackerWWW"
-              ],
+              ["ImageDownloadTrackerWWW"],
               {
-                "__rc": [
-                  "ImageDownloadTrackerWWW",
-                  null
-                ]
+                "__rc": ["ImageDownloadTrackerWWW", null]
               },
               -1
             ],
             [
               "cr:7730",
-              [
-                "getFbtResult"
-              ],
+              ["getFbtResult"],
               {
-                "__rc": [
-                  "getFbtResult",
-                  null
-                ]
+                "__rc": ["getFbtResult", null]
               },
               -1
             ],
             [
               "cr:8907",
-              [
-                "HeroTracingCoreConfigWWW"
-              ],
+              ["HeroTracingCoreConfigWWW"],
               {
-                "__rc": [
-                  "HeroTracingCoreConfigWWW",
-                  null
-                ]
+                "__rc": ["HeroTracingCoreConfigWWW", null]
               },
               -1
             ],
             [
               "cr:8908",
-              [
-                "HeroTracingCoreDependenciesWWW"
-              ],
+              ["HeroTracingCoreDependenciesWWW"],
               {
-                "__rc": [
-                  "HeroTracingCoreDependenciesWWW",
-                  null
-                ]
+                "__rc": ["HeroTracingCoreDependenciesWWW", null]
               },
               -1
             ],
             [
               "cr:8958",
-              [
-                "FBJSON"
-              ],
+              ["FBJSON"],
               {
-                "__rc": [
-                  "FBJSON",
-                  null
-                ]
+                "__rc": ["FBJSON", null]
               },
               -1
             ],
             [
               "cr:8959",
-              [
-                "DTSG"
-              ],
+              ["DTSG"],
               {
-                "__rc": [
-                  "DTSG",
-                  null
-                ]
+                "__rc": ["DTSG", null]
               },
               -1
             ],
             [
               "cr:8960",
-              [
-                "DTSG_ASYNC"
-              ],
+              ["DTSG_ASYNC"],
               {
-                "__rc": [
-                  "DTSG_ASYNC",
-                  null
-                ]
+                "__rc": ["DTSG_ASYNC", null]
               },
               -1
             ],
             [
               "cr:8967",
-              [
-                "clearTimeoutComet"
-              ],
+              ["clearTimeoutComet"],
               {
-                "__rc": [
-                  "clearTimeoutComet",
-                  null
-                ]
+                "__rc": ["clearTimeoutComet", null]
               },
               -1
             ],
@@ -1764,10 +1613,7 @@
               "cr:11054",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1775,10 +1621,7 @@
               "cr:12179",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1786,36 +1629,23 @@
               "cr:12180",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:13597",
-              [
-                "JSSelfProfilerLoomProvider"
-              ],
+              ["JSSelfProfilerLoomProvider"],
               {
-                "__rc": [
-                  "JSSelfProfilerLoomProvider",
-                  null
-                ]
+                "__rc": ["JSSelfProfilerLoomProvider", null]
               },
               -1
             ],
             [
               "cr:13699",
-              [
-                "SSRInjectedElements"
-              ],
+              ["SSRInjectedElements"],
               {
-                "__rc": [
-                  "SSRInjectedElements",
-                  null
-                ]
+                "__rc": ["SSRInjectedElements", null]
               },
               -1
             ],
@@ -1823,36 +1653,23 @@
               "cr:15957",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:17264",
-              [
-                "RSTLogForCrash"
-              ],
+              ["RSTLogForCrash"],
               {
-                "__rc": [
-                  "RSTLogForCrash",
-                  null
-                ]
+                "__rc": ["RSTLogForCrash", null]
               },
               -1
             ],
             [
               "cr:17816",
-              [
-                "FBDomainsSVConfigJSModuleWrapper"
-              ],
+              ["FBDomainsSVConfigJSModuleWrapper"],
               {
-                "__rc": [
-                  "FBDomainsSVConfigJSModuleWrapper",
-                  null
-                ]
+                "__rc": ["FBDomainsSVConfigJSModuleWrapper", null]
               },
               -1
             ],
@@ -1860,10 +1677,7 @@
               "cr:21238",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1871,36 +1685,23 @@
               "cr:22912",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:696703",
-              [
-                "JSScheduler"
-              ],
+              ["JSScheduler"],
               {
-                "__rc": [
-                  "JSScheduler",
-                  null
-                ]
+                "__rc": ["JSScheduler", null]
               },
               -1
             ],
             [
               "cr:955714",
-              [
-                "JSSelfProfilerLoomProvider"
-              ],
+              ["JSSelfProfilerLoomProvider"],
               {
-                "__rc": [
-                  "JSSelfProfilerLoomProvider",
-                  null
-                ]
+                "__rc": ["JSSelfProfilerLoomProvider", null]
               },
               -1
             ],
@@ -1908,10 +1709,7 @@
               "cr:1094133",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1919,10 +1717,7 @@
               "cr:1106516",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
@@ -1930,62 +1725,39 @@
               "cr:1108857",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:1294158",
-              [
-                "React.classic"
-              ],
+              ["React.classic"],
               {
-                "__rc": [
-                  "React.classic",
-                  null
-                ]
+                "__rc": ["React.classic", null]
               },
               -1
             ],
             [
               "cr:1294159",
-              [
-                "ReactDOM.classic"
-              ],
+              ["ReactDOM.classic"],
               {
-                "__rc": [
-                  "ReactDOM.classic",
-                  null
-                ]
+                "__rc": ["ReactDOM.classic", null]
               },
               -1
             ],
             [
               "cr:1408565",
-              [
-                "XCometContextualProfileControllerRouteBuilder"
-              ],
+              ["XCometContextualProfileControllerRouteBuilder"],
               {
-                "__rc": [
-                  "XCometContextualProfileControllerRouteBuilder",
-                  null
-                ]
+                "__rc": ["XCometContextualProfileControllerRouteBuilder", null]
               },
               -1
             ],
             [
               "cr:1522191",
-              [
-                "CometLinkTrackingUtils.facebook"
-              ],
+              ["CometLinkTrackingUtils.facebook"],
               {
-                "__rc": [
-                  "CometLinkTrackingUtils.facebook",
-                  null
-                ]
+                "__rc": ["CometLinkTrackingUtils.facebook", null]
               },
               -1
             ],
@@ -1993,53 +1765,34 @@
               "cr:1984081",
               [],
               {
-                "__rc": [
-                  null,
-                  null
-                ]
+                "__rc": [null, null]
               },
               -1
             ],
             [
               "cr:20266",
-              [
-                "useEmptyFunction"
-              ],
+              ["useEmptyFunction"],
               {
-                "__rc": [
-                  "useEmptyFunction",
-                  null
-                ]
+                "__rc": ["useEmptyFunction", null]
               },
               -1
             ],
             [
               "cr:20414",
-              [
-                "FDSTextContext_New.react"
-              ],
+              ["FDSTextContext_New.react"],
               {
-                "__rc": [
-                  "FDSTextContext_New.react",
-                  null
-                ]
+                "__rc": ["FDSTextContext_New.react", null]
               },
               -1
             ]
           ],
           "require": [
-            [
-              "ProfileGeminiWeakReferenceLink_user$normalization.graphql"
-            ],
-            [
-              "ProfileGeminiWeakReferenceLink.react"
-            ],
+            ["ProfileGeminiWeakReferenceLink_user$normalization.graphql"],
+            ["ProfileGeminiWeakReferenceLink.react"],
             [
               "emptyFunction",
               "thatReturns",
-              [
-                "RequireDeferredReference"
-              ],
+              ["RequireDeferredReference"],
               [
                 [
                   {
@@ -2051,18 +1804,10 @@
                 ]
               ]
             ],
-            [
-              "FbtLogging"
-            ],
-            [
-              "ODS"
-            ],
-            [
-              "IntlQtEventFalcoEvent"
-            ],
-            [
-              "FDSTooltipDeferredImpl.react"
-            ],
+            ["FbtLogging"],
+            ["ODS"],
+            ["IntlQtEventFalcoEvent"],
+            ["FDSTooltipDeferredImpl.react"],
             [
               "RequireDeferredReference",
               "unblock",
@@ -2080,14 +1825,7 @@
               "RequireDeferredReference",
               "unblock",
               [],
-              [
-                [
-                  "FbtLogging",
-                  "ODS",
-                  "IntlQtEventFalcoEvent"
-                ],
-                "sd"
-              ]
+              [["FbtLogging", "ODS", "IntlQtEventFalcoEvent"], "sd"]
             ],
             [
               "RequireDeferredReference",
@@ -2106,27 +1844,14 @@
               "RequireDeferredReference",
               "unblock",
               [],
-              [
-                [
-                  "FbtLogging",
-                  "ODS",
-                  "IntlQtEventFalcoEvent"
-                ],
-                "css"
-              ]
+              [["FbtLogging", "ODS", "IntlQtEventFalcoEvent"], "css"]
             ]
           ],
           "phd2_indexes": ":145,146"
         },
-        "allResources": [
-          "0+g27VZ",
-          "csr:_s_2_x9"
-        ],
+        "allResources": ["0+g27VZ", "csr:_s_2_x9"],
         "tieredResources": {
-          "r": [
-            "0+g27VZ",
-            "csr:_s_2_x9"
-          ],
+          "r": ["0+g27VZ", "csr:_s_2_x9"],
           "rdfds": [],
           "rds": []
         }
