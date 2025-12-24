@@ -325,6 +325,28 @@ describe("getDownloadCount", () => {
       "StoryWatch should have download count of 2 (1 video + index.md)",
     );
   });
+
+  it("should return 2 for shorts video StoryPost (1 video + index.md)", () => {
+    const mockData = JSON.parse(
+      readFileSync(join(__dirname, "story-shorts-video.json"), "utf8"),
+    );
+    const result = extractStories(mockData);
+
+    const shortsStory = result.find(
+      (s) => getStoryPostId(s) === "2223425971514935",
+    );
+    assert.ok(shortsStory, "Should find the shorts video story");
+    assert.strictEqual(
+      getAttachmentCount(shortsStory),
+      1,
+      "Shorts video story should have 1 attachment",
+    );
+    assert.strictEqual(
+      getDownloadCount(shortsStory),
+      2,
+      "Shorts video story should have download count of 2 (1 video + index.md)",
+    );
+  });
 });
 
 describe("extractStories continued", () => {
@@ -1685,6 +1707,48 @@ describe("downloadStory", () => {
     assert.ok(videoDownload, "Should download video file");
     assert.ok(
       videoDownload.url.includes("video.fyvr1-1.fna.fbcdn.net"),
+      "Should download video from Facebook CDN",
+    );
+  });
+
+  it("should download StoryPost shorts video from story-shorts-video.json", async () => {
+    const mockData = JSON.parse(
+      readFileSync(join(__dirname, "story-shorts-video.json"), "utf8"),
+    );
+
+    const stories = extractStories(mockData);
+    extractStoryCreateTime(mockData);
+    extractStoryGroupMap(mockData);
+
+    const shortsStory = stories.find(
+      (s) => getStoryPostId(s) === "2223425971514935",
+    );
+    assert.ok(shortsStory, "Should find the shorts video story");
+
+    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    const downloads = [];
+
+    await downloadStory(shortsStory, (storyId, url, filename) => {
+      downloads.push({ storyId, url, filename });
+    });
+
+    assert.strictEqual(
+      downloads.length,
+      2,
+      "Should download 2 files (markdown + video)",
+    );
+
+    const mdDownload = downloads.find((d) => d.filename.endsWith(".md"));
+    assert.ok(mdDownload, "Should download markdown file");
+    assert.ok(
+      mdDownload.filename.includes("2223425971514935"),
+      "Markdown filename should include post ID",
+    );
+
+    const videoDownload = downloads.find((d) => d.filename.endsWith(".mp4"));
+    assert.ok(videoDownload, "Should download video file");
+    assert.ok(
+      videoDownload.url.includes("video.fcxh3-1.fna.fbcdn.net"),
       "Should download video from Facebook CDN",
     );
   });

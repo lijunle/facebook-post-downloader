@@ -1,0 +1,981 @@
+{
+  "feedback": {
+    "id": "ZmVlZGJhY2s6MjIyMzQyNTk3MTUxNDkzNQ=="
+  },
+  "comet_sections": {
+    "above_message": null,
+    "info_icon": null,
+    "attachment_overlay": null,
+    "attached_story": null,
+    "message": {
+      "__typename": "CometFeedStoryDefaultMessageRenderingStrategy",
+      "__isICometStorySection": "CometFeedStoryDefaultMessageRenderingStrategy",
+      "is_prod_eligible": true,
+      "story": {
+        "is_text_only_story": false,
+        "message": {
+          "delight_ranges": [],
+          "image_ranges": [],
+          "inline_style_ranges": [],
+          "aggregated_ranges": [],
+          "ranges": [],
+          "color_ranges": [],
+          "text": "Happiest November birthday to Ms. Grettel and Ms. Sisi❤️❤️🎉"
+        },
+        "message_truncation_line_limit": null,
+        "th_dat_spo": null,
+        "attachments": [
+          {
+            "action_links": []
+          }
+        ],
+        "id": "UzpfSTUwNzk3MTc4NDpWSzoyMjIzNDI1OTcxNTE0OTM1"
+      },
+      "__module_operation_CometFeedStoryMessageMatchRenderer_story": {
+        "__dr": "CometFeedStoryDefaultMessageRenderingStrategy_message$normalization.graphql"
+      },
+      "__module_component_CometFeedStoryMessageMatchRenderer_story": {
+        "__dr": "CometFeedStoryDefaultMessageRenderingStrategy.react"
+      }
+    },
+    "message_suffix": null,
+    "message_container": {
+      "__typename": "CometFeedStoryMessageContainerRenderingStrategy",
+      "__isICometStorySection": "CometFeedStoryMessageContainerRenderingStrategy",
+      "is_prod_eligible": true,
+      "story": {
+        "message": {
+          "text": "Happiest November birthday to Ms. Grettel and Ms. Sisi❤️❤️🎉"
+        },
+        "referenced_sticker": null,
+        "attachments": [
+          {
+            "style_list": [
+              "fb_shorts_creation",
+              "video_autoplay",
+              "video",
+              "fallback"
+            ]
+          }
+        ],
+        "text_format_metadata": null,
+        "comet_sections": {
+          "message": null
+        },
+        "id": "UzpfSTUwNzk3MTc4NDpWSzoyMjIzNDI1OTcxNTE0OTM1"
+      },
+      "__module_operation_CometFeedStoryMessageContainerMatchRenderer_story": {
+        "__dr": "CometFeedStoryMessageContainerRenderingStrategy_messageContainer$normalization.graphql"
+      },
+      "__module_component_CometFeedStoryMessageContainerMatchRenderer_story": {
+        "__dr": "CometFeedStoryMessageContainerRenderingStrategy.react"
+      }
+    },
+    "message_sticker": null,
+    "aggregated_stories": null
+  },
+  "encrypted_tracking": "AZaAIS-NzXFCWdMkWjRBMQS9dNYIzVnq3B78qYCgTLa8NWI3uenDqqzLiOxpuI0z-Ud7lZ_KDex0OH9B40In1FOX9Fw1NiVjcBY9TZE57sW3VWLfV95FzMnFSSblIK4n6m0Ez1LTrTsjRD1eYKGsaUEa9fJ5aZAo9bzq4XXUAKOJ5wYqr5HPuKxQdrNIncwzo8fWahannMZeieY2UyfJ15QKidbXlXqmxzO_hfDbm-wfAQXBBTioB70HBm2shY0ZGWehylygUYb-Thah_V6mh4dp8jUxPcFQX_iVqgcKoSgkLAgx5ShzmzH2WLz6IEtSQ2K2TQwF88TwvenLU5eMISLpLkuV7OpjDpzopu9c0c7IJgXXTxE_Rom-qFftOhq7mXL12ZiZxQy-s9doz0vpI3Hal1MwOvTIXW8-e3EIVOYKPxUuxpNwKitObLhFfNGm_quT5A5cuE6V_hOjIW-dWk4Hf4tpYFD4t9yHGOA6tGUhTz11Rfl8pFqcT809v8n9PmhcSs_sO6BpS6oCSjnMNdSyR2TEtVxeBWOTAjkA3PMSF2erfPF_Pdp5MYiMRCU6TWA8KqYKZL6mJINI_4-hwfG53s2cDnQCjBla-OLD1Lw66wGBNm1ogjHjCFRPfJQxV1nEAeecFwAj69tIgO5uLtpyxhqxQkQGEzNhhtRkOHJb9DmaUz3nIfJRMSyDB68aDGwpg-0jT8Ob2HmIWFPcIBT0BzHFvNbcwzWAuzzQBFp6HLVRJGMhVFi5C0o_i21ENJqGXBLZ5jmY0wBrTWkiIqEeLXGp1s14BaMhogJxcAXMT4JqnO1hv6F0D2_3jcvDZm7tGg05hFv6B3nH-WJ8x3OxWSTGXqm_WcAqCQMcdJ3eQowusWsIghDAwoRsSWhmdZ1nXs11JezwYmt6H9wN598EL4XazqIA-8YOw6SXvxrWpgXGIv50yvbmfEllsWHVMlkzmnhGfpcbTbE84lJQXSBep7yldTEr_DNpmhDLJxz-b0b1_QRCpQARCFeTcXY4lDvJD0Mo4ZNVSKIUPSmbDJVy",
+  "attachments": [
+    {
+      "deduplication_key": "b0a5d4fccbfdd8a275c9013d3357b621",
+      "target": {
+        "__typename": "Video",
+        "id": "1805471586823029"
+      },
+      "__typename": "StoryAttachment",
+      "style_list": [
+        "fb_shorts_creation",
+        "video_autoplay",
+        "video",
+        "fallback"
+      ],
+      "styles": {
+        "__typename": "StoryAttachmentFBReelsStyleRenderer",
+        "__isStoryAttachmentStyleRendererUnion": "StoryAttachmentFBReelsStyleRenderer",
+        "is_prod_eligible": true,
+        "attachment": {
+          "style_list": [
+            "fb_shorts_creation",
+            "video_autoplay",
+            "video",
+            "fallback"
+          ],
+          "style_infos": [
+            {
+              "__typename": "FBShortsShareAttachmentStyleInfo",
+              "fb_shorts_story": {
+                "encrypted_tracking": "AZYQzGt3CCTdA2lLzxhOXxGkBwaTYz7eULJa4_uWs0-tDU-gLL_QFU8LZ-VLBI7DcVlKUtl4iTHF286XP_1Ksg8znKxOWOkU7lfgD_qsZsJD3AosXaULsrtHDlJNdFHjDZSdD7VeTv1DaV_9-ikEpE2dzdaeyL6ntwBY-kVSKu0y9VtB2Yyvef1B2QHSFzNtWbqt40Sh9VWDwWtczyMizVoD1p51HkJMXZU23d4_JGykNa3BTLWM3GJ-uqwMLEh3k6Q2RjLr1J7LLrxKuwZCJNsGwACCE71gI-0fpIlbwdLgL0ovJ-HmcJ4IBjqSbfmoIdkOG-IKDAgA7pAwRT7xRtqSM7R5DIRMztpLK6YGyUoTQhgF4O74qTb3K_h-n-Dph6o91LMPQp5oF3f74d6j6JxkOxjsYPlIQa2mwevrHq6ZqWk0YwAgEJvlE_rhNQ7k2R-PurQkl60tQh5kS68XbibQx3HaIkoJzqNIkZ9flGXWquDSzjp2Z0uc9jpD5b4CRX5975CKcnuUPFJwePZ6WYHC8agM9opCN1aCopGnSxS894UI-nmhFVnqqshE2tWjbGU3gYdzNYCnhoyawztXlSkktmrKXsGPDq2iY_C5k8rg_6F9g-4_PcFF_-ekhnOWT4xOf9eXzgbPB9gyvUSL-_xb12H4iqZfhbHZq0rlZtRBZsTNDJ4gVnlR-QHjSsuA_68i2MZbHphmj8FvwXSoYZjWtyoAuPeMxRYOhLFDrInvuN7rsorMnTIaOgSRsh1moebk3bFGs7b_Z5wPX6SMELS9o0-Fprt6PN8p_zoWzNBbPLiNmZG7Mzy9gtr070JGJ3B2UTK9UligXsOxPVIzdfZu4F_W449o9YTvK4VE73T255-AlB3ovZg2-JAm_O_pYSuc0ATpUoGR1ykUUWVSIg11cjODo3q4MmS16CuaMmOuJyfhJpN3RjxOfe3PQsXSJw3JAe1QkQzn-OFPcKpgd-zzvw0GQiPHRqNBuhW4-4E298nedlF3jKSx5JJbYJcf5UvOOC7cSJ1kNgMJIUCrkatm",
+                "encrypted_click_tracking": "AZZ7F3BAiSVjgr4RojrkQHUlI7eaSnFJUlwZVO9cJB-l_M3jvarz41OZ1IJpEPqAemzHgb-OqsRiC2qgz-EdWvIuYiHVGiat_37eJPTfiAF0hxafETL6lIi091T1Ayr4GUnLpt3plAOSkifk7t9G7gYBFqbzi2vgoAr93eXPgR5uz-Y39GHmL8iCGy8KYwXDtxMhVRoVZPyHB3sEFbv1K0--",
+                "click_tracking_linkshim_cb": "AT15TxE6rN9LaqmnXRvfxq6NcHPiz0MfM8WwxYFzXvZdi2ffnLXQ4v4Q9mK61mucexezjtdDqYH4BLWsodHbihwQy8lwzmrMQPlMtcDdKZby96O2jDFY7IllMRu8A_tX4VD5IdSEoMramNTYzPVDdvsFp3XV_JLIkeOekxO4oJd-wiyb7YpRFUh6fXSfK2lC0n_JpY5avLc0wfTetFDf19lwBbHmxifLaxgrYL0TZuyLrw",
+                "attachments": [
+                  {
+                    "media": {
+                      "__typename": "Video",
+                      "height": 1280,
+                      "width": 960,
+                      "length_in_second": 3.999,
+                      "id": "1805471586823029",
+                      "dubbed_track_mapping": [],
+                      "thumbnailImage": {
+                        "uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t15.5256-10/587876528_709141265579248_2620139339079010145_n.jpg?stp=dst-jpg_s960x960_tt6&_nc_cat=111&ccb=1-7&_nc_sid=117846&_nc_ohc=g462VytP7gMQ7kNvwHpmwmK&_nc_oc=AdnG6OXbO5L-w_kJSSvO3V4OVIaBa4kg_hFvmFzv9ZyvWNr788uyuLYpZPjUO3CyNQg8G9lpPttD9Tx4Bv12ABHK&_nc_zt=23&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_AfmG4vnyfUg-TphTlYHPYGr9AZDNardFStgRk9zfeXNaHA&oe=6951FBD3"
+                      },
+                      "animated_image_caption": null,
+                      "broadcaster_origin": null,
+                      "broadcast_id": null,
+                      "broadcast_status": null,
+                      "is_live_streaming": false,
+                      "is_live_trace_enabled": false,
+                      "is_looping": true,
+                      "is_video_broadcast": false,
+                      "is_podcast_video": false,
+                      "loop_count": 23,
+                      "is_spherical": false,
+                      "is_spherical_enabled": true,
+                      "unsupported_browser_message": null,
+                      "pmv_metadata": null,
+                      "latency_sensitive_config": null,
+                      "live_playback_instrumentation_configs": null,
+                      "is_ncsr": false,
+                      "permalink_url": "https://www.facebook.com/connie.tseng.7/videos/1805471586823029/?idorvanity=1081620305695513",
+                      "captions_url": null,
+                      "seo_web_crawler_lookaside_url": null,
+                      "dash_prefetch_experimental": ["821326887278947v"],
+                      "video_available_captions_locales": [],
+                      "video_status_type": "OK",
+                      "can_use_oz": true,
+                      "min_quality_preference": null,
+                      "spherical_video_fallback_urls": null,
+                      "comet_video_player_nextgendash_availability": "AVAILABLE",
+                      "videoDeliveryLegacyFields": null,
+                      "videoDeliveryResponseFragment": {
+                        "videoDeliveryResponseResult": {
+                          "dash_manifests": [
+                            {
+                              "manifest_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd\" profiles=\"urn:mpeg:dash:profile:isoff-on-demand:2011\" minBufferTime=\"PT2S\" type=\"static\" mediaPresentationDuration=\"PT4.033333S\" FBTagsetUsed=\"basic_gen2\" FBManifestIdentifier=\"FgAYCmJhc2ljX2dlbjIZJsbl4pXCv/UCquDvmdKb1AYiGAlhdWRpb19hYWMiNjoUABIA\"><Period id=\"0\" duration=\"PT4.033333S\"><AdaptationSet id=\"0\" contentType=\"video\" frameRate=\"15360/512\" subsegmentAlignment=\"true\" par=\"3:4\" FBUnifiedUploadResolutionMos=\"360:75.6,480:75.6,720:75.6,1080:75.6\"><SupplementalProperty schemeIdUri=\"urn:mpeg:mpegB:cicp:TransferCharacteristics\" value=\"1\"/><Representation id=\"1874042703181845v\" bandwidth=\"85891\" codecs=\"avc1.4d001e\" mimeType=\"video/mp4\" sar=\"1:1\" FBEncodingTag=\"dash_h264-basic-gen2_360p\" FBPlaybackResolutionMos=\"0:100,360:74.3,480:69.4,720:60.3,960:53.2\" FBPlaybackResolutionMosConfidenceLevel=\"high\" FBPlaybackResolutionCsvqm=\"0:100,360:88.8,480:84.1,720:75.6,960:68.1\" width=\"360\" height=\"480\" FBQualityClass=\"sd\" FBQualityLabel=\"360p\"><BaseURL>https://video.fcxh3-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQM9uL7M3Tpt5yhEM4WqTEPWaEKD4Ls_PWCW8tqqS9OyLNmpIApZRR4ZZKQ4P8QwyrP1CyE--DKFscfNFO5rYBSIByGx8ZN-ymkcYgV2Z29K4g.mp4?_nc_cat=110&amp;_nc_oc=AdkpRlUWKz4HstG32HSwukkXxDRW9zv71rpNyBmb0ZyPxoWoByXvTr5j7WGjpCjdmZU1C2GXBrIgz3q40Tgp2n6s&amp;_nc_sid=9ca052&amp;_nc_ht=video.fcxh3-1.fna.fbcdn.net&amp;_nc_ohc=VPj0BmL3jnwQ7kNvwHfl2C7&amp;efg=eyJ2ZW5jb2RlX3RhZyI6ImRhc2hfaDI2NC1iYXNpYy1nZW4yXzM2MHAiLCJ2aWRlb19pZCI6MTgwNTQ3MTU4NjgyMzAyOSwib2lsX3VybGdlbl9hcHBfaWQiOjAsImNsaWVudF9uYW1lIjoidW5rbm93biIsInhwdl9hc3NldF9pZCI6ODYwMDA5OTE2NzY2NTYyLCJhc3NldF9hZ2VfZGF5cyI6MjksInZpX3VzZWNhc2VfaWQiOjEwMTIxLCJkdXJhdGlvbl9zIjozLCJiaXRyYXRlIjo4NzczNiwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&amp;ccb=17-1&amp;_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&amp;_nc_zt=28&amp;oh=00_Afm95YSHkEMyefVR0039jgT9HU59eiY-vc1ulBfRqkmnhw&amp;oe=69521D22</BaseURL><SegmentBase indexRange=\"887-930\" timescale=\"15360\" FBFirstSegmentRange=\"931-44233\"><Initialization range=\"0-886\"/></SegmentBase></Representation><Representation id=\"821326887278947v\" bandwidth=\"406001\" codecs=\"avc1.64001f\" mimeType=\"video/mp4\" sar=\"1:1\" FBEncodingTag=\"dash_h264-basic-gen2_720p\" FBPlaybackResolutionMos=\"0:100,360:89.5,480:85.1,720:79.2,960:74.8\" FBPlaybackResolutionMosConfidenceLevel=\"high\" FBPlaybackResolutionCsvqm=\"0:100,360:96.3,480:95,720:92.7,960:89.3\" width=\"720\" height=\"960\" FBQualityClass=\"hd\" FBQualityLabel=\"720p\"><BaseURL>https://video.fcxh3-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQOXWROI3-5fANO7xCm0prO5405gal2UOMb5CJNfDKljUEILufL551Ks0gcVG2Jb3Zxsll40FzdhbTg86ToxbSY5idfwI8wTi5nrMlu2xio-5Q.mp4?_nc_cat=104&amp;_nc_oc=AdnDn2S7CdIxIU4-fBfmYFcGARNkrdpGKzU-dVLMmJ3EDBRWaxVKaX19gRAXP79aaGlmOnDx_JQiYwYMB0JKyj3i&amp;_nc_sid=9ca052&amp;_nc_ht=video.fcxh3-1.fna.fbcdn.net&amp;_nc_ohc=1JyIEK6q2ZkQ7kNvwGWxjj2&amp;efg=eyJ2ZW5jb2RlX3RhZyI6ImRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ2aWRlb19pZCI6MTgwNTQ3MTU4NjgyMzAyOSwib2lsX3VybGdlbl9hcHBfaWQiOjAsImNsaWVudF9uYW1lIjoidW5rbm93biIsInhwdl9hc3NldF9pZCI6ODYwMDA5OTE2NzY2NTYyLCJhc3NldF9hZ2VfZGF5cyI6MjksInZpX3VzZWNhc2VfaWQiOjEwMTIxLCJkdXJhdGlvbl9zIjozLCJiaXRyYXRlIjo0MDc4NTUsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&amp;ccb=17-1&amp;_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&amp;_nc_zt=28&amp;oh=00_AfnthY_Otkr0HTChnTUs-2eQclZ45x-k_27Asru487SQUw&amp;oe=69521CF4</BaseURL><SegmentBase indexRange=\"891-934\" timescale=\"15360\" FBFirstSegmentRange=\"935-205626\"><Initialization range=\"0-890\"/></SegmentBase></Representation></AdaptationSet></Period></MPD>\n",
+                              "failure_reason": null
+                            }
+                          ],
+                          "dash_manifest_urls": [
+                            {
+                              "manifest_url": "https://www.facebook.com/dash_mpd_debug.mpd?v=1805471586823029&dummy=.mpd",
+                              "failure_reason": null
+                            }
+                          ],
+                          "progressive_urls": [
+                            {
+                              "progressive_url": "https://video.fcxh3-1.fna.fbcdn.net/o1/v/t2/f2/m412/AQPzzNQHp4dS_ry-lvT-NDy1rwhZhn-vSz4CU3pplHMwrBi5KlfrMCj5QRsKl7ODS8-cNMMpzi3Ec6AYcHFqN7zxzjOYUBMt2VTRFyI2Uw.mp4?_nc_cat=111&_nc_oc=AdnheuivFy95b8ieCQof7ZNlvop6aBnKKIvhlV9nbdhoT7UWCqo_0MA-jW8FzfKkiEJtu9zEoWTW5qm29-09x8W8&_nc_sid=8bf8fe&_nc_ht=video.fcxh3-1.fna.fbcdn.net&_nc_ohc=7E479z0033kQ7kNvwFIYUaR&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5GQUNFQk9PSy4uQzMuMzYwLnN2ZV9zZCIsInhwdl9hc3NldF9pZCI6ODYwMDA5OTE2NzY2NTYyLCJhc3NldF9hZ2VfZGF5cyI6MjksInZpX3VzZWNhc2VfaWQiOjEwMTIxLCJkdXJhdGlvbl9zIjozLCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&ccb=17-1&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&_nc_zt=28&oh=00_AfnQb6341t3Ji98tCdoALpzAE-BoPd17m061p_ibT6NDSw&oe=695220B7&bitrate=88450&tag=sve_sd",
+                              "failure_reason": null,
+                              "metadata": {
+                                "quality": "SD"
+                              }
+                            },
+                            {
+                              "progressive_url": "https://video.fcxh3-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQOXWROI3-5fANO7xCm0prO5405gal2UOMb5CJNfDKljUEILufL551Ks0gcVG2Jb3Zxsll40FzdhbTg86ToxbSY5idfwI8wTi5nrMlu2xio-5Q.mp4?_nc_cat=104&_nc_oc=AdnDn2S7CdIxIU4-fBfmYFcGARNkrdpGKzU-dVLMmJ3EDBRWaxVKaX19gRAXP79aaGlmOnDx_JQiYwYMB0JKyj3i&_nc_sid=5e9851&_nc_ht=video.fcxh3-1.fna.fbcdn.net&_nc_ohc=1JyIEK6q2ZkQ7kNvwGWxjj2&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5GQUNFQk9PSy4uQzMuNzIwLmRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ4cHZfYXNzZXRfaWQiOjg2MDAwOTkxNjc2NjU2MiwiYXNzZXRfYWdlX2RheXMiOjI5LCJ2aV91c2VjYXNlX2lkIjoxMDEyMSwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=523c6d72b8b30842&_nc_vs=HBkcFQIYRWZiX2VwaGVtZXJhbC82NTRFNDY0NDJEMjVBMjk3ODNFQTg5MkFBODY2QUJBMF9tdF8xX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbE5byZlYuHAxUCKAJDMywXQBAhysCDEm8YGWRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHARAHUCZZKeAQA&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&_nc_zt=28&oh=00_AflrX5lFZ7e6aSD2lYN9KESN4xOcWfR6Hx-JQfMjPojbqA&oe=69521CF4&bitrate=0&tag=dash_h264-basic-gen2_720p",
+                              "failure_reason": null,
+                              "metadata": {
+                                "quality": "HD"
+                              }
+                            }
+                          ],
+                          "hls_playlist_urls": [
+                            {
+                              "hls_playlist_url": null,
+                              "failure_reason": {
+                                "type": "NotEligibleForHls",
+                                "message_format": "",
+                                "message_params": []
+                              }
+                            }
+                          ]
+                        },
+                        "id": "1805471586823029"
+                      },
+                      "is_gaming_video": false,
+                      "is_latency_menu_enabled": false,
+                      "fbls_tier": null,
+                      "is_latency_sensitive_broadcast": false,
+                      "video_player_shaka_performance_logger_init": {
+                        "__typename": "VideoPlayerShakaPerformanceLoggerInit",
+                        "__module_operation_useVideoPlayerShakaPerformanceLoggerRelayImpl_video": {
+                          "__dr": "useVideoPlayerShakaPerformanceLoggerRelayImpl_init$normalization.graphql"
+                        },
+                        "__module_component_useVideoPlayerShakaPerformanceLoggerRelayImpl_video": {
+                          "__dr": "VideoPlayerShakaPerformanceLogger"
+                        }
+                      },
+                      "video_player_shaka_performance_logger_should_sample": false,
+                      "video_player_shaka_performance_logger_init2": {
+                        "__typename": "VideoPlayerShakaPerformanceLoggerInit",
+                        "__module_operation_useVideoPlayerShakaPerformanceLoggerBuilder_video": {
+                          "__dr": "useVideoPlayerShakaPerformanceLoggerBuilder_init$normalization.graphql"
+                        },
+                        "__module_component_useVideoPlayerShakaPerformanceLoggerBuilder_video": {
+                          "__dr": "VideoPlayerShakaPerformanceLoggerBuilder"
+                        },
+                        "per_session_sampling_rate": null
+                      },
+                      "autoplay_gating_result": "user_settings",
+                      "viewer_autoplay_setting": "off",
+                      "can_autoplay": false,
+                      "drm_info": "{\"video_license_uri_map\":{},\"graph_api_video_license_uri\":null,\"fairplay_cert\":null,\"widevine_cert\":\"CsECCAMSEBcFuRfMEgSGiwYzOi93KowYgrSCkgUijgIwggEKAoIBAQCZ7Vs7Mn2rXiTvw7YqlbWYUgrVvMs3UD4GRbgU2Ha430BRBEGtjOOtsRu4jE5yWl5KngeVKR1YWEAjp+GvDjipEnk5MAhhC28VjIeMfiG\\/+\\/7qd+EBnh5XgeikX0YmPRTmDoBYqGB63OBPrIRXsTeo1nzN6zNwXZg6IftO7L1KEMpHSQykfqpdQ4IY3brxyt4zkvE9b\\/tkQv0x4b9AsMYE0cS6TJUgpL+X7r1gkpr87vVbuvVk4tDnbNfFXHOggrmWEguDWe3OJHBwgmgNb2fG2CxKxfMTRJCnTuw3r0svAQxZ6ChD4lgvC2ufXbD8Xm7fZPvTCLRxG88SUAGcn1oJAgMBAAE6FGxpY2Vuc2Uud2lkZXZpbmUuY29tEoADrjRzFLWoNSl\\/JxOI+3u4y1J30kmCPN3R2jC5MzlRHrPMveoEuUS5J8EhNG79verJ1BORfm7BdqEEOEYKUDvBlSubpOTOD8S\\/wgqYCKqvS\\/zRnB3PzfV0zKwo0bQQQWz53ogEMBy9szTK\\/NDUCXhCOmQuVGE98K\\/PlspKkknYVeQrOnA+8XZ\\/apvTbWv4K+drvwy6T95Z0qvMdv62Qke4XEMfvKUiZrYZ\\/DaXlUP8qcu9u\\/r6DhpV51Wjx7zmVflkb1gquc9wqgi5efhn9joLK3\\/bNixbxOzVVdhbyqnFk8ODyFfUnaq3fkC3hR3f0kmYgI41sljnXXjqwMoW9wRzBMINk+3k6P8cbxfmJD4\\/Paj8FwmHDsRfuoI6Jj8M76H3CTsZCZKDJjM3BQQ6Kb2m+bQ0LMjfVDyxoRgvfF\\/\\/M\\/EEkPrKWyU2C3YBXpxaBquO4C8A0ujVmGEEqsxN1HX9lu6c5OMm8huDxwWFd7OHMs3avGpr7RP7DUnTikXrh6X0\"}",
+                      "p2p_settings": null,
+                      "audio_settings": {
+                        "video_volume_setting": "DEFAULT",
+                        "id": "10158542818189318"
+                      },
+                      "captions_settings": {
+                        "always_show_captions": false,
+                        "captions_background_color": null,
+                        "captions_background_opacity": null,
+                        "captions_text_color": null,
+                        "captions_text_size": null,
+                        "id": "10157849681604318"
+                      },
+                      "broadcast_low_latency_config": null,
+                      "audio_availability": "UNAVAILABLE",
+                      "muted_segments": [],
+                      "spherical_video_renderer": null,
+                      "preferred_thumbnail": {
+                        "image": {
+                          "uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t15.5256-10/587876528_709141265579248_2620139339079010145_n.jpg?stp=dst-jpg_s960x960_tt6&_nc_cat=111&ccb=1-7&_nc_sid=50ce42&_nc_ohc=g462VytP7gMQ7kNvwHpmwmK&_nc_oc=AdnG6OXbO5L-w_kJSSvO3V4OVIaBa4kg_hFvmFzv9ZyvWNr788uyuLYpZPjUO3CyNQg8G9lpPttD9Tx4Bv12ABHK&_nc_zt=23&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_AfmG4vnyfUg-TphTlYHPYGr9AZDNardFStgRk9zfeXNaHA&oe=6951FBD3"
+                        },
+                        "image_preview_payload": null,
+                        "id": "1198351472176505"
+                      },
+                      "video_imf_data": null,
+                      "playback_language_on_comet": null,
+                      "warning_screen_renderer": null,
+                      "cix_screen": null,
+                      "playable_duration_in_ms": 3999,
+                      "owner": {
+                        "__typename": "User",
+                        "id": "507971784",
+                        "__isActor": "User",
+                        "name": "Connie Tseng",
+                        "enable_reels_tab_deeplink": true,
+                        "is_verified": false,
+                        "url": "https://www.facebook.com/connie.tseng.7",
+                        "displayPicture": {
+                          "uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t39.30808-1/436380754_10160806452536785_8090431501914853446_n.jpg?stp=cp0_dst-jpg_s40x40_tt6&_nc_cat=101&ccb=1-7&_nc_sid=e99d92&_nc_ohc=tynzXFVp3LQQ7kNvwHq93i8&_nc_oc=AdkoFPTHIXzzWvFtSQ0vE8z1NbyeeNtnadADgasMbwaKNmn5V7TAPeNZG_AFbiC6s4mi9GlbXKqdZTDJoxQinCIu&_nc_zt=24&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_AfkkUk1ZfyQoijJBrVLbxNwISifk6UyeMSA6aohNGv1UlQ&oe=6951F7E9"
+                        },
+                        "subscribe_status": "CANNOT_SUBSCRIBE",
+                        "delegate_page": null
+                      },
+                      "__isNode": "Video",
+                      "video_audio_translations_meta_data": {
+                        "header_label_renderer": null
+                      },
+                      "is_made_with_meta_ai_app": false,
+                      "remix_info": {
+                        "is_remixable": false,
+                        "status": "NOT_APPLICABLE"
+                      },
+                      "embeddable": true,
+                      "has_pending_dubs_for_review": false,
+                      "created_time": 1764021758,
+                      "dubbed_translation_metadata": {
+                        "nodes": []
+                      },
+                      "shareable_url": "https://www.facebook.com/reel/1805471586823029",
+                      "video_delivery_response": {
+                        "transcript_urls": []
+                      },
+                      "video_owner_type": "FACEBOOK_USER",
+                      "soundtrack_info": null,
+                      "track_title": null,
+                      "music_album_art_uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t39.30808-1/436380754_10160806452536785_8090431501914853446_n.jpg?stp=cp0_dst-jpg_s64x64_tt6&_nc_cat=101&ccb=1-7&_nc_sid=68967c&_nc_ohc=tynzXFVp3LQQ7kNvwHq93i8&_nc_oc=AdkoFPTHIXzzWvFtSQ0vE8z1NbyeeNtnadADgasMbwaKNmn5V7TAPeNZG_AFbiC6s4mi9GlbXKqdZTDJoxQinCIu&_nc_zt=24&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_Afm_XMUccISHDx2W0oF2WgbaZNk_QD4sIMWfdr8Ad1164g&oe=6951F7E9",
+                      "is_original_audio_on_facebook": true,
+                      "video_label": null,
+                      "first_frame_thumbnail": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t15.5256-10/587345218_711219495361583_4036924055643419979_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=117846&_nc_ohc=4Hn2Dqdz6RIQ7kNvwF4-xC3&_nc_oc=Adl6qwhuWGzELks3xPnE0hK1uC-8i1AR51ABmXuvpwbpeTosAjD4oV-q1CrDoRbZL2MbhiH6JDwDxuERx37Grd36&_nc_zt=23&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_Aflj5hghW8vzxVPBbAErGqwuvEPzCXAQnUOJDfppaQhuZw&oe=6951F316"
+                    },
+                    "call_to_action_renderer": null
+                  }
+                ],
+                "tracking": "{\"qid\":\"-7727176541194105009\",\"mf_story_key\":\"2223425971514935\",\"top_level_post_id\":\"2223425971514935\",\"tl_objid\":\"2223425971514935\",\"content_owner_id_new\":507971784,\"story_location\":6,\"story_attachment_style\":\"fb_shorts_creation\",\"video_id\":\"1805471586823029\",\"sty\":308,\"ent_attachement_type\":\"FBShortsStoryAttachment\",\"page_insights\":{\"1081620305695513\":{\"page_id\":\"1081620305695513\",\"page_id_type\":\"group\",\"actor_id\":507971784,\"dm\":{\"isShare\":0,\"originalPostOwnerID\":0,\"sharedMediaID\":0,\"sharedMediaOwnerID\":0},\"psn\":\"EntGroupMallPostCreationStory\",\"post_context\":{\"object_fbtype\":657,\"publish_time\":1764021760,\"story_name\":\"EntGroupMallPostCreationStory\",\"story_fbid\":[\"2223425971514935\"]},\"role\":1,\"sl\":6}},\"actrs\":\"507971784\",\"tds_flgs\":3}",
+                "privacy_scope": {
+                  "description": "Private group",
+                  "label": "Private group",
+                  "display_label": "Private group",
+                  "icon_image": {
+                    "height": 36,
+                    "scale": 3,
+                    "uri": "https://static.xx.fbcdn.net/rsrc.php/v4/yE/r/otOYIhDAeEj.png",
+                    "width": 36
+                  },
+                  "privacy_scope_renderer": null
+                },
+                "id": "UzpfSTUwNzk3MTc4NDpWSzoyMjIzNDI1OTcxNTE0OTM1",
+                "post_id": "2223425971514935",
+                "sponsored_data": null,
+                "creation_time": 1764021760,
+                "unpublished_content_type": "PUBLISHED",
+                "scheduled_publish_time": 0,
+                "sponsor_relationship": 0,
+                "branded_content_post_info": null,
+                "creator_collaboration": null,
+                "is_reshare": false,
+                "actors": [
+                  {
+                    "__typename": "User",
+                    "__isActor": "User",
+                    "id": "507971784",
+                    "name": "Connie Tseng",
+                    "enable_reels_tab_deeplink": true,
+                    "is_verified": false,
+                    "url": "https://www.facebook.com/connie.tseng.7"
+                  }
+                ],
+                "media_attribution_elements": [],
+                "can_viewer_delete": false,
+                "can_viewer_edit": false,
+                "can_viewer_cancel_collaboration_invite": false,
+                "can_viewer_remove_collaborator": false,
+                "can_viewer_see_collaboration_invite": false,
+                "legal_reporting_cta_type": null,
+                "legal_reporting_uri": null,
+                "save_info": {
+                  "viewer_save_state": "NOT_SAVED"
+                },
+                "to": {
+                  "__typename": "Group",
+                  "id": "1081620305695513"
+                },
+                "video": {
+                  "id": "1805471586823029",
+                  "owner": {
+                    "__typename": "User",
+                    "id": "507971784"
+                  }
+                },
+                "post_collaboration": null,
+                "can_viewer_remove_self_as_collaborator": false,
+                "if_viewer_can_see_stars_toggle_menu_option": null,
+                "transparency_ad_info": {
+                  "menu_label": "Ad info",
+                  "should_display_ad_info": false
+                },
+                "serialized_frtp_identifiers": null,
+                "debug_info": null,
+                "feedback": {
+                  "associated_group": {
+                    "if_viewer_can_see_reel_group_attribution": {
+                      "id": "1081620305695513",
+                      "__typename": "Group",
+                      "if_viewer_can_see_reel_group_attribution": {
+                        "id": "1081620305695513",
+                        "name": "Tiny Hoppers South Surrey"
+                      },
+                      "profilePicture36": {
+                        "uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t39.30808-6/214572273_10157663710570882_1732654673190616632_n.jpg?stp=c160.0.640.640a_cp0_dst-jpg_s50x50_tt6&_nc_cat=103&ccb=1-7&_nc_sid=33e84f&_nc_ohc=6qd0TVU7imIQ7kNvwEwUfj5&_nc_oc=AdnqcT-YR-DBW7A2y7eWbpAgWRdgW6V3FYxeGJay-4xXoVq9Xn_8OVWFWpK_iUoY-kPtyVimHoHw5-dzv2q9DpYg&_nc_zt=23&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_Afm5dewJ2xnVZWQsJt-GdPm2lMUMrHaIbOSpazgrfYhVBg&oe=69521C08"
+                      }
+                    },
+                    "id": "1081620305695513",
+                    "if_viewer_can_see_group_reels_music_pill": null
+                  },
+                  "id": "ZmVlZGJhY2s6MjIyMzQyNTk3MTUxNDkzNQ=="
+                },
+                "inform_treatment_for_community_notes": null,
+                "message": {
+                  "text": "Happiest November birthday to Ms. Grettel and Ms. Sisi❤️❤️🎉",
+                  "ranges": []
+                },
+                "translated_message_for_viewer": null
+              },
+              "enable_horizontal_ufi": true,
+              "enable_comet_reels_unification_for_ifr": false
+            },
+            {
+              "__typename": "FeedStandardAttachmentStyleInfo"
+            },
+            {
+              "__typename": "FutureOfFeedAttachmentStyleInfo"
+            }
+          ]
+        },
+        "__module_operation_CometFeedStoryAttachmentMatchRenderer_attachment": {
+          "__dr": "CometFeedStoryFBReelsAttachmentStyle_styleTypeRenderer$normalization.graphql"
+        },
+        "__module_component_CometFeedStoryAttachmentMatchRenderer_attachment": {
+          "__dr": "CometFeedStoryFBReelsAttachmentStyle.react"
+        }
+      },
+      "throwbackStyles": null,
+      "comet_footer_renderer": {
+        "__typename": "CometStoryAttachmentFooterGHLMockedGenericShareStrategy",
+        "attachment": {
+          "ghl_mocked_footer_info": {
+            "headline": "Junle",
+            "footer_body": "zB4yRHNXfL2Lk5AJUHABzB54XzzHmexDywYz7AymX9Jg6ZrfafXb1Wbp5FJhzHNsPB14nmQMHg1",
+            "link": "https://l.facebook.com/l.php?u=AT2X0w7CQfiKyQjbok0Xdj_71how6S5S-i7NPz8tO_nIQ1P-BPSK8ZJidzXkFuhr9PZRRq2yC7Ykheopj0_gmsDPBXIn7_90Dn8&h=AT2eKQfGnA72W82JBU3Ea-ApT0FkUunihHLr82LKeN8YBdnpISqc1vJP8EWMN9JfjDa2yshT2j9Nck_bOnN5KlbGWm9C2MRsMQRczJ2n6OZLHMDPB54kYZtMoKJLmEKZTZKZnobpdtFRCEqj-ZrX&enc=1",
+            "meta": "kerRfd.com",
+            "cta_button": {
+              "attributes": [],
+              "styles": [],
+              "text": null,
+              "tag": "b",
+              "children": [
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "L",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "e",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "a",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "r",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "n",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": " ",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "M",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "o",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "r",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [],
+                  "styles": [],
+                  "text": "e",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                },
+                {
+                  "attributes": [
+                    {
+                      "name": "className",
+                      "val": " aw7X7aK zw7X7aJ yw7X7aI xw7X7aH"
+                    },
+                    {
+                      "name": "checksum",
+                      "val": "m1pM0I"
+                    }
+                  ],
+                  "styles": [
+                    {
+                      "name": "display",
+                      "val": "none"
+                    }
+                  ],
+                  "text": "-",
+                  "tag": "b",
+                  "children": []
+                }
+              ]
+            }
+          }
+        },
+        "__module_operation_CometFeedStoryAttachmentFooterMatchRenderer_attachment": {
+          "__dr": "CometStoryAttachmentFooterGHLMockedGenericShareStrategy_attachmentFooter$normalization.graphql"
+        },
+        "__module_component_CometFeedStoryAttachmentFooterMatchRenderer_attachment": {
+          "__dr": "CometStoryAttachmentFooterGHLMockedGenericShareStrategy.react"
+        }
+      },
+      "comet_footer_disclaimer_renderer": null,
+      "media": {
+        "__typename": "Video",
+        "allow_unencrypted_playback": true,
+        "__isNode": "Video",
+        "id": "1805471586823029"
+      },
+      "all_subattachments": {
+        "nodes": []
+      }
+    }
+  ],
+  "future_of_feed_info": {
+    "dominant_readable_color": "#AE2363"
+  },
+  "th_dat_spo": null,
+  "text_format_metadata": null,
+  "post_id": "2223425971514935",
+  "actors": [
+    {
+      "profile_picture": {
+        "uri": "https://scontent.fcxh3-1.fna.fbcdn.net/v/t39.30808-1/436380754_10160806452536785_8090431501914853446_n.jpg?stp=cp0_dst-jpg_s50x50_tt6&_nc_cat=101&ccb=1-7&_nc_sid=e99d92&_nc_ohc=tynzXFVp3LQQ7kNvwHq93i8&_nc_oc=AdkoFPTHIXzzWvFtSQ0vE8z1NbyeeNtnadADgasMbwaKNmn5V7TAPeNZG_AFbiC6s4mi9GlbXKqdZTDJoxQinCIu&_nc_zt=24&_nc_ht=scontent.fcxh3-1.fna&_nc_gid=S1Jg6qIivsL_TtWkYvTfsA&oh=00_AflaOYHsM_6F9-2lTNnvcKZScWpIF4DKWn0pKC6-0zZe-A&oe=6951F7E9"
+      },
+      "__typename": "User",
+      "id": "507971784",
+      "name": "Connie Tseng",
+      "__isEntity": "User",
+      "url": "https://www.facebook.com/connie.tseng.7"
+    }
+  ],
+  "message": {
+    "__typename": "TextWithEntities",
+    "text": "Happiest November birthday to Ms. Grettel and Ms. Sisi❤️❤️🎉"
+  },
+  "ghl_mocked_encrypted_link": "https://l.facebook.com/l.php?u=AT2yZmkuDy_vJRyRFQ3lTOlwvFvjhP0TfdZV6JoiTbD_oxKniwnfgwd_3B5XiKJ4qiwt4fejcdCkOSsMzxJ8G52KxOuxZEA1v1o&h=AT1xWRVrAji97fqPNUtOjIofE9yvJnPYWxG0P98axtDoqZnaJx3Pw5Gnu9bfCVG4rV4gEgSgdo1NFqfCokUPqplgPY2hguxSL7I-W57nHxAdZcC8seDCfmvH70HxU-LZ10WF_tDOugohLfZkaqQ3&enc=1",
+  "ghl_label_mocked_cta_button": null,
+  "wwwURL": "https://www.facebook.com/groups/1081620305695513/permalink/2223425971514935/",
+  "target_group": {
+    "id": "1081620305695513"
+  },
+  "attached_story": null,
+  "id": "UzpfSTUwNzk3MTc4NDpWSzoyMjIzNDI1OTcxNTE0OTM1"
+}
