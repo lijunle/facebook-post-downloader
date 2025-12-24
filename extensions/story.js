@@ -9,6 +9,7 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').MediaId} MediaId
  * @typedef {import('./types').MediaVideo} MediaVideo
  * @typedef {import('./types').MediaWatch} MediaWatch
+ * @typedef {import('./types').MediaPhoto} MediaPhoto
  * @typedef {import('./types').MediaPhotoUrl} MediaPhotoUrl
  * @typedef {import('./types').User} User
  * @typedef {import('./types').Group} Group
@@ -27,38 +28,42 @@ const storyGroupCache = new Map();
 const videoUrlCache = new Map();
 
 /**
- * @param {string} url
- * @returns {string}
+ * Check if an object is a MediaPhoto.
+ * @param {unknown} obj
+ * @returns {obj is MediaPhoto}
  */
-function guessExt(url) {
-    try {
-        if (/\.png(\?|$)/i.test(url)) return "png";
-        const u = new URL(url);
-        const fmt = u.searchParams.get("format");
-        if (fmt && /^png$/i.test(fmt)) return "png";
-        return "jpg";
-    } catch {
-        return /\.png(\?|$)/i.test(url) ? "png" : "jpg";
-    }
+function isMediaPhoto(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Photo') return false;
+    if (typeof o.id !== 'string' || !o.id) return false;
+    return true;
 }
 
 /**
- * @param {MediaVideo} media
- * @returns {string | undefined}
+ * Check if an object is a MediaVideo (has videoDeliveryResponseFragment or video_grid_renderer).
+ * @param {unknown} obj
+ * @returns {obj is MediaVideo}
  */
-function pickBestProgressiveUrl(media) {
-    const list = media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
-    if (!Array.isArray(list) || list.length === 0) return undefined;
+function isMediaVideo(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video') return false;
+    // MediaVideo has videoDeliveryResponseFragment or video_grid_renderer
+    return 'videoDeliveryResponseFragment' in o || 'video_grid_renderer' in o;
+}
 
-    const hd = list.find(
-        /** @param {any} x */(x) => x?.metadata?.quality === "HD" && typeof x?.progressive_url === "string" && x.progressive_url,
-    );
-    if (hd && typeof hd.progressive_url === "string") return hd.progressive_url;
-
-    const first = list.find(
-        /** @param {any} x */(x) => typeof x?.progressive_url === "string" && x.progressive_url,
-    );
-    return first ? String(first.progressive_url) : undefined;
+/**
+ * Check if an object is a MediaWatch (Video with url but no videoDeliveryResponseFragment).
+ * @param {unknown} obj
+ * @returns {obj is MediaWatch}
+ */
+function isMediaWatch(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video') return false;
+    // MediaWatch has url but no videoDeliveryResponseFragment or video_grid_renderer
+    return typeof o.url === 'string' && !('videoDeliveryResponseFragment' in o) && !('video_grid_renderer' in o);
 }
 
 /**
@@ -67,18 +72,7 @@ function pickBestProgressiveUrl(media) {
  * @returns {{ url: string, ext: string } | undefined}
  */
 function getDownloadUrl(media) {
-    if (media.__typename === "Video") {
-        // Try progressive URL first (MediaVideo)
-        const progressiveUrl = pickBestProgressiveUrl(/** @type {MediaVideo} */(media));
-        if (progressiveUrl) return { url: progressiveUrl, ext: "mp4" };
-
-        // Fall back to direct URL (MediaWatch)
-        if (media.url) return { url: media.url, ext: "mp4" };
-
-        return undefined;
-    }
-
-    if (media.__typename === "Photo") {
+    if (isMediaPhoto(media)) {
         // Pick the best image by comparing dimensions (width * height)
         /** @type {MediaPhotoUrl | undefined} */
         let best;
@@ -90,7 +84,39 @@ function getDownloadUrl(media) {
             }
         }
         if (!best) return undefined;
-        return { url: best.uri, ext: guessExt(best.uri) };
+
+        const url = best.uri;
+        let ext = "jpg";
+        try {
+            if (/\.png(\?|$)/i.test(url)) ext = "png";
+            else {
+                const u = new URL(url);
+                const fmt = u.searchParams.get("format");
+                if (fmt && /^png$/i.test(fmt)) ext = "png";
+            }
+        } catch {
+            if (/\.png(\?|$)/i.test(url)) ext = "png";
+        }
+        return { url, ext };
+    }
+
+    if (isMediaVideo(media)) {
+        const list =
+            media?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls ??
+            media?.video_grid_renderer?.video?.videoDeliveryResponseFragment?.videoDeliveryResponseResult?.progressive_urls;
+
+        if (Array.isArray(list) && list.length > 0) {
+            const hd = list.find((x) => x?.metadata?.quality === "HD" && x?.progressive_url);
+            if (hd?.progressive_url) return { url: hd.progressive_url, ext: "mp4" };
+
+            const first = list.find((x) => x?.progressive_url);
+            if (first?.progressive_url) return { url: first.progressive_url, ext: "mp4" };
+        }
+        return undefined;
+    }
+
+    if (isMediaWatch(media)) {
+        return { url: media.url, ext: "mp4" };
     }
 
     return undefined;

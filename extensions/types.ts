@@ -54,16 +54,23 @@ export type MediaPhoto = MediaId & {
   photo_image?: MediaPhotoUrl;
 };
 
+export type MediaVideoUrl = {
+  videoDeliveryResponseResult: {
+    progressive_urls: Array<{
+      progressive_url: string;
+      metadata: { quality: "HD" | "SD" };
+    }>;
+  };
+};
+
 export type MediaVideo = MediaId & {
   __typename: "Video";
   url: string;
   created_time: number;
-  videoDeliveryResponseFragment: {
-    videoDeliveryResponseResult: {
-      progressive_urls: Array<{
-        progressive_url: string;
-        metadata: { quality: "HD" | "SD" };
-      }>;
+  videoDeliveryResponseFragment?: MediaVideoUrl;
+  video_grid_renderer?: {
+    video: {
+      videoDeliveryResponseFragment: MediaVideoUrl;
     };
   };
 };
