@@ -2918,10 +2918,7 @@
                                         "referenced_sticker": null,
                                         "attachments": [
                                           {
-                                            "style_list": [
-                                              "photo",
-                                              "fallback"
-                                            ]
+                                            "style_list": ["photo", "fallback"]
                                           }
                                         ],
                                         "text_format_metadata": null,
@@ -2945,10 +2942,7 @@
                                     {
                                       "deduplication_key": "6a7e09c0c6130d918bde015476bdbc5a",
                                       "__typename": "StoryAttachment",
-                                      "style_list": [
-                                        "photo",
-                                        "fallback"
-                                      ],
+                                      "style_list": ["photo", "fallback"],
                                       "styles": {
                                         "__typename": "StoryAttachmentPhotoStyleRenderer",
                                         "__isStoryAttachmentStyleRendererUnion": "StoryAttachmentPhotoStyleRenderer",
@@ -3643,10 +3637,7 @@
                             "referenced_sticker": null,
                             "attachments": [
                               {
-                                "style_list": [
-                                  "photo",
-                                  "fallback"
-                                ]
+                                "style_list": ["photo", "fallback"]
                               }
                             ],
                             "text_format_metadata": null,
@@ -3673,10 +3664,7 @@
                             "id": "1422788539419067"
                           },
                           "__typename": "StoryAttachment",
-                          "style_list": [
-                            "photo",
-                            "fallback"
-                          ],
+                          "style_list": ["photo", "fallback"],
                           "styles": {
                             "__typename": "StoryAttachmentPhotoStyleRenderer",
                             "__isStoryAttachmentStyleRendererUnion": "StoryAttachmentPhotoStyleRenderer",
@@ -7696,10 +7684,7 @@
               "trackingdata": {
                 "id": "AZZ1zA65zZLkFsHMRMMaBmlkroonhPVWuzHeyV4M7aVHrCbHG70kxDiEjxBTj_AQl-ETt6xgD8XxGjw5VFw2Yi34IRMw_o0XQMKQvbo-KDg4WhZjPlSOYShK_PeJWD1Xir8n4PZxFWl_QtX7v9UhroYiOPGpD0DWV3wVz3jQLsvzg1N2BRgtZqTHdQ3AuR3D7BOt4hwQfaz5McYMKj7uqM0FYHr08AI8aMzmHYpmOCE-0hNH5P5yoh2BEwSgrC7k2eaTwNr75vU5CeD4yrS7lgr62OMZMEbPCFF2VFJDvpyKlXHBAFUrJTfNYjtoeb6_I4IwHGvxj2rg8lzV-IJkwTKNo7KKt45jM8nxFpP0KZC7a0V0mb5NUyFXnKlgUT76IPLBjjjKQY_3g5Q3DwWomUT7gzoRm47OW-kpHOPnvc1WF1XSrj5Gk-HIDWLxo6C-CeQ57fcfpO7SzuylMArCeWZ1DJPXMGxI36tnfa_U0ihXiXZhkEF8eHy6owBMDw45fI3TEVmMKBr4zuMSWcAhHYttGJW-1AiWZJQyOydlfAgJ_8rbwfoj4IVTpUDGR1Sm0IKK5623SRclOISmbCDFtEQRMP3i74br67jcQo3jDv1bi10V4efd9LwDVmQUaKQ-oJPCNYrBUU5gBwNp3qlpMEu-4qM-ba5pHU-OzmVZFgFVxkUWvvH34UYFhCmAB-D-P-M8rkqeF8nsccRPfGZLZ3UbtQunO4QLlbN_g66BIcGVwMVgZwFKo1lXH0dewsZbjALWk6PdBmzAEEFCrtdJc4WuPNeGyfBdjnkIn3fEWxcvHzeuJuaswi0cvLkZneTiakyIAjLaCJvx8Zlx0lf9RW3F48iWlNtwDdtUs0nMvCOqUxHVPNcy35sjY7rkphZt2L-plypqGI5DZZhLwDqPHQNUWswyN03Notge92mMSZfaXanTA6gIIS4FplAY8C7orgkPDezueBfgeZTQuGMGtPkUGVvufltM4VHONcuvR2JKMuaWzxleNkeOjzSk9q1sdpb_wpS421wzqg5rXT0c8XAOLXmvMg4bMa4gQyfHdTCjiPAdAtFWxd-zc5CBa3B3VRUFTgXl26b04h25H9LRWeSESxiMCvkB6mwU8x7DIx0mJk2XUiPHUj_d--SE41xLu6v-mGdPJvQTx_Xa8wa5PPzRz_2G_AmdR1oC7bvSGZaGCoyztkQq6SGIaTe2xgXEs-gmW7xLCNT9t4d6F7mFcDUDSXhe7UtU-unNkOs6b3WmDGQjGwB_BBkccLNvLhlFXAl-SF21X1s7mPMI_2ZxvQPqVwemm9L-8HlVN4QbCe11qHrQFYRyZ96otWZ_V4O1bFsk1nRG2jTg8UgiOu9LiSLj42q-K45NBdQ7Mlc1hc4yNdfdRRnhiw7I20XPB6oLGgOLbuyRMjir5qLE04h5E9wRhuTTTsysKXD4NdedWPoQ_d6C7Zd9veKs3XzI2kqYWBUpKlxFr-kOcTrnRS9oSeKYv5IFgqCdUu8tfdaZmh-FTJB-dBBUN3wUoo7EaJcbUfxdTQjVADDXDbKgk7DorHji1jON6I2EGMnAO--DE53sWbLrPKg-VFw3UyBY0H8tiDjfvEYp2CsK2F7PqCQdXnz4b0qs1zH6uFwHZEOEvqWmyOOqCPQaRUluQaLNVkhYZG4kHUaEHFHV2xkykK58oyIJm2bOwP3yRz2PyAwK_MqEBl8ebA2tpq58I9ki3OX0MYm1Xv4K_VHxy9greM8DPivkKb2q90pB7oypM0uEOuZzyaMhX2LepZ0f7cfqwtAnl8faCWHzyd25LWed1f9i_URXkknunKD3pyGR3kPG705qvl6WBDnScCeXd35yq6UI4So6o7vWvbTwoYhmu0ZrwhBE0UCRj3OupnFP7d4k-FLc7v1PV6v_gWORrnxCy5PsywsLmnf0QKQVuVDni1rxHGC2mJrVdUvZQB1iKQY0hr5Y7ohkZ6KTOij4LcFMVhuwGIOwI4QRr-GqFk7itf5xhnZHe5ja5I9AQHGNqCOcRh2pyMqhJrgsZDpQ90Khvknn8JFaGzxjfze48bA9MPe3hKhOEenZfmZ9Sk8X181nY2hkTlqgpJz-VccgAEMHLafzWhZwhxfRcigkrkhgxtYH_BtlmTdY6skQ7n8TezBiJMmwp_HKBYEi556ZZmV3j3leB4N-m--fQnrAMS6h9qKn7rv2q7r71F3xQFiPGdDEhsPyc64buGDfwFAM4k4AVinT3xv8I-KxQM5KR2XXjDlTDRByvf-xp89h3eKTgngZSWzhVTCHdbfTPHC2g631PZFha_xATGOskdwozuZqQbrB3RbnMwn12Q8UQNE6Xi2fVvs3BevS3FE2VcxYDOe6ehIX_Pz5OFaPidWjPgGKK4I_FP4ICPM-oeSN2VFOjvVRggzEo3lrBb6HeRkF1Oa_1WmoSROJkdukwss3xKL8XbybqfXiJy7UwG4dolYFfTO1rt5ptHpLU2BDiudwEmEEM2Hd7PaHMOvcoYTMXHdLAUdiNv0xTlf-Vdf3lw28T9IzOUL1UlbXA7aFhQcNqSWkLs_H2ELgIg0ZAoEelR1gVSryiWE0F9Yce6WFEJiNeLI84vOf7q6bfL7rh6EXLiVMCWUkPUVfEYgoYcDCdNFUNzzACNsv"
               },
-              "viewability_config": [
-                8,
-                5
-              ],
+              "viewability_config": [8, 5],
               "client_view_config": {
                 "can_delay_log_impression": false,
                 "use_banzai_signal_imp": true,
@@ -7768,294 +7753,166 @@
             [
               "CometFeedStoryActorPhotoStrategy_actorPhoto$normalization.graphql"
             ],
-            [
-              "CometFeedStoryAttachedStoryStrategy.react"
-            ],
-            [
-              "CometFeedStoryActorPhotoStrategy.react"
-            ],
+            ["CometFeedStoryAttachedStoryStrategy.react"],
+            ["CometFeedStoryActorPhotoStrategy.react"],
             [
               "CometFeedStoryTitleWithActorStrategy_contextTitle$normalization.graphql"
             ],
-            [
-              "CometFeedStoryTitleWithActorStrategy.react"
-            ],
+            ["CometFeedStoryTitleWithActorStrategy.react"],
             [
               "CometFeedStoryDefaultContextLayoutStrategy_contextLayout$normalization.graphql"
             ],
-            [
-              "CometFeedStoryDefaultContextLayoutStrategy.react"
-            ],
+            ["CometFeedStoryDefaultContextLayoutStrategy.react"],
             [
               "CometFeedStoryDefaultMessageRenderingStrategy_message$normalization.graphql"
             ],
-            [
-              "CometFeedStoryDefaultMessageRenderingStrategy.react"
-            ],
+            ["CometFeedStoryDefaultMessageRenderingStrategy.react"],
             [
               "CometFeedStoryMessageContainerRenderingStrategy_messageContainer$normalization.graphql"
             ],
-            [
-              "CometFeedStoryMessageContainerRenderingStrategy.react"
-            ],
+            ["CometFeedStoryMessageContainerRenderingStrategy.react"],
             [
               "CometFeedStoryPhotoAttachmentStyle_styleTypeRenderer$normalization.graphql"
             ],
-            [
-              "CometFeedStoryPhotoAttachmentStyle.react"
-            ],
+            ["CometFeedStoryPhotoAttachmentStyle.react"],
             [
               "CometFeedStoryDefaultContentStrategy_content$normalization.graphql"
             ],
-            [
-              "CometFeedStoryDefaultContentStrategy.react"
-            ],
+            ["CometFeedStoryDefaultContentStrategy.react"],
             [
               "CometFeedStoryDefaultLayoutStrategy_layout$normalization.graphql"
             ],
-            [
-              "CometFeedStoryDefaultLayoutStrategy.react"
-            ],
+            ["CometFeedStoryDefaultLayoutStrategy.react"],
             [
               "CometFeedStoryActorCommunityAttributionStrategy_actorPhoto$normalization.graphql"
             ],
-            [
-              "CometFeedStoryActorCommunityAttributionStrategy.react"
-            ],
+            ["CometFeedStoryActorCommunityAttributionStrategy.react"],
             [
               "CometFeedStoryCommunityAttributionTitleStrategy_contextTitle$normalization.graphql"
             ],
-            [
-              "CometFeedStoryCommunityAttributionTitleStrategy.react"
-            ],
-            [
-              "CometUFIAdaptiveShareActionRenderer_story$normalization.graphql"
-            ],
-            [
-              "CometUFIAdaptiveShareActionRenderer.react"
-            ],
-            [
-              "CometSimplifiedUFIContainer_renderer$normalization.graphql"
-            ],
-            [
-              "CometSimplifiedUFIContainer.react"
-            ],
+            ["CometFeedStoryCommunityAttributionTitleStrategy.react"],
+            ["CometUFIAdaptiveShareActionRenderer_story$normalization.graphql"],
+            ["CometUFIAdaptiveShareActionRenderer.react"],
+            ["CometSimplifiedUFIContainer_renderer$normalization.graphql"],
+            ["CometSimplifiedUFIContainer.react"],
             [
               "CometFeedStoryFeedbackGroupContextualProfileUFIStrategy_feedback$normalization.graphql"
             ],
-            [
-              "CometFeedStoryFeedbackGroupContextualProfileUFIStrategy.react"
-            ],
+            ["CometFeedStoryFeedbackGroupContextualProfileUFIStrategy.react"],
             [
               "CometFeedStoryDefaultCallToActionStrategy_cta$normalization.graphql"
             ],
-            [
-              "CometFeedStoryDefaultCallToActionStrategy.react"
-            ],
+            ["CometFeedStoryDefaultCallToActionStrategy.react"],
             [
               "CometFeedStoryLongerTimestampStrategy_timestamp$normalization.graphql"
             ],
-            [
-              "CometFeedStoryLongerTimestampStrategy.react"
-            ],
-            [
-              "CometFeedUnitStoryStrategy_feedUnit$normalization.graphql"
-            ],
-            [
-              "CometFeedUnitStoryStrategy.react"
-            ],
+            ["CometFeedStoryLongerTimestampStrategy.react"],
+            ["CometFeedUnitStoryStrategy_feedUnit$normalization.graphql"],
+            ["CometFeedUnitStoryStrategy.react"],
             [
               "CometStoryAttachmentFooterGHLMockedGenericShareStrategy_attachmentFooter$normalization.graphql"
             ],
-            [
-              "CometStoryAttachmentFooterGHLMockedGenericShareStrategy.react"
-            ],
+            ["CometStoryAttachmentFooterGHLMockedGenericShareStrategy.react"],
             [
               "CometUFIReactionSentence_reactionDisplayConfig$normalization.graphql"
             ],
-            [
-              "CometUFIReactionSentence.react"
-            ],
-            [
-              "CometUFISeenByCountText_feedback$normalization.graphql"
-            ],
-            [
-              "CometUFISeenByCountText.react"
-            ],
-            [
-              "CometUFICommentsCountRenderer_data$normalization.graphql"
-            ],
-            [
-              "CometUFICommentsCountRenderer.react"
-            ],
+            ["CometUFIReactionSentence.react"],
+            ["CometUFISeenByCountText_feedback$normalization.graphql"],
+            ["CometUFISeenByCountText.react"],
+            ["CometUFICommentsCountRenderer_data$normalization.graphql"],
+            ["CometUFICommentsCountRenderer.react"],
             [
               "CometUFIDefaultSummaryAndActionsRenderer_feedback$normalization.graphql"
             ],
-            [
-              "CometUFIDefaultSummaryAndActionsRenderer.react"
-            ],
+            ["CometUFIDefaultSummaryAndActionsRenderer.react"],
             [
               "CometFeedStoryInvertedAttachedStoryLayoutStrategy_attachedStoryLayout$normalization.graphql"
             ],
-            [
-              "CometFeedStoryInvertedAttachedStoryLayoutStrategy.react"
-            ],
+            ["CometFeedStoryInvertedAttachedStoryLayoutStrategy.react"],
             [
               "CometFeedStoryAttachedStoryStrategy_attachedStory$normalization.graphql"
             ],
             [
               "CometGenericCommentDisableNotice_commentDisableNotice$normalization.graphql"
             ],
-            [
-              "CometGenericCommentDisableNotice.react"
-            ],
+            ["CometGenericCommentDisableNotice.react"],
             [
               "CometAnimatedReactionIconRenderer_renderer$normalization.graphql"
             ],
-            [
-              "CometAnimatedReactionIconRenderer.react"
-            ],
-            [
-              "CometUFIStoryReactActionRenderer_renderer$normalization.graphql"
-            ],
-            [
-              "CometUFIStoryReactActionRenderer.react"
-            ],
-            [
-              "CometUFICommentActionRenderer_renderer$normalization.graphql"
-            ],
-            [
-              "CometUFICommentActionRenderer.react"
-            ],
+            ["CometAnimatedReactionIconRenderer.react"],
+            ["CometUFIStoryReactActionRenderer_renderer$normalization.graphql"],
+            ["CometUFIStoryReactActionRenderer.react"],
+            ["CometUFICommentActionRenderer_renderer$normalization.graphql"],
+            ["CometUFICommentActionRenderer.react"],
             [
               "cometUFIComposerGroupMentionsPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerGroupMentionsPlugin"
-            ],
-            [
-              "cometUFIComposerAvatarPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerAvatarPlugin"
-            ],
-            [
-              "cometUFIComposerHashtagPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerHashtagPlugin"
-            ],
-            [
-              "cometUFIComposerEmojiPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerEmojiPlugin"
-            ],
-            [
-              "cometUFIComposerMediaUploadPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerMediaUploadPlugin"
-            ],
-            [
-              "cometUFIComposerGIFPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerGIFPlugin"
-            ],
+            ["cometUFIComposerGroupMentionsPlugin"],
+            ["cometUFIComposerAvatarPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerAvatarPlugin"],
+            ["cometUFIComposerHashtagPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerHashtagPlugin"],
+            ["cometUFIComposerEmojiPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerEmojiPlugin"],
+            ["cometUFIComposerMediaUploadPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerMediaUploadPlugin"],
+            ["cometUFIComposerGIFPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerGIFPlugin"],
             [
               "cometUFIComposerStickersPlugin_next_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerStickersPlugin.next"
-            ],
-            [
-              "cometUFIComposerEmoticonPlugin_plugin$normalization.graphql"
-            ],
-            [
-              "cometUFIComposerEmoticonPlugin"
-            ],
+            ["cometUFIComposerStickersPlugin.next"],
+            ["cometUFIComposerEmoticonPlugin_plugin$normalization.graphql"],
+            ["cometUFIComposerEmoticonPlugin"],
             [
               "cometUFIComposerPrefillMentionPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerPrefillMentionPlugin"
-            ],
+            ["cometUFIComposerPrefillMentionPlugin"],
             [
               "cometUFIComposerAssociateReplyWithParentPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerAssociateReplyWithParentPlugin"
-            ],
+            ["cometUFIComposerAssociateReplyWithParentPlugin"],
             [
               "cometUFIComposerSetReplyClickedPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerSetReplyClickedPlugin"
-            ],
+            ["cometUFIComposerSetReplyClickedPlugin"],
             [
               "cometUFIComposerStateSnapshotPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerStateSnapshotPlugin"
-            ],
+            ["cometUFIComposerStateSnapshotPlugin"],
             [
               "cometUFIComposerLiveTypingBroadcastPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerLiveTypingBroadcastPlugin"
-            ],
+            ["cometUFIComposerLiveTypingBroadcastPlugin"],
             [
               "cometUFIComposerCommentCharacterLimitPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerCommentCharacterLimitPlugin"
-            ],
+            ["cometUFIComposerCommentCharacterLimitPlugin"],
             [
               "cometUFIComposerWriteToComposerPlugin_plugin$normalization.graphql"
             ],
-            [
-              "cometUFIComposerWriteToComposerPlugin"
-            ],
+            ["cometUFIComposerWriteToComposerPlugin"],
             [
               "CometUFIAdaptiveShareActionRenderer_renderer$normalization.graphql"
             ],
-            [
-              "CometUFISendActionRenderer_message_action$normalization.graphql"
-            ],
-            [
-              "CometUFISendActionRenderer.react"
-            ],
+            ["CometUFISendActionRenderer_message_action$normalization.graphql"],
+            ["CometUFISendActionRenderer.react"],
             [
               "CometFeedStoryCommunityAttributionGroupPostByStrategy_strategy$normalization.graphql"
             ],
-            [
-              "CometFeedStoryCommunityAttributionGroupPostByStrategy.react"
-            ],
-            [
-              "CometFeedStoryAudienceStrategy_audience$normalization.graphql"
-            ],
-            [
-              "CometFeedStoryAudienceStrategy.react"
-            ],
-            [
-              "CometFeedStoryMenuXoutSection_story$normalization.graphql"
-            ],
-            [
-              "CometFeedStoryMenuXoutSection.react"
-            ],
+            ["CometFeedStoryCommunityAttributionGroupPostByStrategy.react"],
+            ["CometFeedStoryAudienceStrategy_audience$normalization.graphql"],
+            ["CometFeedStoryAudienceStrategy.react"],
+            ["CometFeedStoryMenuXoutSection_story$normalization.graphql"],
+            ["CometFeedStoryMenuXoutSection.react"],
             [
               "CometFeedStoryTitleGroupMemberActor_groupMemberProfileActionLink$normalization.graphql"
             ],
-            [
-              "CometFeedStoryTitleGroupMemberActor.react"
-            ],
+            ["CometFeedStoryTitleGroupMemberActor.react"],
             [
               "emptyFunction",
               "thatReturns",
-              [
-                "RequireDeferredReference"
-              ],
+              ["RequireDeferredReference"],
               [
                 [
                   {
@@ -8558,13 +8415,9 @@
             ]
           ]
         },
-        "allResources": [
-          "csr:_27_0_X9"
-        ],
+        "allResources": ["csr:_27_0_X9"],
         "tieredResources": {
-          "r": [
-            "csr:_27_0_X9"
-          ],
+          "r": ["csr:_27_0_X9"],
           "rdfds": [],
           "rds": []
         }

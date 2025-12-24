@@ -1,5 +1,10 @@
-import { downloadStory, getStoryUrl, getStoryId, getStoryPostId, getStoryMediaId } from './story.js';
-import { React } from './react.js';
+import {
+  downloadStory,
+  getStoryUrl,
+  getStoryId,
+  getStoryPostId,
+} from "./story.js";
+import { React } from "./react.js";
 
 /**
  * @typedef {import('./types').Story} Story
@@ -14,26 +19,28 @@ const { useEffect } = React;
  * @returns {string | null}
  */
 function getValueFromReactFiber(element, accessor) {
-    const fiberKey = Object.keys(element || {}).find(k => k.startsWith('__reactFiber$'));
-    if (!fiberKey) return null;
+  const fiberKey = Object.keys(element || {}).find((k) =>
+    k.startsWith("__reactFiber$"),
+  );
+  if (!fiberKey) return null;
 
-    // @ts-ignore - accessing React internals
-    let currentFiber = element[fiberKey];
-    let visited = 0;
+  // @ts-ignore - accessing React internals
+  let currentFiber = element[fiberKey];
+  let visited = 0;
 
-    while (currentFiber && visited < 100) {
-        visited++;
-        const props = currentFiber.memoizedProps;
+  while (currentFiber && visited < 100) {
+    visited++;
+    const props = currentFiber.memoizedProps;
 
-        const value = accessor(props);
-        if (value) {
-            return value;
-        }
-
-        currentFiber = currentFiber.return;
+    const value = accessor(props);
+    if (value) {
+      return value;
     }
 
-    return null;
+    currentFiber = currentFiber.return;
+  }
+
+  return null;
 }
 
 /**
@@ -43,40 +50,40 @@ function getValueFromReactFiber(element, accessor) {
  * @returns {HTMLButtonElement}
  */
 function createDownloadButton(story, onDownloadFile) {
-    const btn = document.createElement('button');
-    btn.className = 'fpdl-download-btn';
-    btn.setAttribute('aria-label', 'Download Facebook post');
+  const btn = document.createElement("button");
+  btn.className = "fpdl-download-btn";
+  btn.setAttribute("aria-label", "Download Facebook post");
 
-    // SVG download icon
-    btn.innerHTML = `
+  // SVG download icon
+  btn.innerHTML = `
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M12 16l-5-5h3V4h4v7h3l-5 5z"/>
             <path d="M5 18h14v2H5z"/>
         </svg>
     `;
 
-    let downloading = false;
-    btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+  let downloading = false;
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-        if (downloading) return;
-        downloading = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'wait';
+    if (downloading) return;
+    downloading = true;
+    btn.style.opacity = "0.5";
+    btn.style.cursor = "wait";
 
-        try {
-            await downloadStory(story, onDownloadFile);
-        } catch (err) {
-            console.warn('[fpdl] download failed', err);
-        } finally {
-            downloading = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-        }
-    });
+    try {
+      await downloadStory(story, onDownloadFile);
+    } catch (err) {
+      console.warn("[fpdl] download failed", err);
+    } finally {
+      downloading = false;
+      btn.style.opacity = "1";
+      btn.style.cursor = "pointer";
+    }
+  });
 
-    return btn;
+  return btn;
 }
 
 /**
@@ -87,14 +94,16 @@ function createDownloadButton(story, onDownloadFile) {
  * @returns {{ call: T, cancel: () => void }}
  */
 function debounce(fn, delay) {
-    let timer = 0;
-    return {
-        call: /** @type {T} */ ((...args) => {
-            clearTimeout(timer);
-            timer = window.setTimeout(() => fn(...args), delay);
-        }),
-        cancel: () => clearTimeout(timer),
-    };
+  let timer = 0;
+  return {
+    call: /** @type {T} */ (
+      (...args) => {
+        clearTimeout(timer);
+        timer = window.setTimeout(() => fn(...args), delay);
+      }
+    ),
+    cancel: () => clearTimeout(timer),
+  };
 }
 
 /**
@@ -104,28 +113,31 @@ function debounce(fn, delay) {
  * @returns {Story | null}
  */
 function findStoryForButton(actionBtn, stories) {
-    // Match by story.id
-    const storyId = getValueFromReactFiber(actionBtn, p => p?.story?.id);
-    if (storyId) {
-        const story = stories.find(s => getStoryId(s) === storyId);
-        if (story) return story;
-    }
+  // Match by story.id
+  const storyId = getValueFromReactFiber(actionBtn, (p) => p?.story?.id);
+  if (storyId) {
+    const story = stories.find((s) => getStoryId(s) === storyId);
+    if (story) return story;
+  }
 
-    // Fall back to matching by storyPostID
-    const postId = getValueFromReactFiber(actionBtn, p => p?.storyPostID);
-    if (postId) {
-        const story = stories.find(s => getStoryPostId(s) === postId);
-        if (story) return story;
-    }
+  // Fall back to matching by storyPostID
+  const postId = getValueFromReactFiber(actionBtn, (p) => p?.storyPostID);
+  if (postId) {
+    const story = stories.find((s) => getStoryPostId(s) === postId);
+    if (story) return story;
+  }
 
-    // Fall back to matching by permalink_url to story URL
-    const permalinkUrl = getValueFromReactFiber(actionBtn, p => p?.story?.permalink_url);
-    if (permalinkUrl) {
-        const story = stories.find(s => getStoryUrl(s) === permalinkUrl);
-        if (story) return story;
-    }
+  // Fall back to matching by permalink_url to story URL
+  const permalinkUrl = getValueFromReactFiber(
+    actionBtn,
+    (p) => p?.story?.permalink_url,
+  );
+  if (permalinkUrl) {
+    const story = stories.find((s) => getStoryUrl(s) === permalinkUrl);
+    if (story) return story;
+  }
 
-    return null;
+  return null;
 }
 
 /**
@@ -135,22 +147,24 @@ function findStoryForButton(actionBtn, stories) {
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectPostFeedButtons(stories, onDownloadFile) {
-    const actionButtons = document.querySelectorAll('[aria-label="Actions for this post"]');
+  const actionButtons = document.querySelectorAll(
+    '[aria-label="Actions for this post"]',
+  );
 
-    for (const actionBtn of actionButtons) {
-        // Regular feed: button -> parent -> parent = overflowContainer
-        // Insert before the overflowContainer in its parent (buttonRow)
-        const overflowContainer = actionBtn.parentElement?.parentElement;
-        const buttonRow = overflowContainer?.parentElement;
-        if (!buttonRow) continue;
-        if (buttonRow.querySelector('.fpdl-download-btn')) continue;
+  for (const actionBtn of actionButtons) {
+    // Regular feed: button -> parent -> parent = overflowContainer
+    // Insert before the overflowContainer in its parent (buttonRow)
+    const overflowContainer = actionBtn.parentElement?.parentElement;
+    const buttonRow = overflowContainer?.parentElement;
+    if (!buttonRow) continue;
+    if (buttonRow.querySelector(".fpdl-download-btn")) continue;
 
-        const story = findStoryForButton(actionBtn, stories);
-        if (!story) continue;
+    const story = findStoryForButton(actionBtn, stories);
+    if (!story) continue;
 
-        const downloadBtn = createDownloadButton(story, onDownloadFile);
-        buttonRow.insertBefore(downloadBtn, overflowContainer);
-    }
+    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    buttonRow.insertBefore(downloadBtn, overflowContainer);
+  }
 }
 
 /**
@@ -160,34 +174,34 @@ function injectPostFeedButtons(stories, onDownloadFile) {
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectVideoFeedButtons(stories, onDownloadFile) {
-    const actionButtons = document.querySelectorAll('[aria-label="More"]');
+  const actionButtons = document.querySelectorAll('[aria-label="More"]');
 
-    for (const actionBtn of actionButtons) {
-        // Watch feed: button -> parent = moreButtonWrapper (32x32 container)
-        // parent.parent = buttonRow (flex row with user info, post text, More button)
-        // Insert before the moreButtonWrapper
-        const moreButtonWrapper = actionBtn.parentElement;
-        const buttonRow = moreButtonWrapper?.parentElement;
-        if (!buttonRow) continue;
+  for (const actionBtn of actionButtons) {
+    // Watch feed: button -> parent = moreButtonWrapper (32x32 container)
+    // parent.parent = buttonRow (flex row with user info, post text, More button)
+    // Insert before the moreButtonWrapper
+    const moreButtonWrapper = actionBtn.parentElement;
+    const buttonRow = moreButtonWrapper?.parentElement;
+    if (!buttonRow) continue;
 
-        // Get video ID from React fiber
-        const videoId = getValueFromReactFiber(actionBtn, p => p?.videoID);
+    // Get video ID from React fiber
+    const videoId = getValueFromReactFiber(actionBtn, (p) => p?.videoID);
 
-        // Check if existing button is for a different video, if so remove it
-        const existingBtn = buttonRow.querySelector('.fpdl-download-btn');
-        if (existingBtn) {
-            if (existingBtn.getAttribute('data-video-id') === videoId) continue;
-            existingBtn.remove();
-        }
-
-        const story = findStoryForButton(actionBtn, stories);
-        if (!story) continue;
-
-        const downloadBtn = createDownloadButton(story, onDownloadFile);
-        downloadBtn.classList.add('fpdl-download-btn--video');
-        downloadBtn.setAttribute('data-video-id', videoId ?? '');
-        buttonRow.insertBefore(downloadBtn, moreButtonWrapper);
+    // Check if existing button is for a different video, if so remove it
+    const existingBtn = buttonRow.querySelector(".fpdl-download-btn");
+    if (existingBtn) {
+      if (existingBtn.getAttribute("data-video-id") === videoId) continue;
+      existingBtn.remove();
     }
+
+    const story = findStoryForButton(actionBtn, stories);
+    if (!story) continue;
+
+    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    downloadBtn.classList.add("fpdl-download-btn--video");
+    downloadBtn.setAttribute("data-video-id", videoId ?? "");
+    buttonRow.insertBefore(downloadBtn, moreButtonWrapper);
+  }
 }
 
 /**
@@ -197,49 +211,59 @@ function injectVideoFeedButtons(stories, onDownloadFile) {
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectWatchVideoButtons(stories, onDownloadFile) {
-    const actionButtons = document.querySelectorAll('[aria-label="More options for video"]');
+  const actionButtons = document.querySelectorAll(
+    '[aria-label="More options for video"]',
+  );
 
-    for (const actionBtn of actionButtons) {
-        // Watch video page: button -> wrapper div -> flex container with buttons
-        // Insert before this button's wrapper
-        const buttonWrapper = actionBtn.parentElement;
-        const buttonRow = buttonWrapper?.parentElement;
-        if (!buttonRow) continue;
+  for (const actionBtn of actionButtons) {
+    // Watch video page: button -> wrapper div -> flex container with buttons
+    // Insert before this button's wrapper
+    const buttonWrapper = actionBtn.parentElement;
+    const buttonRow = buttonWrapper?.parentElement;
+    if (!buttonRow) continue;
 
-        // Get video ID from URL as primary source (React fiber can be stale during navigation)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlVideoId = urlParams.get('v');
+    // Get video ID from URL as primary source (React fiber can be stale during navigation)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlVideoId = urlParams.get("v");
 
-        // Fall back to React fiber videoID if URL doesn't have it
-        const videoId = urlVideoId || getValueFromReactFiber(actionBtn, p => p?.videoID);
+    // Fall back to React fiber videoID if URL doesn't have it
+    const videoId =
+      urlVideoId || getValueFromReactFiber(actionBtn, (p) => p?.videoID);
 
-        // Check if existing button is for a different video, if so remove it
-        const existingWrapper = buttonWrapper.querySelector('.fpdl-download-btn-wrapper');
-        if (existingWrapper) {
-            if (existingWrapper.getAttribute('data-video-id') === videoId) continue;
-            existingWrapper.remove();
-        }
-
-        let story = videoId ? stories.find(s => getStoryMediaId(s) === videoId) : null;
-
-        // Fall back to common matching strategies
-        if (!story) {
-            story = findStoryForButton(actionBtn, stories);
-        }
-
-        if (!story) continue;
-
-        const downloadBtn = createDownloadButton(story, onDownloadFile);
-        downloadBtn.classList.add('fpdl-download-btn--watch');
-
-        // Wrap in a container to match the "More options for video" button's parent structure
-        const wrapper = document.createElement('div');
-        wrapper.className = 'fpdl-download-btn-wrapper';
-        wrapper.setAttribute('data-video-id', videoId ?? '');
-        wrapper.appendChild(downloadBtn);
-
-        buttonWrapper.insertBefore(wrapper, actionBtn);
+    // Check if existing button is for a different video, if so remove it
+    const existingWrapper = buttonWrapper.querySelector(
+      ".fpdl-download-btn-wrapper",
+    );
+    if (existingWrapper) {
+      if (existingWrapper.getAttribute("data-video-id") === videoId) continue;
+      existingWrapper.remove();
     }
+
+    let story = videoId
+      ? stories.find((s) => {
+          const attachment = /** @type {any} */ (s.attachments?.[0]);
+          return attachment?.media?.id === videoId;
+        })
+      : null;
+
+    // Fall back to common matching strategies
+    if (!story) {
+      story = findStoryForButton(actionBtn, stories);
+    }
+
+    if (!story) continue;
+
+    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    downloadBtn.classList.add("fpdl-download-btn--watch");
+
+    // Wrap in a container to match the "More options for video" button's parent structure
+    const wrapper = document.createElement("div");
+    wrapper.className = "fpdl-download-btn-wrapper";
+    wrapper.setAttribute("data-video-id", videoId ?? "");
+    wrapper.appendChild(downloadBtn);
+
+    buttonWrapper.insertBefore(wrapper, actionBtn);
+  }
 }
 
 /**
@@ -248,17 +272,17 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 function injectDownloadButtons(stories, onDownloadFile) {
-    injectPostFeedButtons(stories, onDownloadFile);
-    injectVideoFeedButtons(stories, onDownloadFile);
-    injectWatchVideoButtons(stories, onDownloadFile);
+  injectPostFeedButtons(stories, onDownloadFile);
+  injectVideoFeedButtons(stories, onDownloadFile);
+  injectWatchVideoButtons(stories, onDownloadFile);
 }
 
 /**
  * Inject CSS styles for download buttons.
  */
 function injectDownloadButtonStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
+  const style = document.createElement("style");
+  style.textContent = `
         .fpdl-download-btn {
             display: flex;
             align-items: center;
@@ -316,7 +340,7 @@ function injectDownloadButtonStyles() {
             background: var(--hover-overlay);
         }
     `;
-    document.head.appendChild(style);
+  document.head.appendChild(style);
 }
 
 /**
@@ -325,26 +349,26 @@ function injectDownloadButtonStyles() {
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  */
 export function useDownloadButtonInjection(stories, onDownloadFile) {
-    // Inject styles once
-    useEffect(() => {
-        injectDownloadButtonStyles();
-    }, []);
+  // Inject styles once
+  useEffect(() => {
+    injectDownloadButtonStyles();
+  }, []);
 
-    // Set up observer and inject buttons
-    useEffect(() => {
-        const { call: inject, cancel } = debounce(
-            () => injectDownloadButtons(stories, onDownloadFile),
-            100
-        );
+  // Set up observer and inject buttons
+  useEffect(() => {
+    const { call: inject, cancel } = debounce(
+      () => injectDownloadButtons(stories, onDownloadFile),
+      100,
+    );
 
-        const observer = new MutationObserver(inject);
-        observer.observe(document.body, { childList: true, subtree: true });
+    const observer = new MutationObserver(inject);
+    observer.observe(document.body, { childList: true, subtree: true });
 
-        inject();
+    inject();
 
-        return () => {
-            cancel();
-            observer.disconnect();
-        };
-    }, [stories, onDownloadFile]);
+    return () => {
+      cancel();
+      observer.disconnect();
+    };
+  }, [stories, onDownloadFile]);
 }

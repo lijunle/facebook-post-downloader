@@ -1,22 +1,25 @@
 {
-    "name": "facebook-post-downloader",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "check": "tsc -b tsconfig.json",
-        "test": "node --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=tests/lcov.info --experimental-test-module-mocks --test tests/*.test.js",
-        "pack": "node bin/pack.js"
-    },
-    "dependencies": {
-        "umd-react": "^19.2.1"
-    },
-    "devDependencies": {
-        "@types/archiver": "^7.0.0",
-        "@types/chrome": "^0.1.0",
-        "@types/node": "^25.0.2",
-        "@types/react": "^19.2.7",
-        "@types/react-dom": "^19.2.3",
-        "archiver": "^7.0.1",
-        "typescript": "^5.9.0"
-    }
+  "name": "facebook-post-downloader",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc -b tsconfig.json",
+    "test": "node --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=tests/lcov.info --experimental-test-module-mocks --test tests/*.test.js",
+    "pack": "node bin/pack.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "umd-react": "^19.2.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^7.0.0",
+    "@types/chrome": "^0.1.0",
+    "@types/node": "^25.0.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "archiver": "^7.0.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.0"
+  }
 }

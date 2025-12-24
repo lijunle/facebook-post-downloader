@@ -248,7 +248,7 @@ function parseNdjson(text) {
 }
 
 const originalXhrOpen = XMLHttpRequest.prototype.open;
-// const originalXhrSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+const originalXhrSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
 const originalXhrSend = XMLHttpRequest.prototype.send;
 
 /**
@@ -263,7 +263,7 @@ XMLHttpRequest.prototype.open = function patchedOpen(
   url,
   async = true,
   username,
-  password
+  password,
 ) {
   const u = typeof url === "string" ? url : url.href;
   if (method.toUpperCase() === "POST" && u.includes("/api/graphql")) {
@@ -304,16 +304,50 @@ XMLHttpRequest.prototype.open = function patchedOpen(
  * @param {string} name
  * @param {string} value
  */
-// XMLHttpRequest.prototype.setRequestHeader = function patchedSetRequestHeader(
-//   name,
-//   value
-// ) {
-//   const headers = xhrHeaders.get(this);
-//   if (headers) {
-//     headers[name.toLowerCase()] = value;
-//   }
-//   return originalXhrSetRequestHeader.call(this, name, value);
-// };
+XMLHttpRequest.prototype.setRequestHeader = function patchedSetRequestHeader(
+  name,
+  value,
+) {
+  const headers = xhrHeaders.get(this);
+  if (headers) {
+    headers[name.toLowerCase()] = value;
+  }
+  return originalXhrSetRequestHeader.call(this, name, value);
+};
+
+/**
+ * @param {Document | XMLHttpRequestBodyInit | null} body
+ */
+XMLHttpRequest.prototype.send = function patchedSend(body) {
+  if (xhrIsTarget.get(this)) {
+    /** @type {string | undefined} */
+    let bodyText;
+    if (typeof body === "string") {
+      bodyText = body;
+    } else if (body instanceof URLSearchParams) {
+      bodyText = body.toString();
+    } else if (body instanceof FormData) {
+      const parts = [];
+      for (const [k, v] of body.entries()) {
+        parts.push(
+          `${encodeURIComponent(String(k))}=${encodeURIComponent(String(v))}`,
+        );
+      }
+      bodyText = parts.join("&");
+    }
+
+    if (bodyText) {
+      const params = new URLSearchParams(bodyText);
+      /** @type {Record<string, string>} */
+      const payload = {};
+      for (const [k, v] of params.entries()) {
+        payload[k] = v;
+      }
+      xhrPayload.set(this, payload);
+    }
+  }
+  return originalXhrSend.call(this, body);
+};
 
 const originalFetch = window.fetch;
 
@@ -370,40 +404,6 @@ window.fetch = async function patchedFetch(input, init = {}) {
 };
 
 /**
- * @param {Document | XMLHttpRequestBodyInit | null} body
- */
-XMLHttpRequest.prototype.send = function patchedSend(body) {
-  if (xhrIsTarget.get(this)) {
-    /** @type {string | undefined} */
-    let bodyText;
-    if (typeof body === "string") {
-      bodyText = body;
-    } else if (body instanceof URLSearchParams) {
-      bodyText = body.toString();
-    } else if (body instanceof FormData) {
-      const parts = [];
-      for (const [k, v] of body.entries()) {
-        parts.push(
-          `${encodeURIComponent(String(k))}=${encodeURIComponent(String(v))}`
-        );
-      }
-      bodyText = parts.join("&");
-    }
-
-    if (bodyText) {
-      const params = new URLSearchParams(bodyText);
-      /** @type {Record<string, string>} */
-      const payload = {};
-      for (const [k, v] of params.entries()) {
-        payload[k] = v;
-      }
-      xhrPayload.set(this, payload);
-    }
-  }
-  return originalXhrSend.call(this, body);
-};
-
-/**
  * Send a GraphQL request using doc_id from Facebook's module system.
  * @param {{ apiName: string, variables: Record<string, unknown> }} input
  * @returns {Promise<Record<string, unknown>[]>}
@@ -412,7 +412,7 @@ export async function sendGraphqlRequest(input) {
   const docId = getDocId(input.apiName);
   if (!docId)
     throw new Error(
-      `doc_id not found for: ${input.apiName}. Module may not be loaded.`
+      `doc_id not found for: ${input.apiName}. Module may not be loaded.`,
     );
 
   const { params, lsd } = extractPageContext();
