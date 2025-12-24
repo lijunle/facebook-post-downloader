@@ -1,5 +1,8 @@
 # Facebook Post Downloader
 
+[![CI](https://github.com/lijunle/facebook-post-downloader/actions/workflows/ci.yml/badge.svg)](https://github.com/lijunle/facebook-post-downloader/actions/workflows/ci.yml)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Facebook%20Post%20Downloader-blue.svg)](https://chromewebstore.google.com/detail/facebook-post-downloader/dmfnmobeodidnfdkkfcpobhjlpeameef)
+
 A powerful browser extension that allows you to download Facebook posts, including their text content, images, and videos, with a single click.
 
 ## Features
