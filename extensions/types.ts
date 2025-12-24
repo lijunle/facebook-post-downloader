@@ -34,9 +34,13 @@ export type GraphqlEvent = {
   status: number;
 };
 
-export type MediaPhoto = {
-  __typename: "Photo";
+export type MediaId = {
+  __typename: "Video" | "Photo";
   id: string;
+};
+
+export type MediaPhoto = MediaId & {
+  __typename: "Photo";
   url: string;
   created_time: number;
   image: {
@@ -44,9 +48,8 @@ export type MediaPhoto = {
   };
 };
 
-export type MediaVideo = {
+export type MediaVideo = MediaId & {
   __typename: "Video";
-  id: string;
   url: string;
   created_time: number;
   videoDeliveryResponseFragment: {
@@ -59,9 +62,8 @@ export type MediaVideo = {
   };
 };
 
-export type MediaWatch = {
+export type MediaWatch = MediaId & {
   __typename: "Video";
-  id: string;
   url: string;
 };
 

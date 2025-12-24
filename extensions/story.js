@@ -6,6 +6,7 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
  * @typedef {import('./types').StoryVideo} StoryVideo
  * @typedef {import('./types').StoryWatch} StoryWatch
  * @typedef {import('./types').Media} Media
+ * @typedef {import('./types').MediaId} MediaId
  * @typedef {import('./types').MediaVideo} MediaVideo
  * @typedef {import('./types').MediaWatch} MediaWatch
  * @typedef {import('./types').User} User
@@ -14,6 +15,15 @@ import { graphqlListener, sendGraphqlRequest } from './graphql.js';
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
 const VIDEO_ROOT_QUERY = "CometVideoRootMediaViewerQuery";
+
+/** @type {Map<string, number>} */
+const storyCreateTimeCache = new Map();
+
+/** @type {Map<string, Group>} */
+const storyGroupCache = new Map();
+
+/** @type {Map<string, string>} */
+const videoUrlCache = new Map();
 
 /**
  * @param {string} url
@@ -104,47 +114,45 @@ export function getDownloadCount(story) {
     return count;
 }
 
-
-
-/** @type {Map<string, number>} */
-const storyCreateTimeCache = new Map();
-
-/** @type {Map<string, Group>} */
-const storyGroupCache = new Map();
-
-/** @type {Map<string, string>} */
-const videoUrlCache = new Map();
+/**
+ * Check if an object is a valid MediaId.
+ * @param {unknown} obj
+ * @returns {obj is MediaId}
+ */
+function isMediaId(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const o = /** @type {Record<string, unknown>} */ (obj);
+    if (o.__typename !== 'Video' && o.__typename !== 'Photo') return false;
+    if (typeof o.id !== 'string' || !o.id) return false;
+    return true;
+}
 
 /**
  * Fetch navigation info for a media node.
- * @param {string} nodeId
+ * @param {MediaId} currentId
  * @param {string} mediasetToken
- * @param {boolean} [isVideo] - Whether the current node is a video (determines which API to use)
- * @returns {Promise<{ currMedia: Media | undefined, nextId: string | undefined, nextIsVideo: boolean }>}
+ * @returns {Promise<{ currMedia: Media | undefined, nextId: MediaId | undefined }>}
  */
-async function fetchMediaNav(nodeId, mediasetToken, isVideo = false) {
-    const apiName = isVideo ? VIDEO_ROOT_QUERY : PHOTO_ROOT_QUERY;
+async function fetchMediaNav(currentId, mediasetToken) {
+    const apiName = currentId.__typename === 'Video' ? VIDEO_ROOT_QUERY : PHOTO_ROOT_QUERY;
     const objs = await sendGraphqlRequest({
         apiName,
         variables: {
-            nodeID: nodeId,
+            nodeID: currentId.id,
             mediasetToken,
         },
     });
 
     /** @type {Media | undefined} */
     let currMedia;
-    /** @type {string | undefined} */
+    /** @type {MediaId | undefined} */
     let nextId;
-    /** @type {boolean} */
-    let nextIsVideo = false;
 
     for (const obj of objs) {
         /** @type {any} */
         const data = (obj).data;
-        if (data?.nextMediaAfterNodeId) {
-            nextId = data.nextMediaAfterNodeId.id;
-            nextIsVideo = data.nextMediaAfterNodeId.__typename === 'Video';
+        if (isMediaId(data?.nextMediaAfterNodeId)) {
+            nextId = data.nextMediaAfterNodeId;
         }
         if (data?.currMedia) {
             currMedia = data.currMedia;
@@ -154,7 +162,7 @@ async function fetchMediaNav(nodeId, mediasetToken, isVideo = false) {
         }
     }
 
-    return { currMedia, nextId, nextIsVideo };
+    return { currMedia, nextId };
 }
 
 /**
@@ -177,17 +185,14 @@ async function fetchAttachments(story, onAttachment) {
         // Walk from the seed to collect all media
         /** @type {Media[]} */
         const result = [];
-        /** @type {string | undefined} */
+        /** @type {MediaId | undefined} */
         let currentId = seedId;
-        /** @type {boolean} */
-        let currentIsVideo = false; // First media is typically determined by initial fetch
-        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId)) {
-            const nav = await fetchMediaNav(currentId, mediasetToken, currentIsVideo);
+        while (currentId && result.length < totalCount && !result.some(m => m.id === currentId?.id)) {
+            const nav = await fetchMediaNav(currentId, mediasetToken);
             if (!nav.currMedia) break;
             result.push(nav.currMedia);
             onAttachment(nav.currMedia);
             currentId = nav.nextId;
-            currentIsVideo = nav.nextIsVideo;
             if (currentId) await new Promise(r => setTimeout(r, 200));
         }
     }
@@ -432,7 +437,7 @@ export function getStoryUrl(story) {
         return story.wwwURL;
     }
     if (isStoryVideo(story) || isStoryWatch(story)) {
-        return `https://www.facebook.com/watch/?v=${getStoryMediaId(story)}`;
+        return `https://www.facebook.com/watch/?v=${getStoryMediaId(story)?.id}`;
     }
     return '';
 }
@@ -465,7 +470,7 @@ export function getStoryPostId(story) {
         // StoryWatch uses media id as post_id
         const mediaId = getStoryMediaId(story);
         if (!mediaId) throw new Error('StoryWatch missing media id');
-        return mediaId;
+        return mediaId.id;
     }
     throw new Error('Unknown story type: cannot get post_id');
 }
@@ -473,23 +478,23 @@ export function getStoryPostId(story) {
 /**
  * Get the media id for a story (if it has media attachment).
  * @param {Story} story
- * @returns {string | null}
+ * @returns {MediaId | null}
  */
 export function getStoryMediaId(story) {
     if (isStoryVideo(story)) {
-        return story.attachments[0].media.id;
+        return story.attachments[0].media;
     }
     if (isStoryWatch(story)) {
-        return story.attachments[0].media.id;
+        return story.attachments[0].media;
     }
     // StoryPost might have a media attachment
     if (isStoryPost(story)) {
         const attachment = story.attachments[0]?.styles?.attachment;
         if (attachment && 'media' in attachment && attachment.media?.id) {
-            return attachment.media.id;
+            return attachment.media;
         }
         if (attachment && 'all_subattachments' in attachment) {
-            return attachment.all_subattachments.nodes[0]?.media.id ?? null;
+            return attachment.all_subattachments.nodes[0]?.media ?? null;
         }
     }
     return null;

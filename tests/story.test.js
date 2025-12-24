@@ -40,7 +40,7 @@ function setupMockMedia(mediaIds, type = 'Photo', options = {}) {
  * @param {{ apiName: string, variables: { nodeID?: string } }} params
  */
 async function mockSendGraphqlRequest({ apiName, variables }) {
-    if (apiName === 'CometPhotoRootContentQuery' && variables.nodeID) {
+    if ((apiName === 'CometPhotoRootContentQuery' || apiName === 'CometVideoRootMediaViewerQuery') && variables.nodeID) {
         const config = mockMediaConfig.get(variables.nodeID);
         if (config) {
             /** @type {any} */
@@ -67,6 +67,7 @@ async function mockSendGraphqlRequest({ apiName, variables }) {
             }
             // Return data in mediaset format if useMediasetFormat is set
             if (config.useMediasetFormat) {
+                const nextConfig = config.nextId ? mockMediaConfig.get(config.nextId) : undefined;
                 return [{
                     data: {
                         mediaset: {
@@ -74,15 +75,16 @@ async function mockSendGraphqlRequest({ apiName, variables }) {
                                 edges: [{ node: currMedia }]
                             }
                         },
-                        nextMediaAfterNodeId: config.nextId ? { id: config.nextId } : null,
+                        nextMediaAfterNodeId: config.nextId ? { __typename: nextConfig?.type ?? 'Photo', id: config.nextId } : null,
                         prevMediaBeforeNodeId: null
                     }
                 }];
             }
+            const nextConfig = config.nextId ? mockMediaConfig.get(config.nextId) : undefined;
             return [{
                 data: {
                     currMedia,
-                    nextMediaAfterNodeId: config.nextId ? { id: config.nextId } : null,
+                    nextMediaAfterNodeId: config.nextId ? { __typename: nextConfig?.type ?? 'Photo', id: config.nextId } : null,
                     prevMediaBeforeNodeId: null
                 }
             }];

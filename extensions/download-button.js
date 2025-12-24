@@ -220,7 +220,7 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
             existingWrapper.remove();
         }
 
-        let story = videoId ? stories.find(s => getStoryMediaId(s) === videoId) : null;
+        let story = videoId ? stories.find(s => getStoryMediaId(s)?.id === videoId) : null;
 
         // Fall back to common matching strategies
         if (!story) {
