@@ -8,90 +8,13 @@ import { dirname, join } from 'node:path';
  * @typedef {import('../extensions/types').StoryPost} StoryPost
  * @typedef {import('../extensions/types').StoryVideo} StoryVideo
  * @typedef {import('../extensions/types').Story} Story
- * @typedef {{ id: string, nextId?: string, type?: 'Photo' | 'Video', useMediasetFormat?: boolean }} MockMediaConfig
  */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/**
- * Global mock configuration that test cases can set up
- * @type {Map<string, MockMediaConfig>}
- */
-const mockMediaConfig = new Map();
-
-/**
- * Helper to set up mock media for a test case
- * @param {string[]} mediaIds - Array of media IDs in navigation order
- * @param {'Photo' | 'Video'} [type='Photo'] - Type of media
- * @param {{ useMediasetFormat?: boolean }} [options] - Additional options
- */
-function setupMockMedia(mediaIds, type = 'Photo', options = {}) {
-    mockMediaConfig.clear();
-    for (let i = 0; i < mediaIds.length; i++) {
-        const id = mediaIds[i];
-        const nextId = i + 1 < mediaIds.length ? mediaIds[i + 1] : undefined;
-        mockMediaConfig.set(id, { id, nextId, type, useMediasetFormat: options.useMediasetFormat });
-    }
-}
-
-/**
- * Mock sendGraphqlRequest that returns media navigation data based on mockMediaConfig
- * @param {{ apiName: string, variables: { nodeID?: string } }} params
- */
-async function mockSendGraphqlRequest({ apiName, variables }) {
-    if ((apiName === 'CometPhotoRootContentQuery' || apiName === 'CometVideoRootMediaViewerQuery') && variables.nodeID) {
-        const config = mockMediaConfig.get(variables.nodeID);
-        if (config) {
-            /** @type {any} */
-            let currMedia;
-            if (config.type === 'Video') {
-                currMedia = {
-                    __typename: 'Video',
-                    id: config.id,
-                    videoDeliveryResponseFragment: {
-                        videoDeliveryResponseResult: {
-                            progressive_urls: [
-                                { progressive_url: `https://example.com/video_${config.id}_hd.mp4`, metadata: { quality: 'HD' } },
-                                { progressive_url: `https://example.com/video_${config.id}_sd.mp4`, metadata: { quality: 'SD' } }
-                            ]
-                        }
-                    }
-                };
-            } else {
-                currMedia = {
-                    __typename: 'Photo',
-                    id: config.id,
-                    image: { uri: `https://example.com/photo_${config.id}.jpg` }
-                };
-            }
-            // Return data in mediaset format if useMediasetFormat is set
-            if (config.useMediasetFormat) {
-                const nextConfig = config.nextId ? mockMediaConfig.get(config.nextId) : undefined;
-                return [{
-                    data: {
-                        mediaset: {
-                            currMedia: {
-                                edges: [{ node: currMedia }]
-                            }
-                        },
-                        nextMediaAfterNodeId: config.nextId ? { __typename: nextConfig?.type ?? 'Photo', id: config.nextId } : null,
-                        prevMediaBeforeNodeId: null
-                    }
-                }];
-            }
-            const nextConfig = config.nextId ? mockMediaConfig.get(config.nextId) : undefined;
-            return [{
-                data: {
-                    currMedia,
-                    nextMediaAfterNodeId: config.nextId ? { __typename: nextConfig?.type ?? 'Photo', id: config.nextId } : null,
-                    prevMediaBeforeNodeId: null
-                }
-            }];
-        }
-    }
-    return [];
-}
+/** @type {(params: { apiName: string, variables: Record<string, unknown> }) => Promise<unknown[]>} */
+let mockSendGraphqlRequestImpl = async () => [];
 
 // Mock graphql.js before importing story.js
 mock.module('../extensions/graphql.js', {
@@ -101,7 +24,7 @@ mock.module('../extensions/graphql.js', {
             pathname: '/test'
         }),
         graphqlListener: () => { },
-        sendGraphqlRequest: mockSendGraphqlRequest
+        sendGraphqlRequest: /** @type {typeof mockSendGraphqlRequestImpl} */ (params) => mockSendGraphqlRequestImpl(params)
     }
 });
 
@@ -557,7 +480,6 @@ describe('downloadStory', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
 
         const photoIds = ['10236779894211730', '10236779894131728', '10236779894291732', '10236779894371734'];
-        setupMockMedia(photoIds);
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -600,7 +522,6 @@ describe('downloadStory', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-photo.json'), 'utf8'));
 
         const photoIds = ['10236779894211730', '10236779894131728', '10236779894291732', '10236779894371734'];
-        setupMockMedia(photoIds, 'Photo', { useMediasetFormat: true });
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -625,6 +546,231 @@ describe('downloadStory', () => {
             const photoDownload = photoDownloads.find(d => d.filename.includes(photoId));
             assert.ok(photoDownload, `Should have download for photo ${photoId}`);
         }
+    });
+
+    it('should fetch additional media via fetchMediaNav when story has more attachments than nodes', async () => {
+        // Create a story where all_subattachments.count > nodes.length
+        // This will trigger the fetchMediaNav fallback path
+        /** @type {StoryPost} */
+        const story = {
+            id: 'test-story-id',
+            post_id: 'test-post-id',
+            wwwURL: 'https://www.facebook.com/test/posts/test-post-id',
+            actors: [{ __typename: 'User', id: '123', name: 'Test User' }],
+            message: { text: 'Test message' },
+            attachments: [{
+                styles: {
+                    attachment: {
+                        all_subattachments: {
+                            count: 3, // Says there are 3 attachments
+                            nodes: [
+                                // But only provides 1 in nodes array
+                                {
+                                    media: {
+                                        __typename: 'Photo',
+                                        id: 'photo-1',
+                                        image: { uri: 'https://example.com/photo1.jpg', width: 100, height: 100 }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }],
+            attached_story: null
+        };
+
+        // Set up mock to return additional photos via fetchMediaNav
+        mockSendGraphqlRequestImpl = async ({ apiName, variables }) => {
+            if (apiName === 'CometPhotoRootContentQuery') {
+                const nodeID = /** @type {string} */ (variables.nodeID);
+                if (nodeID === 'photo-1') {
+                    // Return nextId pointing to photo-2
+                    return [{
+                        data: {
+                            currMedia: {
+                                __typename: 'Photo',
+                                id: 'photo-1',
+                                image: { uri: 'https://example.com/photo1.jpg', width: 100, height: 100 }
+                            },
+                            nextMediaAfterNodeId: { __typename: 'Photo', id: 'photo-2' }
+                        }
+                    }];
+                }
+                if (nodeID === 'photo-2') {
+                    // Return photo-2 data and nextId pointing to photo-3
+                    return [{
+                        data: {
+                            currMedia: {
+                                __typename: 'Photo',
+                                id: 'photo-2',
+                                image: { uri: 'https://example.com/photo2.jpg', width: 200, height: 200 }
+                            },
+                            nextMediaAfterNodeId: { __typename: 'Photo', id: 'photo-3' }
+                        }
+                    }];
+                }
+                if (nodeID === 'photo-3') {
+                    // Return photo-3 data, no nextId (last photo)
+                    return [{
+                        data: {
+                            currMedia: {
+                                __typename: 'Photo',
+                                id: 'photo-3',
+                                image: { uri: 'https://example.com/photo3.jpg', width: 300, height: 300 }
+                            },
+                            nextMediaAfterNodeId: null
+                        }
+                    }];
+                }
+            }
+            return [];
+        };
+
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
+        });
+
+        // Reset mock
+        mockSendGraphqlRequestImpl = async () => [];
+
+        // Should have 4 downloads: 3 photos + index.md
+        assert.strictEqual(downloads.length, 4, 'Should have 4 downloads (3 photos + index.md)');
+
+        const photoDownloads = downloads.filter(d => d.filename.endsWith('.jpg'));
+        assert.strictEqual(photoDownloads.length, 3, 'Should have 3 photo downloads');
+
+        // Verify each photo was downloaded
+        assert.ok(photoDownloads.find(d => d.filename.includes('photo-1')), 'Should have photo-1');
+        assert.ok(photoDownloads.find(d => d.filename.includes('photo-2')), 'Should have photo-2');
+        assert.ok(photoDownloads.find(d => d.filename.includes('photo-3')), 'Should have photo-3');
+
+        // Verify URLs
+        assert.ok(photoDownloads.find(d => d.url === 'https://example.com/photo1.jpg'), 'Should have photo1 URL');
+        assert.ok(photoDownloads.find(d => d.url === 'https://example.com/photo2.jpg'), 'Should have photo2 URL');
+        assert.ok(photoDownloads.find(d => d.url === 'https://example.com/photo3.jpg'), 'Should have photo3 URL');
+    });
+
+    it('should fetch additional video media via fetchMediaNav when story has more attachments than nodes', async () => {
+        // Create a story where all_subattachments.count > nodes.length with video media
+        // This will trigger the fetchMediaNav fallback path using CometVideoRootMediaViewerQuery
+        /** @type {StoryPost} */
+        const story = {
+            id: 'test-video-story-id',
+            post_id: 'test-video-post-id',
+            wwwURL: 'https://www.facebook.com/test/posts/test-video-post-id',
+            actors: [{ __typename: 'User', id: '456', name: 'Video User' }],
+            message: { text: 'Test video message' },
+            attachments: [{
+                styles: {
+                    attachment: {
+                        all_subattachments: {
+                            count: 2, // Says there are 2 attachments
+                            nodes: [
+                                // But only provides 1 in nodes array
+                                {
+                                    media: {
+                                        __typename: 'Video',
+                                        id: 'video-1',
+                                        videoDeliveryResponseFragment: {
+                                            videoDeliveryResponseResult: {
+                                                progressive_urls: [
+                                                    { progressive_url: 'https://example.com/video1_hd.mp4', metadata: { quality: 'HD' } }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }],
+            attached_story: null
+        };
+
+        // Set up mock to return additional video via fetchMediaNav
+        mockSendGraphqlRequestImpl = async ({ apiName, variables }) => {
+            if (apiName === 'CometVideoRootMediaViewerQuery') {
+                const nodeID = /** @type {string} */ (variables.nodeID);
+                if (nodeID === 'video-1') {
+                    // Return nextId pointing to video-2 using mediaset format
+                    return [{
+                        data: {
+                            mediaset: {
+                                currMedia: {
+                                    edges: [{
+                                        node: {
+                                            __typename: 'Video',
+                                            id: 'video-1',
+                                            videoDeliveryResponseFragment: {
+                                                videoDeliveryResponseResult: {
+                                                    progressive_urls: [
+                                                        { progressive_url: 'https://example.com/video1_hd.mp4', metadata: { quality: 'HD' } }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }]
+                                }
+                            },
+                            nextMediaAfterNodeId: { __typename: 'Video', id: 'video-2' }
+                        }
+                    }];
+                }
+                if (nodeID === 'video-2') {
+                    // Return video-2 data, no nextId (last video) using mediaset format
+                    return [{
+                        data: {
+                            mediaset: {
+                                currMedia: {
+                                    edges: [{
+                                        node: {
+                                            __typename: 'Video',
+                                            id: 'video-2',
+                                            videoDeliveryResponseFragment: {
+                                                videoDeliveryResponseResult: {
+                                                    progressive_urls: [
+                                                        { progressive_url: 'https://example.com/video2_hd.mp4', metadata: { quality: 'HD' } }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }]
+                                }
+                            },
+                            nextMediaAfterNodeId: null
+                        }
+                    }];
+                }
+            }
+            return [];
+        };
+
+        /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+        const downloads = [];
+        await downloadStory(story, (storyId, url, filename) => {
+            downloads.push({ storyId, url, filename });
+        });
+
+        // Reset mock
+        mockSendGraphqlRequestImpl = async () => [];
+
+        // Should have 3 downloads: 2 videos + index.md
+        assert.strictEqual(downloads.length, 3, 'Should have 3 downloads (2 videos + index.md)');
+
+        const videoDownloads = downloads.filter(d => d.filename.endsWith('.mp4'));
+        assert.strictEqual(videoDownloads.length, 2, 'Should have 2 video downloads');
+
+        // Verify each video was downloaded
+        assert.ok(videoDownloads.find(d => d.filename.includes('video-1')), 'Should have video-1');
+        assert.ok(videoDownloads.find(d => d.filename.includes('video-2')), 'Should have video-2');
+
+        // Verify URLs
+        assert.ok(videoDownloads.find(d => d.url === 'https://example.com/video1_hd.mp4'), 'Should have video1 URL');
+        assert.ok(videoDownloads.find(d => d.url === 'https://example.com/video2_hd.mp4'), 'Should have video2 URL');
     });
 
     it('should download StoryPost with group from story-user-group.json', async () => {
@@ -660,7 +806,6 @@ describe('downloadStory', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story.json'), 'utf8'));
 
         const attachedPhotoId = '1284281187062002';
-        setupMockMedia([attachedPhotoId]);
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -697,7 +842,6 @@ describe('downloadStory', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attached-story-only.json'), 'utf8'));
 
         const attachedPhotoId = '1422788539419067';
-        setupMockMedia([attachedPhotoId]);
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
@@ -734,7 +878,6 @@ describe('downloadStory', () => {
         const mockData = JSON.parse(readFileSync(join(__dirname, 'story-attachment-video.json'), 'utf8'));
 
         const videoId = '1800120837356279';
-        setupMockMedia([videoId], 'Video');
 
         const stories = extractStories(mockData);
         extractStoryCreateTime(mockData);
