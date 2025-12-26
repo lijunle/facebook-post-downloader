@@ -1,9 +1,5 @@
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "cSpell.words": [
-    "fpdl",
-    "mediaset",
-    "subattachments"
-  ]
+  "cSpell.words": ["fpdl", "mediaset", "subattachments"]
 }

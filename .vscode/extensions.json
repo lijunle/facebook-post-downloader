@@ -1,3 +1,8 @@
 {
-  "recommendations": ["ryanluker.vscode-coverage-gutters"]
+  "recommendations": [
+    "ryanluker.vscode-coverage-gutters",
+    "esbenp.prettier-vscode",
+    "github.copilot-chat",
+    "streetsidesoftware.code-spell-checker"
+  ]
 }
