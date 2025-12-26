@@ -374,6 +374,15 @@ function StoryDialog({
     setDownloadedStory,
   ]);
 
+  // Count stories that can be cleared (not currently downloading)
+  const clearableCount = stories.filter((story) => {
+    const storyId = getStoryId(story);
+    const downloadedCount = downloadedStories[storyId];
+    if (downloadedCount === undefined) return true;
+    const totalCount = getDownloadCount(story);
+    return downloadedCount >= totalCount;
+  }).length;
+
   return React.createElement(
     "div",
     { className: "fpdl-container" },
@@ -397,6 +406,7 @@ function StoryDialog({
           className: "fpdl-btn",
           onClick: onClearStories,
           style: { marginLeft: "4px" },
+          disabled: clearableCount === 0,
         },
         "Clear",
       ),
