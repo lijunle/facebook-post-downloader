@@ -383,6 +383,11 @@ function StoryDialog({
     return downloadedCount >= totalCount;
   }).length;
 
+  const handleClear = useCallback(() => {
+    setSelectedIds(new Set());
+    onClearStories();
+  }, [onClearStories]);
+
   return React.createElement(
     "div",
     { className: "fpdl-container" },
@@ -404,7 +409,7 @@ function StoryDialog({
         {
           type: "button",
           className: "fpdl-btn",
-          onClick: onClearStories,
+          onClick: handleClear,
           style: { marginLeft: "4px" },
           disabled: clearableCount === 0,
         },
