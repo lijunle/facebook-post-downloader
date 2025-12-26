@@ -240,17 +240,17 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedCountMap: { [storyId: string]: number } }} props
+ * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
   stories,
   selectedIds,
   onToggleStory,
   onToggleAll,
-  downloadedCountMap,
+  downloadedStories,
 }) {
   const selectableStories = stories.filter(
-    (s) => !(getStoryId(s) in downloadedCountMap),
+    (s) => !(getStoryId(s) in downloadedStories),
   );
   const allSelected =
     selectableStories.length > 0 &&
@@ -295,7 +295,7 @@ function StoryTable({
           story,
           selected: selectedIds.has(getStoryId(story)),
           onToggle: () => onToggleStory(getStoryId(story)),
-          downloadedCount: downloadedCountMap[getStoryId(story)],
+          downloadedCount: downloadedStories[getStoryId(story)],
         }),
       ),
     ),
@@ -303,24 +303,17 @@ function StoryTable({
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, setDownloadedStory: (storyId: string, updater: (count: number) => number) => void }} props
  */
-function StoryDialog({ stories, onDownloadFile, onClose }) {
+function StoryDialog({
+  stories,
+  onDownloadFile,
+  onClose,
+  downloadedStories,
+  setDownloadedStory,
+}) {
   const [selectedIds, setSelectedIds] = useState(
     /** @type {Set<string>} */ (new Set()),
-  );
-  const [downloadedCountMap, setDownloadedCountMap] = useState(
-    /** @type {{ [storyId: string]: number }} */ ({}),
-  );
-
-  useChromeMessage(
-    "FPDL_DOWNLOAD_COMPLETE",
-    useCallback((message) => {
-      setDownloadedCountMap((prev) => ({
-        ...prev,
-        [message.storyId]: (prev[message.storyId] ?? 0) + 1,
-      }));
-    }, []),
   );
 
   const onToggleStory = useCallback((/** @type {string} */ id) => {
@@ -351,17 +344,13 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
 
     const selectedStories = stories
       .filter((s) => selectedIds.has(getStoryId(s)))
-      .filter((s) => !(getStoryId(s) in downloadedCountMap));
+      .filter((s) => !(getStoryId(s) in downloadedStories));
     if (selectedStories.length === 0) return;
 
     setSelectedIds(new Set());
-    setDownloadedCountMap((prev) => {
-      const next = { ...prev };
-      for (const story of selectedStories) {
-        next[getStoryId(story)] = 0;
-      }
-      return next;
-    });
+    for (const story of selectedStories) {
+      setDownloadedStory(getStoryId(story), () => 0);
+    }
 
     for (let i = 0; i < selectedStories.length; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
@@ -376,7 +365,13 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
         );
       }
     }
-  }, [selectedIds, stories, onDownloadFile]);
+  }, [
+    selectedIds,
+    stories,
+    onDownloadFile,
+    downloadedStories,
+    setDownloadedStory,
+  ]);
 
   return React.createElement(
     "div",
@@ -415,7 +410,7 @@ function StoryDialog({ stories, onDownloadFile, onClose }) {
       selectedIds,
       onToggleStory,
       onToggleAll,
-      downloadedCountMap,
+      downloadedStories,
     }),
   );
 }
@@ -427,6 +422,33 @@ function App({ initialStories, onStory }) {
   const [stories, setStories] = useState(initialStories);
   const [visible, setVisible] = useState(false);
   const hasRendered = React.useRef(false);
+  const [downloadedStories, setDownloadedStories] = useState(
+    /** @type {{ [storyId: string]: number }} */ ({}),
+  );
+
+  const setDownloadedStory = useCallback(
+    /**
+     * @param {string} storyId
+     * @param {(count: number) => number} updater
+     */
+    (storyId, updater) => {
+      setDownloadedStories((prev) => ({
+        ...prev,
+        [storyId]: updater(prev[storyId] ?? 0),
+      }));
+    },
+    [],
+  );
+
+  useChromeMessage(
+    "FPDL_DOWNLOAD_COMPLETE",
+    useCallback(
+      (message) => {
+        setDownloadedStory(message.storyId, (c) => c + 1);
+      },
+      [setDownloadedStory],
+    ),
+  );
 
   const onDownloadFile = useCallback(
     /** @param {string} storyId @param {string} url @param {string} filename */
@@ -469,7 +491,13 @@ function App({ initialStories, onStory }) {
 
   if (!visible) return null;
 
-  return React.createElement(StoryDialog, { stories, onDownloadFile, onClose });
+  return React.createElement(StoryDialog, {
+    stories,
+    onDownloadFile,
+    onClose,
+    downloadedStories,
+    setDownloadedStory,
+  });
 }
 
 function run() {
