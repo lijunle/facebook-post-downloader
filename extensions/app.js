@@ -303,12 +303,13 @@ function StoryTable({
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, setDownloadedStory: (storyId: string, updater: (count: number) => number) => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, onClearStories: () => void, downloadedStories: { [storyId: string]: number }, setDownloadedStory: (storyId: string, updater: (count: number) => number) => void }} props
  */
 function StoryDialog({
   stories,
   onDownloadFile,
   onClose,
+  onClearStories,
   downloadedStories,
   setDownloadedStory,
 }) {
@@ -390,6 +391,16 @@ function StoryDialog({
         `Download (${selectedIds.size})`,
       ),
       React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "fpdl-btn",
+          onClick: onClearStories,
+          style: { marginLeft: "4px" },
+        },
+        "Clear",
+      ),
+      React.createElement(
         "div",
         { className: "fpdl-title" },
         `Facebook Post Downloader (${stories.length})`,
@@ -462,6 +473,33 @@ function App({ initialStories, onStory }) {
     setVisible(false);
   }, []);
 
+  const onClearStories = useCallback(() => {
+    setStories((prev) =>
+      prev.filter((story) => {
+        const storyId = getStoryId(story);
+        const downloadedCount = downloadedStories[storyId];
+        if (downloadedCount === undefined) return false;
+        const totalCount = getDownloadCount(story);
+        return downloadedCount >= 0 && downloadedCount < totalCount;
+      }),
+    );
+    setDownloadedStories((prev) => {
+      const next = { ...prev };
+      for (const storyId in prev) {
+        const story = stories.find((s) => getStoryId(s) === storyId);
+        if (!story) {
+          delete next[storyId];
+          continue;
+        }
+        const totalCount = getDownloadCount(story);
+        if (prev[storyId] >= totalCount) {
+          delete next[storyId];
+        }
+      }
+      return next;
+    });
+  }, [downloadedStories, stories]);
+
   // Listen for toggle messages - scroll to trigger load on first render
   useChromeMessage(
     "FPDL_TOGGLE",
@@ -495,6 +533,7 @@ function App({ initialStories, onStory }) {
     stories,
     onDownloadFile,
     onClose,
+    onClearStories,
     downloadedStories,
     setDownloadedStory,
   });
