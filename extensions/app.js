@@ -412,6 +412,24 @@ function useStoryListener({ initialStories, onStory }) {
 }
 
 /**
+ * Custom hook to manage visible stories filtering
+ * @param {{ stories: Story[] }} params
+ * @returns {{ visibleStories: Story[], hiddenStories: Set<string>, setHiddenStories: React.Dispatch<React.SetStateAction<Set<string>>> }}
+ */
+function useVisibleStories({ stories }) {
+  const [hiddenStories, setHiddenStories] = useState(
+    /** @type {Set<string>} */ (new Set()),
+  );
+
+  const visibleStories = useMemo(
+    () => stories.filter((s) => !hiddenStories.has(getStoryId(s))),
+    [stories, hiddenStories],
+  );
+
+  return { visibleStories, hiddenStories, setHiddenStories };
+}
+
+/**
  * Custom hook to manage downloaded stories state
  * @returns {[{ [storyId: string]: number }, React.Dispatch<React.SetStateAction<{ [storyId: string]: number }>>]}
  */
@@ -439,8 +457,8 @@ function useDownloadingStories() {
 function App({ initialStories, onStory }) {
   const stories = useStoryListener({ initialStories, onStory });
   const [downloadingStories, setDownloadingStories] = useDownloadingStories();
-  const [hiddenStories, setHiddenStories] = useState(
-    /** @type {Set<string>} */ (new Set()),
+  const { visibleStories, hiddenStories, setHiddenStories } = useVisibleStories(
+    { stories },
   );
   const [selectedStories, setSelectedStories] = useState(
     /** @type {Set<string>} */ (new Set()),
@@ -460,11 +478,6 @@ function App({ initialStories, onStory }) {
       return next;
     });
   }, []);
-
-  const visibleStories = useMemo(
-    () => stories.filter((s) => !hiddenStories.has(getStoryId(s))),
-    [stories, hiddenStories],
-  );
 
   const handleToggleAll = useCallback(() => {
     setSelectedStories((prev) => {
