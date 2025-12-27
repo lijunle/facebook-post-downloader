@@ -18,7 +18,7 @@ import { useDownloadButtonInjection } from "./download-button.js";
  * @typedef {import('./types').ChromeMessage} ChromeMessage
  */
 
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useMemo } = React;
 
 /**
  * Hook to listen for Chrome extension messages of a specific type.
@@ -44,7 +44,7 @@ function useChromeMessage(type, callback) {
 }
 
 /**
- * Sends a message to the content script.
+ * Send a message to the content script.
  * @param {AppMessage} message
  */
 function sendAppMessage(message) {
@@ -52,7 +52,7 @@ function sendAppMessage(message) {
 }
 
 /**
- * Inject the styles for the FPDL UI.
+ * Inject styles for the FPDL UI.
  */
 function injectStyles() {
   if (document.getElementById("fpdl-styles")) return;
@@ -173,6 +173,7 @@ function injectStyles() {
 }
 
 /**
+ * Render a single story row in the table.
  * @param {{ story: Story, selected: boolean, onToggle: () => void, downloadedCount: number | undefined }} props
  */
 function StoryRow({ story, selected, onToggle, downloadedCount }) {
@@ -240,21 +241,22 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
+ * Render the story table with headers and rows.
+ * @param {{ stories: Story[], selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, downloadingStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
   stories,
-  selectedIds,
-  onToggleStory,
-  onToggleAll,
-  downloadedStories,
+  selectedStories,
+  toggleStory,
+  toggleAllStories,
+  downloadingStories,
 }) {
   const selectableStories = stories.filter(
-    (s) => !(getStoryId(s) in downloadedStories),
+    (s) => !(getStoryId(s) in downloadingStories),
   );
   const allSelected =
     selectableStories.length > 0 &&
-    selectableStories.every((s) => selectedIds.has(getStoryId(s)));
+    selectableStories.every((s) => selectedStories.has(getStoryId(s)));
 
   return React.createElement(
     "table",
@@ -271,7 +273,7 @@ function StoryTable({
           React.createElement("input", {
             type: "checkbox",
             checked: allSelected,
-            onChange: onToggleAll,
+            onChange: toggleAllStories,
             disabled: selectableStories.length === 0,
           }),
         ),
@@ -293,9 +295,9 @@ function StoryTable({
         React.createElement(StoryRow, {
           key: getStoryId(story),
           story,
-          selected: selectedIds.has(getStoryId(story)),
-          onToggle: () => onToggleStory(getStoryId(story)),
-          downloadedCount: downloadedStories[getStoryId(story)],
+          selected: selectedStories.has(getStoryId(story)),
+          onToggle: () => toggleStory(story),
+          downloadedCount: downloadingStories[getStoryId(story)],
         }),
       ),
     ),
@@ -303,35 +305,49 @@ function StoryTable({
 }
 
 /**
- * @param {{ selectedIds: Set<string>, downloadedStoryIds: string[], hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
+ * Render a button to hide/unhide stories based on current state.
+ * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, clearSelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
  */
 function HideButton({
-  selectedIds,
-  downloadedStoryIds,
+  selectedStories,
+  visibleStories,
+  downloadingStories,
   hiddenStories,
-  setSelectedIds,
+  clearSelectedStories,
   setHiddenStories,
 }) {
+  const downloadedStoryIds = useMemo(
+    () =>
+      visibleStories
+        .filter((s) => {
+          const id = getStoryId(s);
+          const downloadingCount = downloadingStories[id];
+          return downloadingCount === getDownloadCount(s);
+        })
+        .map((s) => getStoryId(s)),
+    [visibleStories, downloadingStories],
+  );
+
   const hideSelected = useCallback(() => {
-    setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
-    setSelectedIds(new Set());
-  }, [selectedIds, setHiddenStories, setSelectedIds]);
+    setHiddenStories((prev) => new Set([...prev, ...selectedStories]));
+    clearSelectedStories();
+  }, [selectedStories, setHiddenStories, clearSelectedStories]);
 
   const hideDownloaded = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-    setSelectedIds(new Set());
-  }, [downloadedStoryIds, setHiddenStories, setSelectedIds]);
+    clearSelectedStories();
+  }, [downloadedStoryIds, setHiddenStories, clearSelectedStories]);
 
   const unhide = useCallback(() => {
     setHiddenStories(() => new Set());
-    setSelectedIds(new Set());
-  }, [setHiddenStories, setSelectedIds]);
+    clearSelectedStories();
+  }, [setHiddenStories, clearSelectedStories]);
 
   let label = null;
   let action = null;
 
-  if (selectedIds.size > 0) {
-    label = `Hide selected (${selectedIds.size})`;
+  if (selectedStories.size > 0) {
+    label = `Hide selected (${selectedStories.size})`;
     action = hideSelected;
   } else if (downloadedStoryIds.length > 0) {
     label = `Hide downloaded (${downloadedStoryIds.length})`;
@@ -356,23 +372,67 @@ function HideButton({
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void, hiddenStories: Set<string>, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
+ * Hook to manage dialog open/close state.
+ * @param {{ clearSelectedStories: () => void }} params
+ * @returns {{ open: boolean, closeDialog: () => void }}
  */
-function StoryDialog({
-  stories,
-  onDownloadFile,
-  onClose,
-  downloadedStories,
-  updateDownloadedStories,
-  hiddenStories,
-  setHiddenStories,
-}) {
-  const [selectedIds, setSelectedIds] = useState(
+function useDialogOpen({ clearSelectedStories }) {
+  const [open, setOpen] = useState(false);
+  const hasRendered = React.useRef(false);
+
+  const closeDialog = useCallback(() => {
+    setOpen(false);
+    clearSelectedStories();
+  }, [clearSelectedStories]);
+
+  useChromeMessage(
+    "FPDL_TOGGLE",
+    useCallback(() => {
+      if (!hasRendered.current) {
+        hasRendered.current = true;
+        window.scrollBy(0, 1);
+      }
+      setOpen((v) => !v);
+    }, []),
+  );
+
+  return { open, closeDialog };
+}
+
+/**
+ * Hook to listen for new stories and update badge count.
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} params
+ * @returns {Story[]}
+ */
+function useStoryListener({ initialStories, onStory }) {
+  const [stories, setStories] = useState(initialStories);
+
+  useEffect(() => {
+    onStory((story) => {
+      setStories((prev) => [...prev, story]);
+    });
+  }, [onStory]);
+
+  useEffect(() => {
+    sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
+  }, [stories.length]);
+
+  return stories;
+}
+
+/**
+ * Hook to manage story selection state.
+ * @param {{ visibleStories: Story[] }} params
+ * @returns {{ selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, clearSelectedStories: () => void }}
+ */
+function useSelectedStories({ visibleStories }) {
+  const [selectedStories, setSelectedStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
 
-  const onToggleStory = useCallback((/** @type {string} */ id) => {
-    setSelectedIds((prev) => {
+  const toggleStory = useCallback((/** @type {Story} */ story) => {
+    const id = getStoryId(story);
+    setSelectedStories((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -383,13 +443,8 @@ function StoryDialog({
     });
   }, []);
 
-  // Filter out hidden stories for display
-  const visibleStories = stories.filter(
-    (s) => !hiddenStories.has(getStoryId(s)),
-  );
-
-  const onToggleAll = useCallback(() => {
-    setSelectedIds((prev) => {
+  const toggleAllStories = useCallback(() => {
+    setSelectedStories((prev) => {
       const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
         return new Set();
@@ -399,25 +454,82 @@ function StoryDialog({
     });
   }, [visibleStories]);
 
-  const handleDownload = useCallback(async () => {
-    if (selectedIds.size === 0) return;
+  const clearSelectedStories = useCallback(() => {
+    setSelectedStories(new Set());
+  }, []);
 
-    const selectedStories = visibleStories
-      .filter((s) => selectedIds.has(getStoryId(s)))
-      .filter((s) => !(getStoryId(s) in downloadedStories));
-    if (selectedStories.length === 0) return;
+  return {
+    selectedStories,
+    toggleStory,
+    toggleAllStories,
+    clearSelectedStories,
+  };
+}
 
-    setSelectedIds(new Set());
-    updateDownloadedStories(
-      selectedStories.map((s) => getStoryId(s)),
-      () => 0,
+/**
+ * Hook to filter visible stories based on hidden state.
+ * @param {{ stories: Story[] }} params
+ * @returns {{ visibleStories: Story[], hiddenStories: Set<string>, setHiddenStories: React.Dispatch<React.SetStateAction<Set<string>>> }}
+ */
+function useVisibleStories({ stories }) {
+  const [hiddenStories, setHiddenStories] = useState(
+    /** @type {Set<string>} */ (new Set()),
+  );
+
+  const visibleStories = useMemo(
+    () => stories.filter((s) => !hiddenStories.has(getStoryId(s))),
+    [stories, hiddenStories],
+  );
+
+  return { visibleStories, hiddenStories, setHiddenStories };
+}
+
+/**
+ * Hook to manage story download state and download logic.
+ * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
+ * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => Promise<void> }}
+ */
+function useDownloadingStories({
+  visibleStories,
+  selectedStories,
+  clearSelectedStories,
+}) {
+  const [downloadingStories, setDownloadingStories] = useState(
+    /** @type {{ [storyId: string]: number }} */ ({}),
+  );
+
+  useChromeMessage(
+    "FPDL_DOWNLOAD_COMPLETE",
+    useCallback((message) => {
+      setDownloadingStories((prev) => ({
+        ...prev,
+        [message.storyId]: (prev[message.storyId] ?? 0) + 1,
+      }));
+    }, []),
+  );
+
+  const downloadStories = useCallback(async () => {
+    const storiesToDownload = visibleStories.filter((s) =>
+      selectedStories.has(getStoryId(s)),
     );
+    if (storiesToDownload.length === 0) return;
 
-    for (let i = 0; i < selectedStories.length; i++) {
+    clearSelectedStories();
+    setDownloadingStories((prev) => {
+      const next = { ...prev };
+      for (const story of storiesToDownload) {
+        next[getStoryId(story)] = 0;
+      }
+      return next;
+    });
+
+    for (let i = 0; i < storiesToDownload.length; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
-      const story = selectedStories[i];
+      const story = storiesToDownload[i];
       try {
-        await downloadStory(story, onDownloadFile);
+        await downloadStory(story, (storyId, url, filename) =>
+          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
+        );
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -426,22 +538,39 @@ function StoryDialog({
         );
       }
     }
-  }, [
-    selectedIds,
-    visibleStories,
-    onDownloadFile,
-    downloadedStories,
-    updateDownloadedStories,
-  ]);
+  }, [selectedStories, visibleStories, clearSelectedStories]);
 
-  // Compute downloaded story IDs from visible stories
-  const downloadedStoryIds = visibleStories
-    .filter((s) => {
-      const id = getStoryId(s);
-      const count = downloadedStories[id];
-      return count !== undefined && count >= getDownloadCount(s);
-    })
-    .map((s) => getStoryId(s));
+  return { downloadingStories, downloadStories };
+}
+
+/**
+ * Main application component for the Facebook Post Downloader.
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
+ */
+function App({ initialStories, onStory }) {
+  const stories = useStoryListener({ initialStories, onStory });
+  const { visibleStories, hiddenStories, setHiddenStories } = useVisibleStories(
+    { stories },
+  );
+  const {
+    selectedStories,
+    toggleStory,
+    toggleAllStories,
+    clearSelectedStories,
+  } = useSelectedStories({ visibleStories });
+  const { downloadingStories, downloadStories } = useDownloadingStories({
+    visibleStories,
+    selectedStories,
+    clearSelectedStories,
+  });
+
+  const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
+
+  useDownloadButtonInjection(stories, (storyId, url, filename) =>
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
+  );
+
+  if (!open) return null;
 
   return React.createElement(
     "div",
@@ -454,16 +583,17 @@ function StoryDialog({
         {
           type: "button",
           className: "fpdl-btn",
-          onClick: handleDownload,
-          disabled: selectedIds.size === 0,
+          onClick: downloadStories,
+          disabled: selectedStories.size === 0,
         },
-        `Download (${selectedIds.size})`,
+        `Download (${selectedStories.size})`,
       ),
       React.createElement(HideButton, {
-        selectedIds,
-        downloadedStoryIds,
+        selectedStories,
+        visibleStories,
+        downloadingStories,
         hiddenStories,
-        setSelectedIds,
+        clearSelectedStories,
         setHiddenStories,
       }),
       React.createElement(
@@ -476,7 +606,7 @@ function StoryDialog({
         {
           type: "button",
           className: "fpdl-close-btn",
-          onClick: onClose,
+          onClick: closeDialog,
           title: "Close",
         },
         "×",
@@ -484,109 +614,15 @@ function StoryDialog({
     ),
     React.createElement(StoryTable, {
       stories: visibleStories,
-      selectedIds,
-      onToggleStory,
-      onToggleAll,
-      downloadedStories,
+      selectedStories,
+      toggleStory,
+      toggleAllStories,
+      downloadingStories,
     }),
   );
 }
 
-/**
- * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
- */
-function App({ initialStories, onStory }) {
-  const [stories, setStories] = useState(initialStories);
-  const [visible, setVisible] = useState(false);
-  const hasRendered = React.useRef(false);
-  const [downloadedStories, setDownloadedStories] = useState(
-    /** @type {{ [storyId: string]: number }} */ ({}),
-  );
-  const [hiddenStories, setHiddenStories] = useState(
-    /** @type {Set<string>} */ (new Set()),
-  );
-
-  const updateDownloadedStories = useCallback(
-    /**
-     * @param {string[]} storyIds
-     * @param {(count: number) => number} updater
-     */
-    (storyIds, updater) => {
-      setDownloadedStories((prev) => {
-        const next = { ...prev };
-        for (const storyId of storyIds) {
-          next[storyId] = updater(prev[storyId] ?? 0);
-        }
-        return next;
-      });
-    },
-    [],
-  );
-
-  useChromeMessage(
-    "FPDL_DOWNLOAD_COMPLETE",
-    useCallback(
-      (message) => {
-        updateDownloadedStories([message.storyId], (c) => c + 1);
-      },
-      [updateDownloadedStories],
-    ),
-  );
-
-  const onDownloadFile = useCallback(
-    /** @param {string} storyId @param {string} url @param {string} filename */
-    (storyId, url, filename) => {
-      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-    },
-    [],
-  );
-
-  const onClose = useCallback(() => {
-    setVisible(false);
-  }, []);
-
-  // Listen for toggle messages - scroll to trigger load on first render
-  useChromeMessage(
-    "FPDL_TOGGLE",
-    useCallback(() => {
-      if (!hasRendered.current) {
-        hasRendered.current = true;
-        window.scrollBy(0, 1);
-      }
-      setVisible((v) => !v);
-    }, []),
-  );
-
-  // Subscribe to new stories
-  useEffect(() => {
-    onStory((story) => {
-      setStories((prev) => [...prev, story]);
-    });
-  }, [onStory]);
-
-  // Update badge count when stories change
-  useEffect(() => {
-    sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
-  }, [stories.length]);
-
-  // Inject download buttons when stories change
-  useDownloadButtonInjection(stories, onDownloadFile);
-
-  if (!visible) return null;
-
-  return React.createElement(StoryDialog, {
-    stories,
-    onDownloadFile,
-    onClose,
-    downloadedStories,
-    updateDownloadedStories,
-    hiddenStories,
-    setHiddenStories,
-  });
-}
-
 function run() {
-  // Inject styles first
   injectStyles();
 
   /** @type {Story[]} */
@@ -594,7 +630,6 @@ function run() {
   /** @type {((story: Story) => void) | null} */
   let storyCallback = null;
 
-  // Start listening immediately, before React mounts
   storyListener((story) => {
     if (storyCallback) {
       storyCallback(story);
