@@ -18,7 +18,7 @@ import { useDownloadButtonInjection } from "./download-button.js";
  * @typedef {import('./types').ChromeMessage} ChromeMessage
  */
 
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useMemo } = React;
 
 /**
  * Hook to listen for Chrome extension messages of a specific type.
@@ -456,8 +456,9 @@ function App({ initialStories, onStory }) {
     });
   }, []);
 
-  const visibleStories = stories.filter(
-    (s) => !hiddenStories.has(getStoryId(s)),
+  const visibleStories = useMemo(
+    () => stories.filter((s) => !hiddenStories.has(getStoryId(s))),
+    [stories, hiddenStories],
   );
 
   const onToggleAll = useCallback(() => {
