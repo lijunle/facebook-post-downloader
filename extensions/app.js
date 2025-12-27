@@ -303,7 +303,58 @@ function StoryTable({
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void }} props
+ * @param {{ selectedIds: Set<string>, downloadedStoryIds: string[], hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
+ */
+function HideButton({
+  selectedIds,
+  downloadedStoryIds,
+  hiddenStories,
+  setSelectedIds,
+  setHiddenStories,
+}) {
+  const hideSelected = useCallback(() => {
+    setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
+    setSelectedIds(new Set());
+  }, [selectedIds, setHiddenStories, setSelectedIds]);
+
+  const hideDownloaded = useCallback(() => {
+    setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
+  }, [downloadedStoryIds, setHiddenStories]);
+
+  const unhide = useCallback(() => {
+    setHiddenStories(() => new Set());
+  }, [setHiddenStories]);
+
+  let label = null;
+  let action = null;
+
+  if (selectedIds.size > 0) {
+    label = `Hide selected (${selectedIds.size})`;
+    action = hideSelected;
+  } else if (downloadedStoryIds.length > 0) {
+    label = `Hide downloaded (${downloadedStoryIds.length})`;
+    action = hideDownloaded;
+  } else if (hiddenStories.size > 0) {
+    label = `Unhide (${hiddenStories.size})`;
+    action = unhide;
+  }
+
+  if (!label) return null;
+
+  return React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "fpdl-btn",
+      onClick: action,
+      style: { marginLeft: "8px" },
+    },
+    label,
+  );
+}
+
+/**
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void, hiddenStories: Set<string>, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
  */
 function StoryDialog({
   stories,
@@ -311,6 +362,8 @@ function StoryDialog({
   onClose,
   downloadedStories,
   updateDownloadedStories,
+  hiddenStories,
+  setHiddenStories,
 }) {
   const [selectedIds, setSelectedIds] = useState(
     /** @type {Set<string>} */ (new Set()),
@@ -328,21 +381,26 @@ function StoryDialog({
     });
   }, []);
 
+  // Filter out hidden stories for display
+  const visibleStories = stories.filter(
+    (s) => !hiddenStories.has(getStoryId(s)),
+  );
+
   const onToggleAll = useCallback(() => {
     setSelectedIds((prev) => {
-      const allSelected = stories.every((s) => prev.has(getStoryId(s)));
+      const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
         return new Set();
       } else {
-        return new Set(stories.map((s) => getStoryId(s)));
+        return new Set(visibleStories.map((s) => getStoryId(s)));
       }
     });
-  }, [stories]);
+  }, [visibleStories]);
 
   const handleDownload = useCallback(async () => {
     if (selectedIds.size === 0) return;
 
-    const selectedStories = stories
+    const selectedStories = visibleStories
       .filter((s) => selectedIds.has(getStoryId(s)))
       .filter((s) => !(getStoryId(s) in downloadedStories));
     if (selectedStories.length === 0) return;
@@ -368,11 +426,20 @@ function StoryDialog({
     }
   }, [
     selectedIds,
-    stories,
+    visibleStories,
     onDownloadFile,
     downloadedStories,
     updateDownloadedStories,
   ]);
+
+  // Compute downloaded story IDs from visible stories
+  const downloadedStoryIds = visibleStories
+    .filter((s) => {
+      const id = getStoryId(s);
+      const count = downloadedStories[id];
+      return count !== undefined && count >= getDownloadCount(s);
+    })
+    .map((s) => getStoryId(s));
 
   return React.createElement(
     "div",
@@ -390,10 +457,17 @@ function StoryDialog({
         },
         `Download (${selectedIds.size})`,
       ),
+      React.createElement(HideButton, {
+        selectedIds,
+        downloadedStoryIds,
+        hiddenStories,
+        setSelectedIds,
+        setHiddenStories,
+      }),
       React.createElement(
         "div",
         { className: "fpdl-title" },
-        `Facebook Post Downloader (${stories.length})`,
+        `Facebook Post Downloader (${visibleStories.length})`,
       ),
       React.createElement(
         "button",
@@ -407,7 +481,7 @@ function StoryDialog({
       ),
     ),
     React.createElement(StoryTable, {
-      stories,
+      stories: visibleStories,
       selectedIds,
       onToggleStory,
       onToggleAll,
@@ -425,6 +499,9 @@ function App({ initialStories, onStory }) {
   const hasRendered = React.useRef(false);
   const [downloadedStories, setDownloadedStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
+  );
+  const [hiddenStories, setHiddenStories] = useState(
+    /** @type {Set<string>} */ (new Set()),
   );
 
   const updateDownloadedStories = useCallback(
@@ -501,6 +578,8 @@ function App({ initialStories, onStory }) {
     onClose,
     downloadedStories,
     updateDownloadedStories,
+    hiddenStories,
+    setHiddenStories,
   });
 }
 
