@@ -380,41 +380,24 @@ function useStoryListener({ initialStories, onStory }) {
 
 /**
  * Custom hook to manage downloaded stories state
- * @returns {{ downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void }}
+ * @returns {{ downloadedStories: { [storyId: string]: number }, setDownloadedStories: React.Dispatch<React.SetStateAction<{ [storyId: string]: number }>> }}
  */
 function useDownloadedStories() {
   const [downloadedStories, setDownloadedStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
   );
 
-  const updateDownloadedStories = useCallback(
-    /**
-     * @param {string[]} storyIds
-     * @param {(count: number) => number} updater
-     */
-    (storyIds, updater) => {
-      setDownloadedStories((prev) => {
-        const next = { ...prev };
-        for (const storyId of storyIds) {
-          next[storyId] = updater(prev[storyId] ?? 0);
-        }
-        return next;
-      });
-    },
-    [],
-  );
-
   useChromeMessage(
     "FPDL_DOWNLOAD_COMPLETE",
-    useCallback(
-      (message) => {
-        updateDownloadedStories([message.storyId], (c) => c + 1);
-      },
-      [updateDownloadedStories],
-    ),
+    useCallback((message) => {
+      setDownloadedStories((prev) => ({
+        ...prev,
+        [message.storyId]: (prev[message.storyId] ?? 0) + 1,
+      }));
+    }, []),
   );
 
-  return { downloadedStories, updateDownloadedStories };
+  return { downloadedStories, setDownloadedStories };
 }
 
 /**
@@ -422,7 +405,7 @@ function useDownloadedStories() {
  */
 function App({ initialStories, onStory }) {
   const stories = useStoryListener({ initialStories, onStory });
-  const { downloadedStories, updateDownloadedStories } = useDownloadedStories();
+  const { downloadedStories, setDownloadedStories } = useDownloadedStories();
   const [visible, setVisible] = useState(false);
   const hasRendered = React.useRef(false);
   const [hiddenStories, setHiddenStories] = useState(
@@ -430,14 +413,6 @@ function App({ initialStories, onStory }) {
   );
   const [selectedIds, setSelectedIds] = useState(
     /** @type {Set<string>} */ (new Set()),
-  );
-
-  const onDownloadFile = useCallback(
-    /** @param {string} storyId @param {string} url @param {string} filename */
-    (storyId, url, filename) => {
-      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-    },
-    [],
   );
 
   const onClose = useCallback(() => {
@@ -481,16 +456,21 @@ function App({ initialStories, onStory }) {
     if (selectedStories.length === 0) return;
 
     setSelectedIds(new Set());
-    updateDownloadedStories(
-      selectedStories.map((s) => getStoryId(s)),
-      () => 0,
-    );
+    setDownloadedStories((prev) => {
+      const next = { ...prev };
+      for (const story of selectedStories) {
+        next[getStoryId(story)] = 0;
+      }
+      return next;
+    });
 
     for (let i = 0; i < selectedStories.length; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
       const story = selectedStories[i];
       try {
-        await downloadStory(story, onDownloadFile);
+        await downloadStory(story, (storyId, url, filename) => {
+          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+        });
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -499,13 +479,7 @@ function App({ initialStories, onStory }) {
         );
       }
     }
-  }, [
-    selectedIds,
-    visibleStories,
-    onDownloadFile,
-    downloadedStories,
-    updateDownloadedStories,
-  ]);
+  }, [selectedIds, visibleStories, downloadedStories, setDownloadedStories]);
 
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
     selectedIds,
@@ -529,7 +503,9 @@ function App({ initialStories, onStory }) {
   );
 
   // Inject download buttons when stories change
-  useDownloadButtonInjection(stories, onDownloadFile);
+  useDownloadButtonInjection(stories, (storyId, url, filename) => {
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+  });
 
   if (!visible) return null;
 
