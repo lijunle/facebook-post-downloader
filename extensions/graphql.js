@@ -28,14 +28,18 @@ function emit(ev) {
 const GRAPHQL_URL = `${location.origin}/api/graphql/`;
 
 /**
- * Map of API names to their Facebook module names containing doc_id.
- * @type {Record<string, string>}
+ * Map of API names to their module names and fallback doc IDs.
+ * @type {Record<string, { moduleName: string, fallbackDocId: string }>}
  */
 const DOC_ID_MODULES = {
-  CometPhotoRootContentQuery:
-    "CometPhotoRootContentQuery_facebookRelayOperation",
-  CometVideoRootMediaViewerQuery:
-    "CometVideoRootMediaViewerQuery_facebookRelayOperation",
+  CometPhotoRootContentQuery: {
+    moduleName: "CometPhotoRootContentQuery_facebookRelayOperation",
+    fallbackDocId: "25407333282216326",
+  },
+  CometVideoRootMediaViewerQuery: {
+    moduleName: "CometVideoRootMediaViewerQuery_facebookRelayOperation",
+    fallbackDocId: "25092610667077508",
+  },
 };
 
 /**
@@ -83,17 +87,13 @@ const DEFAULT_VARIABLES = {
 /**
  * Get doc_id for an API using Facebook's internal require().
  * @param {string} apiName
- * @returns {string | undefined}
+ * @returns {string}
  */
 function getDocId(apiName) {
-  const moduleName = DOC_ID_MODULES[apiName];
-  if (!moduleName) return undefined;
-  try {
-    // @ts-ignore - Facebook's global require
-    return require(moduleName);
-  } catch {
-    return undefined;
-  }
+  const config = DOC_ID_MODULES[apiName];
+  if (!config) throw new Error(`Unknown API: ${apiName}`);
+  // @ts-ignore - Facebook's global require
+  return require(config.moduleName) ?? config.fallbackDocId;
 }
 
 /**
@@ -356,11 +356,6 @@ XMLHttpRequest.prototype.send = function patchedSend(body) {
  */
 export async function sendGraphqlRequest(input) {
   const docId = getDocId(input.apiName);
-  if (!docId)
-    throw new Error(
-      `doc_id not found for: ${input.apiName}. Module may not be loaded.`,
-    );
-
   const { params, lsd } = extractPageContext();
 
   // Merge default variables with input variables (input takes precedence)
