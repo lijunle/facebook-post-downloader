@@ -415,6 +415,16 @@ function App({ initialStories, onStory }) {
     /** @type {Set<string>} */ (new Set()),
   );
 
+  /**
+   * Download file callback
+   * @param {string} storyId
+   * @param {string} url
+   * @param {string} filename
+   */
+  const downloadFile = (storyId, url, filename) => {
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+  };
+
   const onClose = useCallback(() => {
     setVisible(false);
     setSelectedIds(new Set());
@@ -468,9 +478,7 @@ function App({ initialStories, onStory }) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
       const story = selectedStories[i];
       try {
-        await downloadStory(story, (storyId, url, filename) => {
-          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-        });
+        await downloadStory(story, downloadFile);
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -503,9 +511,7 @@ function App({ initialStories, onStory }) {
   );
 
   // Inject download buttons when stories change
-  useDownloadButtonInjection(stories, (storyId, url, filename) => {
-    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-  });
+  useDownloadButtonInjection(stories, downloadFile);
 
   if (!visible) return null;
 
