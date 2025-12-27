@@ -450,23 +450,23 @@ function App({ initialStories, onStory }) {
   const handleDownload = useCallback(async () => {
     if (selectedStories.size === 0) return;
 
-    const selectedStories = visibleStories
+    const storiesToDownload = visibleStories
       .filter((s) => selectedStories.has(getStoryId(s)))
       .filter((s) => !(getStoryId(s) in downloadedStories));
-    if (selectedStories.length === 0) return;
+    if (storiesToDownload.length === 0) return;
 
     setSelectedStories(new Set());
     setDownloadedStories((prev) => {
       const next = { ...prev };
-      for (const story of selectedStories) {
+      for (const story of storiesToDownload) {
         next[getStoryId(story)] = 0;
       }
       return next;
     });
 
-    for (let i = 0; i < selectedStories.length; i++) {
+    for (let i = 0; i < storiesToDownload.length; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
-      const story = selectedStories[i];
+      const story = storiesToDownload[i];
       try {
         await downloadStory(story, (storyId, url, filename) =>
           sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
