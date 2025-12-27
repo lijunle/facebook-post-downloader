@@ -476,10 +476,15 @@ function useVisibleStories({ stories }) {
 }
 
 /**
- * Custom hook to manage downloaded stories state
- * @returns {[{ [storyId: string]: number }, React.Dispatch<React.SetStateAction<{ [storyId: string]: number }>>]}
+ * Custom hook to manage downloading stories state and logic
+ * @param {{ visibleStories: Story[], selectedStories: Set<string>, emptySelectedStories: () => void }} params
+ * @returns {{ downloadingStories: { [storyId: string]: number }, handleDownload: () => Promise<void> }}
  */
-function useDownloadingStories() {
+function useDownloadingStories({
+  visibleStories,
+  selectedStories,
+  emptySelectedStories,
+}) {
   const [downloadingStories, setDownloadingStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
   );
@@ -493,27 +498,6 @@ function useDownloadingStories() {
       }));
     }, []),
   );
-
-  return [downloadingStories, setDownloadingStories];
-}
-
-/**
- * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
- */
-function App({ initialStories, onStory }) {
-  const stories = useStoryListener({ initialStories, onStory });
-  const [downloadingStories, setDownloadingStories] = useDownloadingStories();
-  const { visibleStories, hiddenStories, setHiddenStories } = useVisibleStories(
-    { stories },
-  );
-  const {
-    selectedStories,
-    handleToggleStory,
-    handleToggleAll,
-    emptySelectedStories,
-  } = useSelectedStories({ visibleStories });
-
-  const { open, onClose } = useDialogOpen({ emptySelectedStories });
 
   const handleDownload = useCallback(async () => {
     const storiesToDownload = visibleStories.filter((s) =>
@@ -546,6 +530,31 @@ function App({ initialStories, onStory }) {
       }
     }
   }, [selectedStories, visibleStories, emptySelectedStories]);
+
+  return { downloadingStories, handleDownload };
+}
+
+/**
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
+ */
+function App({ initialStories, onStory }) {
+  const stories = useStoryListener({ initialStories, onStory });
+  const { visibleStories, hiddenStories, setHiddenStories } = useVisibleStories(
+    { stories },
+  );
+  const {
+    selectedStories,
+    handleToggleStory,
+    handleToggleAll,
+    emptySelectedStories,
+  } = useSelectedStories({ visibleStories });
+  const { downloadingStories, handleDownload } = useDownloadingStories({
+    visibleStories,
+    selectedStories,
+    emptySelectedStories,
+  });
+
+  const { open, onClose } = useDialogOpen({ emptySelectedStories });
 
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
     selectedStories,
