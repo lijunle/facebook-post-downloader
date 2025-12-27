@@ -303,10 +303,77 @@ function StoryTable({
 }
 
 /**
+ * Custom hook to manage hide button logic
+ * @param {{ selectedIds: Set<string>, downloadedStoryIds: string[], hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
+ * @returns {{ label: string | null, action: (() => void) | null }}
+ */
+function useHideButton({
+  selectedIds,
+  downloadedStoryIds,
+  hiddenStories,
+  setSelectedIds,
+  setHiddenStories,
+}) {
+  const hideSelected = useCallback(() => {
+    setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
+    setSelectedIds(new Set());
+  }, [selectedIds, setHiddenStories, setSelectedIds]);
+
+  const hideDownloaded = useCallback(() => {
+    setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
+    setSelectedIds(new Set());
+  }, [downloadedStoryIds, setHiddenStories, setSelectedIds]);
+
+  const unhide = useCallback(() => {
+    setHiddenStories(() => new Set());
+    setSelectedIds(new Set());
+  }, [setHiddenStories, setSelectedIds]);
+
+  let label = null;
+  let action = null;
+
+  if (selectedIds.size > 0) {
+    label = `Hide selected (${selectedIds.size})`;
+    action = hideSelected;
+  } else if (downloadedStoryIds.length > 0) {
+    label = `Hide downloaded (${downloadedStoryIds.length})`;
+    action = hideDownloaded;
+  } else if (hiddenStories.size > 0) {
+    label = `Unhide (${hiddenStories.size})`;
+    action = unhide;
+  }
+
+  return { label, action };
+}
+
+/**
+ * Custom hook to manage story listening and badge count updates
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} params
+ * @returns {Story[]}
+ */
+function useStoryListener({ initialStories, onStory }) {
+  const [stories, setStories] = useState(initialStories);
+
+  // Subscribe to new stories
+  useEffect(() => {
+    onStory((story) => {
+      setStories((prev) => [...prev, story]);
+    });
+  }, [onStory]);
+
+  // Update badge count when stories change
+  useEffect(() => {
+    sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
+  }, [stories.length]);
+
+  return stories;
+}
+
+/**
  * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
  */
 function App({ initialStories, onStory }) {
-  const [stories, setStories] = useState(initialStories);
+  const stories = useStoryListener({ initialStories, onStory });
   const [visible, setVisible] = useState(false);
   const hasRendered = React.useRef(false);
   const [downloadedStories, setDownloadedStories] = useState(
@@ -356,9 +423,9 @@ function App({ initialStories, onStory }) {
 
   const onClose = useCallback(() => {
     setVisible(false);
+    setSelectedIds(new Set());
   }, []);
 
-  // Callbacks for story selection (from StoryDialog)
   const onToggleStory = useCallback((/** @type {string} */ id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -371,7 +438,6 @@ function App({ initialStories, onStory }) {
     });
   }, []);
 
-  // Filter visible stories (from StoryDialog)
   const visibleStories = stories.filter(
     (s) => !hiddenStories.has(getStoryId(s)),
   );
@@ -422,7 +488,6 @@ function App({ initialStories, onStory }) {
     updateDownloadedStories,
   ]);
 
-  // Compute downloaded story IDs from visible stories (from StoryDialog)
   const downloadedStoryIds = visibleStories
     .filter((s) => {
       const id = getStoryId(s);
@@ -431,35 +496,13 @@ function App({ initialStories, onStory }) {
     })
     .map((s) => getStoryId(s));
 
-  // Hide button logic (from HideButton)
-  const hideSelected = useCallback(() => {
-    setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
-    setSelectedIds(new Set());
-  }, [selectedIds]);
-
-  const hideDownloaded = useCallback(() => {
-    setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-    setSelectedIds(new Set());
-  }, [downloadedStoryIds]);
-
-  const unhide = useCallback(() => {
-    setHiddenStories(() => new Set());
-    setSelectedIds(new Set());
-  }, []);
-
-  let hideButtonLabel = null;
-  let hideButtonAction = null;
-
-  if (selectedIds.size > 0) {
-    hideButtonLabel = `Hide selected (${selectedIds.size})`;
-    hideButtonAction = hideSelected;
-  } else if (downloadedStoryIds.length > 0) {
-    hideButtonLabel = `Hide downloaded (${downloadedStoryIds.length})`;
-    hideButtonAction = hideDownloaded;
-  } else if (hiddenStories.size > 0) {
-    hideButtonLabel = `Unhide (${hiddenStories.size})`;
-    hideButtonAction = unhide;
-  }
+  const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
+    selectedIds,
+    downloadedStoryIds,
+    hiddenStories,
+    setSelectedIds,
+    setHiddenStories,
+  });
 
   // Listen for toggle messages - scroll to trigger load on first render
   useChromeMessage(
@@ -472,18 +515,6 @@ function App({ initialStories, onStory }) {
       setVisible((v) => !v);
     }, []),
   );
-
-  // Subscribe to new stories
-  useEffect(() => {
-    onStory((story) => {
-      setStories((prev) => [...prev, story]);
-    });
-  }, [onStory]);
-
-  // Update badge count when stories change
-  useEffect(() => {
-    sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
-  }, [stories.length]);
 
   // Inject download buttons when stories change
   useDownloadButtonInjection(stories, onDownloadFile);
