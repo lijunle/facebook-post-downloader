@@ -462,7 +462,7 @@ function App({ initialStories, onStory }) {
     [stories, hiddenStories],
   );
 
-  const onToggleAll = useCallback(() => {
+  const handleToggleAll = useCallback(() => {
     setSelectedStories((prev) => {
       const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
@@ -569,7 +569,7 @@ function App({ initialStories, onStory }) {
       stories: visibleStories,
       selectedStories,
       onToggleStory: handleToggleStory,
-      onToggleAll,
+      onToggleAll: handleToggleAll,
       downloadedStories,
     }),
   );
