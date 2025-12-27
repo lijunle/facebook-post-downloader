@@ -304,7 +304,7 @@ function StoryTable({
 
 /**
  * Custom hook to manage hide button logic
- * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, setSelectedStories: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
+ * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, emptySelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
  * @returns {{ label: string | null, action: (() => void) | null }}
  */
 function useHideButton({
@@ -312,7 +312,7 @@ function useHideButton({
   visibleStories,
   downloadingStories,
   hiddenStories,
-  setSelectedStories,
+  emptySelectedStories,
   setHiddenStories,
 }) {
   const downloadedStoryIds = useMemo(
@@ -329,18 +329,18 @@ function useHideButton({
 
   const hideSelected = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...selectedStories]));
-    setSelectedStories(new Set());
-  }, [selectedStories, setHiddenStories, setSelectedStories]);
+    emptySelectedStories();
+  }, [selectedStories, setHiddenStories, emptySelectedStories]);
 
   const hideDownloaded = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-    setSelectedStories(new Set());
-  }, [downloadedStoryIds, setHiddenStories, setSelectedStories]);
+    emptySelectedStories();
+  }, [downloadedStoryIds, setHiddenStories, emptySelectedStories]);
 
   const unhide = useCallback(() => {
     setHiddenStories(() => new Set());
-    setSelectedStories(new Set());
-  }, [setHiddenStories, setSelectedStories]);
+    emptySelectedStories();
+  }, [setHiddenStories, emptySelectedStories]);
 
   let label = null;
   let action = null;
@@ -361,17 +361,17 @@ function useHideButton({
 
 /**
  * Custom hook to manage dialog visibility
- * @param {{ setSelectedStories: (ids: Set<string>) => void }} params
+ * @param {{ emptySelectedStories: () => void }} params
  * @returns {{ open: boolean, onClose: () => void }}
  */
-function useDialogOpen({ setSelectedStories }) {
+function useDialogOpen({ emptySelectedStories }) {
   const [open, setOpen] = useState(false);
   const hasRendered = React.useRef(false);
 
   const onClose = useCallback(() => {
     setOpen(false);
-    setSelectedStories(new Set());
-  }, [setSelectedStories]);
+    emptySelectedStories();
+  }, [emptySelectedStories]);
 
   // Listen for toggle messages - scroll to trigger load on first render
   useChromeMessage(
@@ -409,6 +409,52 @@ function useStoryListener({ initialStories, onStory }) {
   }, [stories.length]);
 
   return stories;
+}
+
+/**
+ * Custom hook to manage selected stories
+ * @param {{ visibleStories: Story[] }} params
+ * @returns {{ selectedStories: Set<string>, handleToggleStory: (story: Story) => void, handleToggleAll: () => void, emptySelectedStories: () => void }}
+ */
+function useSelectedStories({ visibleStories }) {
+  const [selectedStories, setSelectedStories] = useState(
+    /** @type {Set<string>} */ (new Set()),
+  );
+
+  const handleToggleStory = useCallback((/** @type {Story} */ story) => {
+    const id = getStoryId(story);
+    setSelectedStories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleAll = useCallback(() => {
+    setSelectedStories((prev) => {
+      const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
+      if (allSelected) {
+        return new Set();
+      } else {
+        return new Set(visibleStories.map((s) => getStoryId(s)));
+      }
+    });
+  }, [visibleStories]);
+
+  const emptySelectedStories = useCallback(() => {
+    setSelectedStories(new Set());
+  }, []);
+
+  return {
+    selectedStories,
+    handleToggleStory,
+    handleToggleAll,
+    emptySelectedStories,
+  };
 }
 
 /**
@@ -460,35 +506,14 @@ function App({ initialStories, onStory }) {
   const { visibleStories, hiddenStories, setHiddenStories } = useVisibleStories(
     { stories },
   );
-  const [selectedStories, setSelectedStories] = useState(
-    /** @type {Set<string>} */ (new Set()),
-  );
+  const {
+    selectedStories,
+    handleToggleStory,
+    handleToggleAll,
+    emptySelectedStories,
+  } = useSelectedStories({ visibleStories });
 
-  const { open, onClose } = useDialogOpen({ setSelectedStories });
-
-  const handleToggleStory = useCallback((/** @type {Story} */ story) => {
-    const id = getStoryId(story);
-    setSelectedStories((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleToggleAll = useCallback(() => {
-    setSelectedStories((prev) => {
-      const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
-      if (allSelected) {
-        return new Set();
-      } else {
-        return new Set(visibleStories.map((s) => getStoryId(s)));
-      }
-    });
-  }, [visibleStories]);
+  const { open, onClose } = useDialogOpen({ emptySelectedStories });
 
   const handleDownload = useCallback(async () => {
     const storiesToDownload = visibleStories.filter((s) =>
@@ -496,7 +521,7 @@ function App({ initialStories, onStory }) {
     );
     if (storiesToDownload.length === 0) return;
 
-    setSelectedStories(new Set());
+    emptySelectedStories();
     setDownloadingStories((prev) => {
       const next = { ...prev };
       for (const story of storiesToDownload) {
@@ -520,14 +545,14 @@ function App({ initialStories, onStory }) {
         );
       }
     }
-  }, [selectedStories, visibleStories]);
+  }, [selectedStories, visibleStories, emptySelectedStories]);
 
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
     selectedStories,
     visibleStories,
     downloadingStories,
     hiddenStories,
-    setSelectedStories,
+    emptySelectedStories,
     setHiddenStories,
   });
 
