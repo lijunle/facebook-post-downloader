@@ -240,7 +240,7 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedStories: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
+ * @param {{ stories: Story[], selectedStories: Set<string>, onToggleStory: (story: Story) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
   stories,
@@ -294,7 +294,7 @@ function StoryTable({
           key: getStoryId(story),
           story,
           selected: selectedStories.has(getStoryId(story)),
-          onToggle: () => onToggleStory(getStoryId(story)),
+          onToggle: () => onToggleStory(story),
           downloadedCount: downloadedStories[getStoryId(story)],
         }),
       ),
@@ -444,7 +444,8 @@ function App({ initialStories, onStory }) {
 
   const { open, onClose } = useDialogOpen({ setSelectedStories });
 
-  const onToggleStory = useCallback((/** @type {string} */ id) => {
+  const handleToggleStory = useCallback((/** @type {Story} */ story) => {
+    const id = getStoryId(story);
     setSelectedStories((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -567,7 +568,7 @@ function App({ initialStories, onStory }) {
     React.createElement(StoryTable, {
       stories: visibleStories,
       selectedStories,
-      onToggleStory,
+      onToggleStory: handleToggleStory,
       onToggleAll,
       downloadedStories,
     }),
