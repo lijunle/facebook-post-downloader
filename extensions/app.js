@@ -303,14 +303,14 @@ function StoryTable({
 }
 
 /**
- * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, setDownloadedStory: (storyId: string, updater: (count: number) => number) => void }} props
+ * @param {{ stories: Story[], onDownloadFile: (storyId: string, url: string, filename: string) => void, onClose: () => void, downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void }} props
  */
 function StoryDialog({
   stories,
   onDownloadFile,
   onClose,
   downloadedStories,
-  setDownloadedStory,
+  updateDownloadedStories,
 }) {
   const [selectedIds, setSelectedIds] = useState(
     /** @type {Set<string>} */ (new Set()),
@@ -348,9 +348,10 @@ function StoryDialog({
     if (selectedStories.length === 0) return;
 
     setSelectedIds(new Set());
-    for (const story of selectedStories) {
-      setDownloadedStory(getStoryId(story), () => 0);
-    }
+    updateDownloadedStories(
+      selectedStories.map((s) => getStoryId(s)),
+      () => 0,
+    );
 
     for (let i = 0; i < selectedStories.length; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
@@ -370,7 +371,7 @@ function StoryDialog({
     stories,
     onDownloadFile,
     downloadedStories,
-    setDownloadedStory,
+    updateDownloadedStories,
   ]);
 
   return React.createElement(
@@ -426,16 +427,19 @@ function App({ initialStories, onStory }) {
     /** @type {{ [storyId: string]: number }} */ ({}),
   );
 
-  const setDownloadedStory = useCallback(
+  const updateDownloadedStories = useCallback(
     /**
-     * @param {string} storyId
+     * @param {string[]} storyIds
      * @param {(count: number) => number} updater
      */
-    (storyId, updater) => {
-      setDownloadedStories((prev) => ({
-        ...prev,
-        [storyId]: updater(prev[storyId] ?? 0),
-      }));
+    (storyIds, updater) => {
+      setDownloadedStories((prev) => {
+        const next = { ...prev };
+        for (const storyId of storyIds) {
+          next[storyId] = updater(prev[storyId] ?? 0);
+        }
+        return next;
+      });
     },
     [],
   );
@@ -444,9 +448,9 @@ function App({ initialStories, onStory }) {
     "FPDL_DOWNLOAD_COMPLETE",
     useCallback(
       (message) => {
-        setDownloadedStory(message.storyId, (c) => c + 1);
+        updateDownloadedStories([message.storyId], (c) => c + 1);
       },
-      [setDownloadedStory],
+      [updateDownloadedStories],
     ),
   );
 
@@ -496,7 +500,7 @@ function App({ initialStories, onStory }) {
     onDownloadFile,
     onClose,
     downloadedStories,
-    setDownloadedStory,
+    updateDownloadedStories,
   });
 }
 
