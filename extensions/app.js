@@ -497,6 +497,8 @@ function useDownloadingStories({
   const [downloadingStories, setDownloadingStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
   );
+  const downloadQueueRef = React.useRef(/** @type {Story[]} */ ([]));
+  const isProcessingRef = React.useRef(false);
 
   useChromeMessage(
     "FPDL_DOWNLOAD_COMPLETE",
@@ -508,24 +510,17 @@ function useDownloadingStories({
     }, []),
   );
 
-  const downloadStories = useCallback(async () => {
-    const storiesToDownload = visibleStories.filter((s) =>
-      selectedStories.has(getStoryId(s)),
-    );
-    if (storiesToDownload.length === 0) return;
+  const processDownloadQueue = useCallback(async () => {
+    if (isProcessingRef.current) return;
+    if (downloadQueueRef.current.length === 0) return;
 
-    clearSelectedStories();
-    setDownloadingStories((prev) => {
-      const next = { ...prev };
-      for (const story of storiesToDownload) {
-        next[getStoryId(story)] = 0;
-      }
-      return next;
-    });
+    isProcessingRef.current = true;
 
-    for (let i = 0; i < storiesToDownload.length; i++) {
-      if (i > 0) await new Promise((r) => setTimeout(r, 500));
-      const story = storiesToDownload[i];
+    while (downloadQueueRef.current.length > 0) {
+      const story = downloadQueueRef.current.shift();
+      if (!story) break;
+
+      await new Promise((r) => setTimeout(r, 500));
       try {
         await downloadStory(story, (storyId, url, filename) =>
           sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
@@ -538,7 +533,38 @@ function useDownloadingStories({
         );
       }
     }
-  }, [selectedStories, visibleStories, clearSelectedStories]);
+
+    isProcessingRef.current = false;
+  }, []);
+
+  const downloadStories = useCallback(async () => {
+    const storiesToDownload = visibleStories.filter((s) =>
+      selectedStories.has(getStoryId(s)),
+    );
+    if (storiesToDownload.length === 0) return;
+
+    clearSelectedStories();
+
+    // Mark stories as queued (0 downloads) for UI feedback
+    setDownloadingStories((prev) => {
+      const next = { ...prev };
+      for (const story of storiesToDownload) {
+        next[getStoryId(story)] = 0;
+      }
+      return next;
+    });
+
+    // Add stories to queue
+    downloadQueueRef.current.push(...storiesToDownload);
+
+    // Start processing the queue
+    processDownloadQueue();
+  }, [
+    selectedStories,
+    visibleStories,
+    clearSelectedStories,
+    processDownloadQueue,
+  ]);
 
   return { downloadingStories, downloadStories };
 }
