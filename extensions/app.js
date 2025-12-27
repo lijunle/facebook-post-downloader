@@ -356,6 +356,35 @@ function useHideButton({
 }
 
 /**
+ * Custom hook to manage dialog visibility
+ * @param {{ setSelectedStories: (ids: Set<string>) => void }} params
+ * @returns {{ open: boolean, onClose: () => void }}
+ */
+function useDialogOpen({ setSelectedStories }) {
+  const [open, setOpen] = useState(false);
+  const hasRendered = React.useRef(false);
+
+  const onClose = useCallback(() => {
+    setOpen(false);
+    setSelectedStories(new Set());
+  }, [setSelectedStories]);
+
+  // Listen for toggle messages - scroll to trigger load on first render
+  useChromeMessage(
+    "FPDL_TOGGLE",
+    useCallback(() => {
+      if (!hasRendered.current) {
+        hasRendered.current = true;
+        window.scrollBy(0, 1);
+      }
+      setOpen((v) => !v);
+    }, []),
+  );
+
+  return { open, onClose };
+}
+
+/**
  * Custom hook to manage story listening and badge count updates
  * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} params
  * @returns {Story[]}
@@ -406,8 +435,6 @@ function useDownloadedStories() {
 function App({ initialStories, onStory }) {
   const stories = useStoryListener({ initialStories, onStory });
   const [downloadedStories, setDownloadedStories] = useDownloadedStories();
-  const [visible, setVisible] = useState(false);
-  const hasRendered = React.useRef(false);
   const [hiddenStories, setHiddenStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
@@ -415,10 +442,7 @@ function App({ initialStories, onStory }) {
     /** @type {Set<string>} */ (new Set()),
   );
 
-  const onClose = useCallback(() => {
-    setVisible(false);
-    setSelectedStories(new Set());
-  }, []);
+  const { open, onClose } = useDialogOpen({ setSelectedStories });
 
   const onToggleStory = useCallback((/** @type {string} */ id) => {
     setSelectedStories((prev) => {
@@ -495,24 +519,12 @@ function App({ initialStories, onStory }) {
     setHiddenStories,
   });
 
-  // Listen for toggle messages - scroll to trigger load on first render
-  useChromeMessage(
-    "FPDL_TOGGLE",
-    useCallback(() => {
-      if (!hasRendered.current) {
-        hasRendered.current = true;
-        window.scrollBy(0, 1);
-      }
-      setVisible((v) => !v);
-    }, []),
-  );
-
   // Inject download buttons when stories change
   useDownloadButtonInjection(stories, (storyId, url, filename) =>
     sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
   );
 
-  if (!visible) return null;
+  if (!open) return null;
 
   return React.createElement(
     "div",
