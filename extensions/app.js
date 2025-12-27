@@ -240,13 +240,13 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedStories: Set<string>, onToggleStory: (story: Story) => void, onToggleAll: () => void, downloadingStories: { [storyId: string]: number } }} props
+ * @param {{ stories: Story[], selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, downloadingStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
   stories,
   selectedStories,
-  onToggleStory,
-  onToggleAll,
+  toggleStory,
+  toggleAllStories,
   downloadingStories,
 }) {
   const selectableStories = stories.filter(
@@ -271,7 +271,7 @@ function StoryTable({
           React.createElement("input", {
             type: "checkbox",
             checked: allSelected,
-            onChange: onToggleAll,
+            onChange: toggleAllStories,
             disabled: selectableStories.length === 0,
           }),
         ),
@@ -294,7 +294,7 @@ function StoryTable({
           key: getStoryId(story),
           story,
           selected: selectedStories.has(getStoryId(story)),
-          onToggle: () => onToggleStory(story),
+          onToggle: () => toggleStory(story),
           downloadedCount: downloadingStories[getStoryId(story)],
         }),
       ),
@@ -303,14 +303,14 @@ function StoryTable({
 }
 
 /**
- * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, emptySelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
+ * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, clearSelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
  */
 function HideButton({
   selectedStories,
   visibleStories,
   downloadingStories,
   hiddenStories,
-  emptySelectedStories,
+  clearSelectedStories,
   setHiddenStories,
 }) {
   const downloadedStoryIds = useMemo(
@@ -327,18 +327,18 @@ function HideButton({
 
   const hideSelected = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...selectedStories]));
-    emptySelectedStories();
-  }, [selectedStories, setHiddenStories, emptySelectedStories]);
+    clearSelectedStories();
+  }, [selectedStories, setHiddenStories, clearSelectedStories]);
 
   const hideDownloaded = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-    emptySelectedStories();
-  }, [downloadedStoryIds, setHiddenStories, emptySelectedStories]);
+    clearSelectedStories();
+  }, [downloadedStoryIds, setHiddenStories, clearSelectedStories]);
 
   const unhide = useCallback(() => {
     setHiddenStories(() => new Set());
-    emptySelectedStories();
-  }, [setHiddenStories, emptySelectedStories]);
+    clearSelectedStories();
+  }, [setHiddenStories, clearSelectedStories]);
 
   let label = null;
   let action = null;
@@ -370,17 +370,17 @@ function HideButton({
 
 /**
  * Custom hook to manage dialog visibility
- * @param {{ emptySelectedStories: () => void }} params
- * @returns {{ open: boolean, onClose: () => void }}
+ * @param {{ clearSelectedStories: () => void }} params
+ * @returns {{ open: boolean, closeDialog: () => void }}
  */
-function useDialogOpen({ emptySelectedStories }) {
+function useDialogOpen({ clearSelectedStories }) {
   const [open, setOpen] = useState(false);
   const hasRendered = React.useRef(false);
 
-  const onClose = useCallback(() => {
+  const closeDialog = useCallback(() => {
     setOpen(false);
-    emptySelectedStories();
-  }, [emptySelectedStories]);
+    clearSelectedStories();
+  }, [clearSelectedStories]);
 
   // Listen for toggle messages - scroll to trigger load on first render
   useChromeMessage(
@@ -394,7 +394,7 @@ function useDialogOpen({ emptySelectedStories }) {
     }, []),
   );
 
-  return { open, onClose };
+  return { open, closeDialog };
 }
 
 /**
@@ -423,14 +423,14 @@ function useStoryListener({ initialStories, onStory }) {
 /**
  * Custom hook to manage selected stories
  * @param {{ visibleStories: Story[] }} params
- * @returns {{ selectedStories: Set<string>, handleToggleStory: (story: Story) => void, handleToggleAll: () => void, emptySelectedStories: () => void }}
+ * @returns {{ selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, clearSelectedStories: () => void }}
  */
 function useSelectedStories({ visibleStories }) {
   const [selectedStories, setSelectedStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
 
-  const handleToggleStory = useCallback((/** @type {Story} */ story) => {
+  const toggleStory = useCallback((/** @type {Story} */ story) => {
     const id = getStoryId(story);
     setSelectedStories((prev) => {
       const next = new Set(prev);
@@ -443,7 +443,7 @@ function useSelectedStories({ visibleStories }) {
     });
   }, []);
 
-  const handleToggleAll = useCallback(() => {
+  const toggleAllStories = useCallback(() => {
     setSelectedStories((prev) => {
       const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
@@ -454,15 +454,15 @@ function useSelectedStories({ visibleStories }) {
     });
   }, [visibleStories]);
 
-  const emptySelectedStories = useCallback(() => {
+  const clearSelectedStories = useCallback(() => {
     setSelectedStories(new Set());
   }, []);
 
   return {
     selectedStories,
-    handleToggleStory,
-    handleToggleAll,
-    emptySelectedStories,
+    toggleStory,
+    toggleAllStories,
+    clearSelectedStories,
   };
 }
 
@@ -486,13 +486,13 @@ function useVisibleStories({ stories }) {
 
 /**
  * Custom hook to manage downloading stories state and logic
- * @param {{ visibleStories: Story[], selectedStories: Set<string>, emptySelectedStories: () => void }} params
- * @returns {{ downloadingStories: { [storyId: string]: number }, handleDownload: () => Promise<void> }}
+ * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
+ * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => Promise<void> }}
  */
 function useDownloadingStories({
   visibleStories,
   selectedStories,
-  emptySelectedStories,
+  clearSelectedStories,
 }) {
   const [downloadingStories, setDownloadingStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
@@ -508,13 +508,13 @@ function useDownloadingStories({
     }, []),
   );
 
-  const handleDownload = useCallback(async () => {
+  const downloadStories = useCallback(async () => {
     const storiesToDownload = visibleStories.filter((s) =>
       selectedStories.has(getStoryId(s)),
     );
     if (storiesToDownload.length === 0) return;
 
-    emptySelectedStories();
+    clearSelectedStories();
     setDownloadingStories((prev) => {
       const next = { ...prev };
       for (const story of storiesToDownload) {
@@ -538,9 +538,9 @@ function useDownloadingStories({
         );
       }
     }
-  }, [selectedStories, visibleStories, emptySelectedStories]);
+  }, [selectedStories, visibleStories, clearSelectedStories]);
 
-  return { downloadingStories, handleDownload };
+  return { downloadingStories, downloadStories };
 }
 
 /**
@@ -553,17 +553,17 @@ function App({ initialStories, onStory }) {
   );
   const {
     selectedStories,
-    handleToggleStory,
-    handleToggleAll,
-    emptySelectedStories,
+    toggleStory,
+    toggleAllStories,
+    clearSelectedStories,
   } = useSelectedStories({ visibleStories });
-  const { downloadingStories, handleDownload } = useDownloadingStories({
+  const { downloadingStories, downloadStories } = useDownloadingStories({
     visibleStories,
     selectedStories,
-    emptySelectedStories,
+    clearSelectedStories,
   });
 
-  const { open, onClose } = useDialogOpen({ emptySelectedStories });
+  const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
   // Inject download buttons when stories change
   useDownloadButtonInjection(stories, (storyId, url, filename) =>
@@ -583,7 +583,7 @@ function App({ initialStories, onStory }) {
         {
           type: "button",
           className: "fpdl-btn",
-          onClick: handleDownload,
+          onClick: downloadStories,
           disabled: selectedStories.size === 0,
         },
         `Download (${selectedStories.size})`,
@@ -593,7 +593,7 @@ function App({ initialStories, onStory }) {
         visibleStories,
         downloadingStories,
         hiddenStories,
-        emptySelectedStories,
+        clearSelectedStories,
         setHiddenStories,
       }),
       React.createElement(
@@ -606,7 +606,7 @@ function App({ initialStories, onStory }) {
         {
           type: "button",
           className: "fpdl-close-btn",
-          onClick: onClose,
+          onClick: closeDialog,
           title: "Close",
         },
         "×",
@@ -615,8 +615,8 @@ function App({ initialStories, onStory }) {
     React.createElement(StoryTable, {
       stories: visibleStories,
       selectedStories,
-      onToggleStory: handleToggleStory,
-      onToggleAll: handleToggleAll,
+      toggleStory,
+      toggleAllStories,
       downloadingStories,
     }),
   );
