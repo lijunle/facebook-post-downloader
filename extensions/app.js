@@ -304,16 +304,25 @@ function StoryTable({
 
 /**
  * Custom hook to manage hide button logic
- * @param {{ selectedIds: Set<string>, downloadedStoryIds: string[], hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
+ * @param {{ selectedIds: Set<string>, visibleStories: Story[], downloadedStories: { [storyId: string]: number }, hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
  * @returns {{ label: string | null, action: (() => void) | null }}
  */
 function useHideButton({
   selectedIds,
-  downloadedStoryIds,
+  visibleStories,
+  downloadedStories,
   hiddenStories,
   setSelectedIds,
   setHiddenStories,
 }) {
+  const downloadedStoryIds = visibleStories
+    .filter((s) => {
+      const id = getStoryId(s);
+      const count = downloadedStories[id];
+      return count !== undefined && count >= getDownloadCount(s);
+    })
+    .map((s) => getStoryId(s));
+
   const hideSelected = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
     setSelectedIds(new Set());
@@ -370,20 +379,12 @@ function useStoryListener({ initialStories, onStory }) {
 }
 
 /**
- * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
+ * Custom hook to manage downloaded stories state
+ * @returns {{ downloadedStories: { [storyId: string]: number }, updateDownloadedStories: (storyIds: string[], updater: (count: number) => number) => void }}
  */
-function App({ initialStories, onStory }) {
-  const stories = useStoryListener({ initialStories, onStory });
-  const [visible, setVisible] = useState(false);
-  const hasRendered = React.useRef(false);
+function useDownloadedStories() {
   const [downloadedStories, setDownloadedStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
-  );
-  const [hiddenStories, setHiddenStories] = useState(
-    /** @type {Set<string>} */ (new Set()),
-  );
-  const [selectedIds, setSelectedIds] = useState(
-    /** @type {Set<string>} */ (new Set()),
   );
 
   const updateDownloadedStories = useCallback(
@@ -411,6 +412,24 @@ function App({ initialStories, onStory }) {
       },
       [updateDownloadedStories],
     ),
+  );
+
+  return { downloadedStories, updateDownloadedStories };
+}
+
+/**
+ * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
+ */
+function App({ initialStories, onStory }) {
+  const stories = useStoryListener({ initialStories, onStory });
+  const { downloadedStories, updateDownloadedStories } = useDownloadedStories();
+  const [visible, setVisible] = useState(false);
+  const hasRendered = React.useRef(false);
+  const [hiddenStories, setHiddenStories] = useState(
+    /** @type {Set<string>} */ (new Set()),
+  );
+  const [selectedIds, setSelectedIds] = useState(
+    /** @type {Set<string>} */ (new Set()),
   );
 
   const onDownloadFile = useCallback(
@@ -488,17 +507,10 @@ function App({ initialStories, onStory }) {
     updateDownloadedStories,
   ]);
 
-  const downloadedStoryIds = visibleStories
-    .filter((s) => {
-      const id = getStoryId(s);
-      const count = downloadedStories[id];
-      return count !== undefined && count >= getDownloadCount(s);
-    })
-    .map((s) => getStoryId(s));
-
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
     selectedIds,
-    downloadedStoryIds,
+    visibleStories,
+    downloadedStories,
     hiddenStories,
     setSelectedIds,
     setHiddenStories,
