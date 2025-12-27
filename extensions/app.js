@@ -44,7 +44,7 @@ function useChromeMessage(type, callback) {
 }
 
 /**
- * Sends a message to the content script.
+ * Send a message to the content script.
  * @param {AppMessage} message
  */
 function sendAppMessage(message) {
@@ -52,7 +52,7 @@ function sendAppMessage(message) {
 }
 
 /**
- * Inject the styles for the FPDL UI.
+ * Inject styles for the FPDL UI.
  */
 function injectStyles() {
   if (document.getElementById("fpdl-styles")) return;
@@ -173,6 +173,7 @@ function injectStyles() {
 }
 
 /**
+ * Render a single story row in the table.
  * @param {{ story: Story, selected: boolean, onToggle: () => void, downloadedCount: number | undefined }} props
  */
 function StoryRow({ story, selected, onToggle, downloadedCount }) {
@@ -240,6 +241,7 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
+ * Render the story table with headers and rows.
  * @param {{ stories: Story[], selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, downloadingStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
@@ -303,6 +305,7 @@ function StoryTable({
 }
 
 /**
+ * Render a button to hide/unhide stories based on current state.
  * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, clearSelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
  */
 function HideButton({
@@ -369,7 +372,7 @@ function HideButton({
 }
 
 /**
- * Custom hook to manage dialog visibility
+ * Hook to manage dialog open/close state.
  * @param {{ clearSelectedStories: () => void }} params
  * @returns {{ open: boolean, closeDialog: () => void }}
  */
@@ -382,7 +385,6 @@ function useDialogOpen({ clearSelectedStories }) {
     clearSelectedStories();
   }, [clearSelectedStories]);
 
-  // Listen for toggle messages - scroll to trigger load on first render
   useChromeMessage(
     "FPDL_TOGGLE",
     useCallback(() => {
@@ -398,21 +400,19 @@ function useDialogOpen({ clearSelectedStories }) {
 }
 
 /**
- * Custom hook to manage story listening and badge count updates
+ * Hook to listen for new stories and update badge count.
  * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} params
  * @returns {Story[]}
  */
 function useStoryListener({ initialStories, onStory }) {
   const [stories, setStories] = useState(initialStories);
 
-  // Subscribe to new stories
   useEffect(() => {
     onStory((story) => {
       setStories((prev) => [...prev, story]);
     });
   }, [onStory]);
 
-  // Update badge count when stories change
   useEffect(() => {
     sendAppMessage({ type: "FPDL_STORY_COUNT", count: stories.length });
   }, [stories.length]);
@@ -421,7 +421,7 @@ function useStoryListener({ initialStories, onStory }) {
 }
 
 /**
- * Custom hook to manage selected stories
+ * Hook to manage story selection state.
  * @param {{ visibleStories: Story[] }} params
  * @returns {{ selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, clearSelectedStories: () => void }}
  */
@@ -467,7 +467,7 @@ function useSelectedStories({ visibleStories }) {
 }
 
 /**
- * Custom hook to manage visible stories filtering
+ * Hook to filter visible stories based on hidden state.
  * @param {{ stories: Story[] }} params
  * @returns {{ visibleStories: Story[], hiddenStories: Set<string>, setHiddenStories: React.Dispatch<React.SetStateAction<Set<string>>> }}
  */
@@ -485,7 +485,7 @@ function useVisibleStories({ stories }) {
 }
 
 /**
- * Custom hook to manage downloading stories state and logic
+ * Hook to manage story download state and download logic.
  * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
  * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => Promise<void> }}
  */
@@ -544,6 +544,7 @@ function useDownloadingStories({
 }
 
 /**
+ * Main application component for the Facebook Post Downloader.
  * @param {{ initialStories: Story[], onStory: (cb: (story: Story) => void) => void }} props
  */
 function App({ initialStories, onStory }) {
@@ -565,7 +566,6 @@ function App({ initialStories, onStory }) {
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
-  // Inject download buttons when stories change
   useDownloadButtonInjection(stories, (storyId, url, filename) =>
     sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
   );
@@ -623,7 +623,6 @@ function App({ initialStories, onStory }) {
 }
 
 function run() {
-  // Inject styles first
   injectStyles();
 
   /** @type {Story[]} */
@@ -631,7 +630,6 @@ function run() {
   /** @type {((story: Story) => void) | null} */
   let storyCallback = null;
 
-  // Start listening immediately, before React mounts
   storyListener((story) => {
     if (storyCallback) {
       storyCallback(story);
