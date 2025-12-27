@@ -240,11 +240,11 @@ function StoryRow({ story, selected, onToggle, downloadedCount }) {
 }
 
 /**
- * @param {{ stories: Story[], selectedIds: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
+ * @param {{ stories: Story[], selectedStories: Set<string>, onToggleStory: (id: string) => void, onToggleAll: () => void, downloadedStories: { [storyId: string]: number } }} props
  */
 function StoryTable({
   stories,
-  selectedIds,
+  selectedStories,
   onToggleStory,
   onToggleAll,
   downloadedStories,
@@ -254,7 +254,7 @@ function StoryTable({
   );
   const allSelected =
     selectableStories.length > 0 &&
-    selectableStories.every((s) => selectedIds.has(getStoryId(s)));
+    selectableStories.every((s) => selectedStories.has(getStoryId(s)));
 
   return React.createElement(
     "table",
@@ -293,7 +293,7 @@ function StoryTable({
         React.createElement(StoryRow, {
           key: getStoryId(story),
           story,
-          selected: selectedIds.has(getStoryId(story)),
+          selected: selectedStories.has(getStoryId(story)),
           onToggle: () => onToggleStory(getStoryId(story)),
           downloadedCount: downloadedStories[getStoryId(story)],
         }),
@@ -304,15 +304,15 @@ function StoryTable({
 
 /**
  * Custom hook to manage hide button logic
- * @param {{ selectedIds: Set<string>, visibleStories: Story[], downloadedStories: { [storyId: string]: number }, hiddenStories: Set<string>, setSelectedIds: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
+ * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadedStories: { [storyId: string]: number }, hiddenStories: Set<string>, setSelectedStories: (ids: Set<string>) => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
  * @returns {{ label: string | null, action: (() => void) | null }}
  */
 function useHideButton({
-  selectedIds,
+  selectedStories,
   visibleStories,
   downloadedStories,
   hiddenStories,
-  setSelectedIds,
+  setSelectedStories,
   setHiddenStories,
 }) {
   const downloadedStoryIds = visibleStories
@@ -324,25 +324,25 @@ function useHideButton({
     .map((s) => getStoryId(s));
 
   const hideSelected = useCallback(() => {
-    setHiddenStories((prev) => new Set([...prev, ...selectedIds]));
-    setSelectedIds(new Set());
-  }, [selectedIds, setHiddenStories, setSelectedIds]);
+    setHiddenStories((prev) => new Set([...prev, ...selectedStories]));
+    setSelectedStories(new Set());
+  }, [selectedStories, setHiddenStories, setSelectedStories]);
 
   const hideDownloaded = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-    setSelectedIds(new Set());
-  }, [downloadedStoryIds, setHiddenStories, setSelectedIds]);
+    setSelectedStories(new Set());
+  }, [downloadedStoryIds, setHiddenStories, setSelectedStories]);
 
   const unhide = useCallback(() => {
     setHiddenStories(() => new Set());
-    setSelectedIds(new Set());
-  }, [setHiddenStories, setSelectedIds]);
+    setSelectedStories(new Set());
+  }, [setHiddenStories, setSelectedStories]);
 
   let label = null;
   let action = null;
 
-  if (selectedIds.size > 0) {
-    label = `Hide selected (${selectedIds.size})`;
+  if (selectedStories.size > 0) {
+    label = `Hide selected (${selectedStories.size})`;
     action = hideSelected;
   } else if (downloadedStoryIds.length > 0) {
     label = `Hide downloaded (${downloadedStoryIds.length})`;
@@ -380,7 +380,7 @@ function useStoryListener({ initialStories, onStory }) {
 
 /**
  * Custom hook to manage downloaded stories state
- * @returns {{ downloadedStories: { [storyId: string]: number }, setDownloadedStories: React.Dispatch<React.SetStateAction<{ [storyId: string]: number }>> }}
+ * @returns {[{ [storyId: string]: number }, React.Dispatch<React.SetStateAction<{ [storyId: string]: number }>>]}
  */
 function useDownloadedStories() {
   const [downloadedStories, setDownloadedStories] = useState(
@@ -397,7 +397,7 @@ function useDownloadedStories() {
     }, []),
   );
 
-  return { downloadedStories, setDownloadedStories };
+  return [downloadedStories, setDownloadedStories];
 }
 
 /**
@@ -405,33 +405,23 @@ function useDownloadedStories() {
  */
 function App({ initialStories, onStory }) {
   const stories = useStoryListener({ initialStories, onStory });
-  const { downloadedStories, setDownloadedStories } = useDownloadedStories();
+  const [downloadedStories, setDownloadedStories] = useDownloadedStories();
   const [visible, setVisible] = useState(false);
   const hasRendered = React.useRef(false);
   const [hiddenStories, setHiddenStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
-  const [selectedIds, setSelectedIds] = useState(
+  const [selectedStories, setSelectedStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
 
-  /**
-   * Download file callback
-   * @param {string} storyId
-   * @param {string} url
-   * @param {string} filename
-   */
-  const downloadFile = (storyId, url, filename) => {
-    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-  };
-
   const onClose = useCallback(() => {
     setVisible(false);
-    setSelectedIds(new Set());
+    setSelectedStories(new Set());
   }, []);
 
   const onToggleStory = useCallback((/** @type {string} */ id) => {
-    setSelectedIds((prev) => {
+    setSelectedStories((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -447,7 +437,7 @@ function App({ initialStories, onStory }) {
   );
 
   const onToggleAll = useCallback(() => {
-    setSelectedIds((prev) => {
+    setSelectedStories((prev) => {
       const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
         return new Set();
@@ -458,14 +448,14 @@ function App({ initialStories, onStory }) {
   }, [visibleStories]);
 
   const handleDownload = useCallback(async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedStories.size === 0) return;
 
     const selectedStories = visibleStories
-      .filter((s) => selectedIds.has(getStoryId(s)))
+      .filter((s) => selectedStories.has(getStoryId(s)))
       .filter((s) => !(getStoryId(s) in downloadedStories));
     if (selectedStories.length === 0) return;
 
-    setSelectedIds(new Set());
+    setSelectedStories(new Set());
     setDownloadedStories((prev) => {
       const next = { ...prev };
       for (const story of selectedStories) {
@@ -478,7 +468,9 @@ function App({ initialStories, onStory }) {
       if (i > 0) await new Promise((r) => setTimeout(r, 500));
       const story = selectedStories[i];
       try {
-        await downloadStory(story, downloadFile);
+        await downloadStory(story, (storyId, url, filename) =>
+          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
+        );
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -487,14 +479,19 @@ function App({ initialStories, onStory }) {
         );
       }
     }
-  }, [selectedIds, visibleStories, downloadedStories, setDownloadedStories]);
+  }, [
+    selectedStories,
+    visibleStories,
+    downloadedStories,
+    setDownloadedStories,
+  ]);
 
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
-    selectedIds,
+    selectedStories,
     visibleStories,
     downloadedStories,
     hiddenStories,
-    setSelectedIds,
+    setSelectedStories,
     setHiddenStories,
   });
 
@@ -511,7 +508,9 @@ function App({ initialStories, onStory }) {
   );
 
   // Inject download buttons when stories change
-  useDownloadButtonInjection(stories, downloadFile);
+  useDownloadButtonInjection(stories, (storyId, url, filename) =>
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
+  );
 
   if (!visible) return null;
 
@@ -527,9 +526,9 @@ function App({ initialStories, onStory }) {
           type: "button",
           className: "fpdl-btn",
           onClick: handleDownload,
-          disabled: selectedIds.size === 0,
+          disabled: selectedStories.size === 0,
         },
-        `Download (${selectedIds.size})`,
+        `Download (${selectedStories.size})`,
       ),
       hideButtonLabel
         ? React.createElement(
@@ -561,7 +560,7 @@ function App({ initialStories, onStory }) {
     ),
     React.createElement(StoryTable, {
       stories: visibleStories,
-      selectedIds,
+      selectedStories,
       onToggleStory,
       onToggleAll,
       downloadedStories,
