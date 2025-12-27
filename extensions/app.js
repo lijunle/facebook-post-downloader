@@ -473,11 +473,9 @@ function App({ initialStories, onStory }) {
   }, [visibleStories]);
 
   const handleDownload = useCallback(async () => {
-    if (selectedStories.size === 0) return;
-
-    const storiesToDownload = visibleStories
-      .filter((s) => selectedStories.has(getStoryId(s)))
-      .filter((s) => !(getStoryId(s) in downloadedStories));
+    const storiesToDownload = visibleStories.filter((s) =>
+      selectedStories.has(getStoryId(s)),
+    );
     if (storiesToDownload.length === 0) return;
 
     setSelectedStories(new Set());
@@ -504,12 +502,7 @@ function App({ initialStories, onStory }) {
         );
       }
     }
-  }, [
-    selectedStories,
-    visibleStories,
-    downloadedStories,
-    setDownloadedStories,
-  ]);
+  }, [selectedStories, visibleStories]);
 
   const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
     selectedStories,
