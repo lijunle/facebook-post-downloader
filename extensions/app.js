@@ -319,11 +319,13 @@ function HideButton({
 
   const hideDownloaded = useCallback(() => {
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
-  }, [downloadedStoryIds, setHiddenStories]);
+    setSelectedIds(new Set());
+  }, [downloadedStoryIds, setHiddenStories, setSelectedIds]);
 
   const unhide = useCallback(() => {
     setHiddenStories(() => new Set());
-  }, [setHiddenStories]);
+    setSelectedIds(new Set());
+  }, [setHiddenStories, setSelectedIds]);
 
   let label = null;
   let action = null;
