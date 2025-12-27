@@ -28,7 +28,7 @@ function emit(ev) {
 const GRAPHQL_URL = `${location.origin}/api/graphql/`;
 
 /**
- * Map of API names to their Facebook module names containing doc_id and fallback doc_id.
+ * Map of API names to their module names and fallback doc IDs.
  * @type {Record<string, { moduleName: string, fallbackDocId: string }>}
  */
 const DOC_ID_MODULES = {
