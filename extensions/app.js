@@ -303,11 +303,9 @@ function StoryTable({
 }
 
 /**
- * Custom hook to manage hide button logic
- * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, emptySelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} params
- * @returns {{ label: string | null, action: (() => void) | null }}
+ * @param {{ selectedStories: Set<string>, visibleStories: Story[], downloadingStories: { [storyId: string]: number }, hiddenStories: Set<string>, emptySelectedStories: () => void, setHiddenStories: (updater: (prev: Set<string>) => Set<string>) => void }} props
  */
-function useHideButton({
+function HideButton({
   selectedStories,
   visibleStories,
   downloadingStories,
@@ -356,7 +354,18 @@ function useHideButton({
     action = unhide;
   }
 
-  return { label, action };
+  if (!label) return null;
+
+  return React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "fpdl-btn",
+      onClick: action,
+      style: { marginLeft: "8px" },
+    },
+    label,
+  );
 }
 
 /**
@@ -556,15 +565,6 @@ function App({ initialStories, onStory }) {
 
   const { open, onClose } = useDialogOpen({ emptySelectedStories });
 
-  const { label: hideButtonLabel, action: hideButtonAction } = useHideButton({
-    selectedStories,
-    visibleStories,
-    downloadingStories,
-    hiddenStories,
-    emptySelectedStories,
-    setHiddenStories,
-  });
-
   // Inject download buttons when stories change
   useDownloadButtonInjection(stories, (storyId, url, filename) =>
     sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
@@ -588,18 +588,14 @@ function App({ initialStories, onStory }) {
         },
         `Download (${selectedStories.size})`,
       ),
-      hideButtonLabel
-        ? React.createElement(
-            "button",
-            {
-              type: "button",
-              className: "fpdl-btn",
-              onClick: hideButtonAction,
-              style: { marginLeft: "8px" },
-            },
-            hideButtonLabel,
-          )
-        : null,
+      React.createElement(HideButton, {
+        selectedStories,
+        visibleStories,
+        downloadingStories,
+        hiddenStories,
+        emptySelectedStories,
+        setHiddenStories,
+      }),
       React.createElement(
         "div",
         { className: "fpdl-title" },
