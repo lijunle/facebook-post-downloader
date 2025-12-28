@@ -487,7 +487,7 @@ function useVisibleStories({ stories }) {
 /**
  * Hook to manage story download state and download logic.
  * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
- * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => Promise<void> }}
+ * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => void }}
  */
 function useDownloadingStories({
   visibleStories,
@@ -540,7 +540,7 @@ function useDownloadingStories({
     isProcessingRef.current = false;
   }, []);
 
-  const downloadStories = useCallback(async () => {
+  const downloadStories = useCallback(() => {
     const storiesToDownload = visibleStories.filter((s) =>
       selectedStories.has(getStoryId(s)),
     );
