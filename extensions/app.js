@@ -650,7 +650,11 @@ function App({ initialStories, onStory }) {
           type: "button",
           className: "fpdl-sponsor-btn",
           onClick: () =>
-            window.open("https://github.com/sponsors/lijunle", "_blank"),
+            window.open(
+              "https://github.com/sponsors/lijunle",
+              "_blank",
+              "noopener,noreferrer",
+            ),
           title: "Sponsor",
         },
         "♥",
