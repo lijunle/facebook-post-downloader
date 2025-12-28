@@ -520,7 +520,6 @@ function useDownloadingStories({
       const story = downloadQueueRef.current.shift();
       if (!story) break;
 
-      await new Promise((r) => setTimeout(r, 500));
       try {
         await downloadStory(story, (storyId, url, filename) =>
           sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
@@ -531,6 +530,10 @@ function useDownloadingStories({
           getStoryId(story),
           err,
         );
+      }
+
+      if (downloadQueueRef.current.length > 0) {
+        await new Promise((r) => setTimeout(r, 500));
       }
     }
 
