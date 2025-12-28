@@ -649,12 +649,13 @@ function App({ initialStories, onStory }) {
         {
           type: "button",
           className: "fpdl-sponsor-btn",
-          onClick: () =>
-            window.open(
+          onClick: () => {
+            const newWindow = window.open(
               "https://github.com/sponsors/lijunle",
               "_blank",
-              "noopener,noreferrer",
-            ),
+            );
+            if (newWindow) newWindow.opener = null;
+          },
           title: "Sponsor",
         },
         "♥",
