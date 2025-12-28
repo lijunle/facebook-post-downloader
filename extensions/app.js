@@ -100,6 +100,20 @@ function injectStyles() {
             cursor: not-allowed;
             opacity: 0.5;
         }
+        .fpdl-sponsor-btn {
+            background: transparent;
+            border: none;
+            color: #ff69b4;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            opacity: 0.7;
+            margin-right: 8px;
+        }
+        .fpdl-sponsor-btn:hover {
+            opacity: 1;
+        }
         .fpdl-close-btn {
             background: transparent;
             border: none;
@@ -629,6 +643,17 @@ function App({ initialStories, onStory }) {
         "div",
         { className: "fpdl-title" },
         `Facebook Post Downloader (${visibleStories.length})`,
+      ),
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "fpdl-sponsor-btn",
+          onClick: () =>
+            window.open("https://github.com/sponsors/lijunle", "_blank"),
+          title: "Sponsor",
+        },
+        "♥",
       ),
       React.createElement(
         "button",
