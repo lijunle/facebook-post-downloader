@@ -40,6 +40,10 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Inject Application Insights connection string
+        run: |
+          sed -i 's|__APP_INSIGHTS_CONNECTION_STRING__|${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}|g' extensions/background.js
+
       - name: Pack extension
         run: npm run pack
 

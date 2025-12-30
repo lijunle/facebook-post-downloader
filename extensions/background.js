@@ -13,16 +13,31 @@ import "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationi
 // @ts-ignore
 const ApplicationInsightsModule = globalThis.Microsoft.ApplicationInsights;
 
-// Initialize Application Insights
-const appInsights = new ApplicationInsightsModule.ApplicationInsights({
-  config: {
-    connectionString:
-      "InstrumentationKey=0b8a6a27-3b94-4411-aa58-bc5ff386cd7d;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=a4e17229-ea4c-42c3-b219-cee1fdb2e9b9",
-    enableAutoRouteTracking: false,
-    enableAjaxErrorStatusText: true,
-  },
-});
-appInsights.loadAppInsights();
+// Initialize Application Insights (skip if connection string not injected)
+const APP_INSIGHTS_CONNECTION_STRING = "__APP_INSIGHTS_CONNECTION_STRING__";
+const appInsights = APP_INSIGHTS_CONNECTION_STRING.startsWith("__")
+  ? null
+  : new ApplicationInsightsModule.ApplicationInsights({
+      config: {
+        connectionString: APP_INSIGHTS_CONNECTION_STRING,
+        enableAutoRouteTracking: false,
+        enableAjaxErrorStatusText: true,
+      },
+    });
+appInsights?.loadAppInsights();
+
+/**
+ * Track an analytics event.
+ * @param {string} name - The event name.
+ * @param {Record<string, string | number | boolean> | undefined} properties - Event properties.
+ */
+export function trackEvent(name, properties) {
+  if (appInsights) {
+    appInsights.trackEvent({ name, properties });
+  } else {
+    console.log("[fpdl] Track event:", name, properties);
+  }
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -141,10 +156,7 @@ chrome.runtime.onMessage.addListener(
     } else if (msg.type === "FPDL_DOWNLOAD") {
       downloadFile(msg.storyId, msg.url, msg.filename, sender.tab?.id);
     } else if (msg.type === "FPDL_TRACK_EVENT") {
-      appInsights.trackEvent({
-        name: msg.name,
-        properties: msg.properties,
-      });
+      trackEvent(msg.name, msg.properties);
     }
   },
 );
