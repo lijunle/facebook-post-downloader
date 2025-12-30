@@ -27,6 +27,11 @@ export function resetActiveDownloads() {
 
 /**
  * Downloads a file with retry mechanism.
+ *
+ * On successful download initiation, the download is tracked in activeDownloadItems.
+ * When the download completes (via chrome.downloads.onChanged), a FPDL_DOWNLOAD_COMPLETE
+ * message is sent to the originating tab to notify the content script.
+ *
  * @param {string} storyId - The story ID.
  * @param {string} url - The URL to download.
  * @param {string} filename - The filename to save as.
