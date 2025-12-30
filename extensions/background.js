@@ -67,10 +67,7 @@ export function downloadFile(storyId, url, filename, tabId, attempt = 1) {
 }
 
 chrome.downloads.onChanged.addListener((delta) => {
-  if (
-    delta.state?.current === "complete" ||
-    delta.state?.current === "interrupted"
-  ) {
+  if (delta.state?.current === "complete") {
     const item = activeDownloadItems.get(delta.id);
     if (item) {
       activeDownloadItems.delete(delta.id);

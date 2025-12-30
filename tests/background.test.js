@@ -93,6 +93,7 @@ describe("updateBadge", () => {
 describe("downloadFile", () => {
   beforeEach(() => {
     downloadMock.mock.resetCalls();
+    mockChrome.tabs.sendMessage.mock.resetCalls();
     mockChrome.runtime.lastError = null;
     resetQueue();
   });
