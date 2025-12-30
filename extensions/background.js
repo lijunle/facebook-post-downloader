@@ -1,6 +1,4 @@
-/**
- * MV3 service worker: receives download requests from content script.
- */
+import "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js";
 
 /**
  * @typedef {import("./types").AppMessage} AppMessage
@@ -8,6 +6,38 @@
  * @typedef {import("./types").ChromeMessageDownloadResult} ChromeMessageDownloadResult
  * @typedef {import("./types").StoryFile} StoryFile
  */
+
+/**
+ * @type {import("@microsoft/applicationinsights-web")}
+ */
+// @ts-ignore
+const ApplicationInsightsModule = globalThis.Microsoft.ApplicationInsights;
+
+// Initialize Application Insights (skip if connection string not injected)
+const APP_INSIGHTS_CONNECTION_STRING = "__APP_INSIGHTS_CONNECTION_STRING__";
+const appInsights = APP_INSIGHTS_CONNECTION_STRING.startsWith("__")
+  ? null
+  : new ApplicationInsightsModule.ApplicationInsights({
+      config: {
+        connectionString: APP_INSIGHTS_CONNECTION_STRING,
+        enableAutoRouteTracking: false,
+        enableAjaxErrorStatusText: true,
+      },
+    });
+appInsights?.loadAppInsights();
+
+/**
+ * Track an analytics event.
+ * @param {string} name - The event name.
+ * @param {Record<string, string | number | boolean> | undefined} properties - Event properties.
+ */
+export function trackEvent(name, properties) {
+  if (appInsights) {
+    appInsights.trackEvent({ name, properties });
+  } else {
+    console.log("[fpdl] Track event:", name, properties);
+  }
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -125,6 +155,8 @@ chrome.runtime.onMessage.addListener(
       updateBadge(msg.count, sender.tab?.id);
     } else if (msg.type === "FPDL_DOWNLOAD") {
       downloadFile(msg.storyId, msg.url, msg.filename, sender.tab?.id);
+    } else if (msg.type === "FPDL_TRACK_EVENT") {
+      trackEvent(msg.name, msg.properties);
     }
   },
 );

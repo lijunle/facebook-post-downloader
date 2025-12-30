@@ -1,22 +1,39 @@
 # Privacy Policy
 
-**Last Updated:** December 23, 2025
+**Last Updated:** December 30, 2025
 
 ## Introduction
 
-This Privacy Policy describes how the **Facebook Post Downloader** browser extension ("we", "our", or "the extension") handles your information. We are committed to protecting your privacy and ensuring that your data remains secure and under your control.
+This Privacy Policy describes how the **Facebook Post Downloader** browser extension ("we", "our", or "the extension") handles your information. We are committed to protecting your privacy and being transparent about what data we collect.
 
 ## Data Collection and Usage
 
-**We do not collect, store, or transmit any of your personal data.**
+### Personal Information
+
+**We do not collect any personally identifiable information.**
 
 - **No Personal Information:** We do not collect your name, email address, phone number, or any other personally identifiable information.
-- **No Facebook Data:** We do not collect, store, or transmit your Facebook posts, messages, friends list, or login credentials. All processing of your data occurs locally on your device.
-- **No Tracking:** We do not track your browsing history, usage patterns, or analytics.
+- **No Facebook Data:** We do not collect, store, or transmit your Facebook posts, messages, friends list, or login credentials. All processing of your Facebook data occurs locally on your device.
+
+### Anonymous Usage Analytics
+
+We collect **anonymous usage analytics** through Microsoft Application Insights to help us understand how the extension is used and to improve its functionality. This data includes:
+
+- **Event names:** Such as when the extension dialog is opened/closed, when downloads are initiated, or when buttons are clicked.
+- **Aggregate counts:** Such as the number of stories visible, the number of downloads in progress, or the number of items selected.
+
+**What we do NOT collect:**
+
+- Any content from your Facebook posts (text, images, videos)
+- Your Facebook account information or credentials
+- URLs or identifiers of specific posts
+- Any information that could identify you personally
+
+All analytics data is anonymous and cannot be used to identify individual users.
 
 ## How It Works
 
-The extension operates entirely **client-side** (within your browser). When you visit Facebook, the extension interacts directly with the website to:
+The extension operates primarily **client-side** (within your browser). When you visit Facebook, the extension interacts directly with the website to:
 
 1.  Identify available posts.
 2.  Add download buttons to posts.
@@ -33,11 +50,14 @@ The extension requests the following permissions to function:
 
 ## Third-Party Services
 
-The extension interacts directly with Facebook. It does not route your traffic through any intermediate servers. We do not share your data with any third-party services, advertisers, or analytics providers.
+- **Facebook:** The extension interacts directly with Facebook. It does not route your traffic through any intermediate servers.
+- **Microsoft Application Insights:** We use this service to collect anonymous usage analytics as described above. For more information, see [Microsoft's Privacy Statement](https://privacy.microsoft.com/en-us/privacystatement).
+
+We do not share your data with any other third-party services, advertisers, or analytics providers.
 
 ## Changes to This Policy
 
-We may update this Privacy Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. Any changes will be posted on this page.
+We may update this Privacy Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. Any changes will be posted on this page with an updated "Last Updated" date.
 
 ## Contact Us
 

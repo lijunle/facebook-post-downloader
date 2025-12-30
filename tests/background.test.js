@@ -1,6 +1,18 @@
 import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
 
+// Mock the Application Insights module import (not instantiated due to placeholder connection string)
+mock.module(
+  "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js",
+  { namedExports: {} },
+);
+
+globalThis.Microsoft = {
+  ApplicationInsights: {
+    ApplicationInsights: class {},
+  },
+};
+
 // Mock chrome API before importing the module
 const downloadMock = mock.fn();
 /** @type {Function[]} */
@@ -43,7 +55,7 @@ function simulateDownloadComplete(downloadId, state = "complete") {
   }
 }
 
-const { downloadFile, resetActiveDownloads, updateBadge } =
+const { downloadFile, resetActiveDownloads, updateBadge, trackEvent } =
   await import("../extensions/background.js");
 
 describe("updateBadge", () => {
@@ -244,5 +256,66 @@ describe("downloadFile", () => {
     assert.strictEqual(message.status, "max_retries");
 
     console.error = originalConsoleError;
+  });
+});
+
+describe("trackEvent", () => {
+  it("should log to console when connection string is placeholder", async () => {
+    const originalConsoleLog = console.log;
+    const logMock = mock.fn();
+    console.log = logMock;
+
+    // Send a track event message
+    const trackEventMessage = {
+      type: "FPDL_TRACK_EVENT",
+      name: "TestEvent",
+      properties: { key: "value", count: 42 },
+    };
+    await onMessageListeners[0](trackEventMessage, { tab: { id: 123 } });
+
+    assert.strictEqual(logMock.mock.callCount(), 1);
+    const [prefix, name, properties] = logMock.mock.calls[0].arguments;
+    assert.strictEqual(prefix, "[fpdl] Track event:");
+    assert.strictEqual(name, "TestEvent");
+    assert.deepStrictEqual(properties, { key: "value", count: 42 });
+
+    console.log = originalConsoleLog;
+  });
+
+  it("should log to console without properties when properties is undefined", async () => {
+    const originalConsoleLog = console.log;
+    const logMock = mock.fn();
+    console.log = logMock;
+
+    // Send a track event message without properties
+    const trackEventMessage = {
+      type: "FPDL_TRACK_EVENT",
+      name: "SimpleEvent",
+    };
+    await onMessageListeners[0](trackEventMessage, { tab: { id: 123 } });
+
+    assert.strictEqual(logMock.mock.callCount(), 1);
+    const [prefix, name, properties] = logMock.mock.calls[0].arguments;
+    assert.strictEqual(prefix, "[fpdl] Track event:");
+    assert.strictEqual(name, "SimpleEvent");
+    assert.strictEqual(properties, undefined);
+
+    console.log = originalConsoleLog;
+  });
+
+  it("should call trackEvent function directly", () => {
+    const originalConsoleLog = console.log;
+    const logMock = mock.fn();
+    console.log = logMock;
+
+    trackEvent("DirectEvent", { count: 5 });
+
+    assert.strictEqual(logMock.mock.callCount(), 1);
+    const [prefix, name, properties] = logMock.mock.calls[0].arguments;
+    assert.strictEqual(prefix, "[fpdl] Track event:");
+    assert.strictEqual(name, "DirectEvent");
+    assert.deepStrictEqual(properties, { count: 5 });
+
+    console.log = originalConsoleLog;
   });
 });

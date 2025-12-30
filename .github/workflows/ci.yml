@@ -40,6 +40,15 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Inject Application Insights connection string
+        if: github.event_name == 'push'
+        run: |
+          if [ -z "${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}" ]; then
+            echo "::error::APP_INSIGHTS_CONNECTION_STRING secret is required for releases"
+            exit 1
+          fi
+          sed -i 's|__APP_INSIGHTS_CONNECTION_STRING__|${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}|g' extensions/background.js
+
       - name: Pack extension
         run: npm run pack
 

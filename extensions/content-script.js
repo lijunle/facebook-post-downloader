@@ -91,6 +91,15 @@
           url: data.url,
           filename: data.filename,
         });
+      } else if (
+        data.type === "FPDL_TRACK_EVENT" &&
+        typeof data.name === "string"
+      ) {
+        sendChromeMessage({
+          type: "FPDL_TRACK_EVENT",
+          name: data.name,
+          properties: data.properties,
+        });
       }
     } catch (err) {
       console.warn("[fpdl] download bridge failed", err);

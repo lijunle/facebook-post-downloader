@@ -29,8 +29,9 @@
         "extensions/graphql.js",
         "extensions/react.js",
         "extensions/story.js",
-        "node_modules/umd-react/dist/react.production.min.js",
-        "node_modules/umd-react/dist/react-dom.production.min.js"
+        "node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js",
+        "node_modules/umd-react/dist/react-dom.production.min.js",
+        "node_modules/umd-react/dist/react.production.min.js"
       ],
       "matches": [
         "https://www.facebook.com/*",
