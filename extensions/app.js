@@ -605,9 +605,9 @@ function App({ initialStories, onStory }) {
   } = useSelectedStories({ visibleStories });
 
   const downloadStory = useCallback(async (/** @type {Story} */ story) => {
-    await fetchStoryFiles(story, (storyId, url, filename) =>
-      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
-    );
+    for await (const { storyId, url, filename } of fetchStoryFiles(story)) {
+      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+    }
   }, []);
   const { downloadingStories, downloadStories } = useDownloadingStories({
     visibleStories,

@@ -804,9 +804,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -883,9 +883,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -967,9 +967,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1097,9 +1097,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     // Reset mock
     mockSendGraphqlRequestImpl = async () => [];
@@ -1267,9 +1267,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     // Reset mock
     mockSendGraphqlRequestImpl = async () => [];
@@ -1323,9 +1323,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     const indexDownload = downloads.find((d) =>
       d.filename.endsWith("/index.md"),
@@ -1388,9 +1388,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1458,9 +1458,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1520,9 +1520,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(story, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(story)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1606,9 +1606,9 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await fetchStoryFiles(storyVideo, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(storyVideo)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1686,9 +1686,9 @@ describe("downloadStory", () => {
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
 
-    await fetchStoryFiles(storyWatch, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(storyWatch)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,
@@ -1728,9 +1728,9 @@ describe("downloadStory", () => {
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
 
-    await fetchStoryFiles(shortsStory, (storyId, url, filename) => {
-      downloads.push({ storyId, url, filename });
-    });
+    for await (const download of fetchStoryFiles(shortsStory)) {
+      downloads.push(download);
+    }
 
     assert.strictEqual(
       downloads.length,

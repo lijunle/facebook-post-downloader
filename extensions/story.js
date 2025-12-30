@@ -435,12 +435,15 @@ function renderStory(story, attachments, quoted_story) {
 }
 
 /**
+ * @typedef {{ storyId: string, url: string, filename: string }} DownloadFile
+ */
+
+/**
  * Fetch story files for download.
  * @param {Story} story
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
- * @returns {Promise<void>}
+ * @yields {DownloadFile}
  */
-export async function fetchStoryFiles(story, onDownloadFile) {
+export async function* fetchStoryFiles(story) {
   const folder = buildFolderName(story);
   const storyId = getStoryId(story);
 
@@ -455,7 +458,7 @@ export async function fetchStoryFiles(story, onDownloadFile) {
     mediaIndex++;
     const indexPrefix = String(mediaIndex).padStart(4, "0");
     const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-    onDownloadFile(storyId, download.url, filename);
+    yield { storyId, url: download.url, filename };
     downloadedAttachments.push({ media, filename });
   }
 
@@ -472,7 +475,7 @@ export async function fetchStoryFiles(story, onDownloadFile) {
       mediaIndex++;
       const indexPrefix = String(mediaIndex).padStart(4, "0");
       const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
-      onDownloadFile(storyId, download.url, filename);
+      yield { storyId, url: download.url, filename };
       attachedStoryAttachments.push({ media, filename });
     }
     quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
@@ -481,7 +484,7 @@ export async function fetchStoryFiles(story, onDownloadFile) {
   const indexMarkdown = renderStory(story, downloadedAttachments, quotedStory);
   const indexDataUrl =
     "data:text/markdown;charset=utf-8," + encodeURIComponent(indexMarkdown);
-  onDownloadFile(storyId, indexDataUrl, `${folder}/index.md`);
+  yield { storyId, url: indexDataUrl, filename: `${folder}/index.md` };
 }
 
 /**
