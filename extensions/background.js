@@ -1,6 +1,4 @@
-/**
- * MV3 service worker: receives download requests from content script.
- */
+import "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js";
 
 /**
  * @typedef {import("./types").AppMessage} AppMessage
@@ -8,6 +6,14 @@
  * @typedef {import("./types").ChromeMessageDownloadResult} ChromeMessageDownloadResult
  * @typedef {import("./types").StoryFile} StoryFile
  */
+
+/**
+ * @type {import("@microsoft/applicationinsights-web")}}
+ */
+// @ts-ignore
+const ApplicationInsightsModule = globalThis.Microsoft.ApplicationInsights;
+
+console.log(ApplicationInsightsModule.ApplicationInsights);
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
