@@ -1,6 +1,6 @@
 import {
   storyListener,
-  downloadStory,
+  fetchStoryFiles,
   getAttachmentCount,
   getDownloadCount,
   getCreateTime,
@@ -49,6 +49,17 @@ function useChromeMessage(type, callback) {
  */
 function sendAppMessage(message) {
   window.postMessage({ __fpdl: true, ...message }, window.location.origin);
+}
+
+/**
+ * Download all files for a story.
+ * @param {Story} story
+ */
+async function downloadStory(story) {
+  for await (const { storyId, url, filename } of fetchStoryFiles(story)) {
+    await new Promise((r) => setTimeout(r, 200));
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+  }
 }
 
 /**
@@ -538,9 +549,7 @@ function useDownloadingStories({
       if (!story) break;
 
       try {
-        await downloadStory(story, (storyId, url, filename) =>
-          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
-        );
+        await downloadStory(story);
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -612,9 +621,7 @@ function App({ initialStories, onStory }) {
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
-  useDownloadButtonInjection(stories, (storyId, url, filename) =>
-    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
-  );
+  useDownloadButtonInjection(stories, downloadStory);
 
   if (!open) return null;
 

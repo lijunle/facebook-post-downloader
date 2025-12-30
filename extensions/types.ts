@@ -177,3 +177,9 @@ export type StoryWatch = {
 };
 
 export type Story = StoryPost | StoryVideo | StoryWatch;
+
+export type StoryFile = {
+  storyId: string;
+  url: string;
+  filename: string;
+};
