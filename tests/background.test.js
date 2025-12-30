@@ -77,6 +77,12 @@ describe("updateBadge", () => {
     const [textArgs] = mockChrome.action.setBadgeText.mock.calls[0].arguments;
     assert.strictEqual(textArgs.text, "");
     assert.strictEqual(textArgs.tabId, 123);
+
+    // Background color is always set regardless of count
+    assert.strictEqual(
+      mockChrome.action.setBadgeBackgroundColor.mock.callCount(),
+      1,
+    );
   });
 
   it("should not set badge when tabId is undefined", () => {
