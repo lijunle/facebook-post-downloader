@@ -52,6 +52,17 @@ function sendAppMessage(message) {
 }
 
 /**
+ * Download all files for a story.
+ * @param {Story} story
+ */
+async function downloadStory(story) {
+  for await (const { storyId, url, filename } of fetchStoryFiles(story)) {
+    await new Promise((r) => setTimeout(r, 200));
+    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
+  }
+}
+
+/**
  * Inject styles for the FPDL UI.
  */
 function injectStyles() {
@@ -503,14 +514,13 @@ function useVisibleStories({ stories }) {
 
 /**
  * Hook to manage story download state and download logic.
- * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void, downloadStory: (story: Story) => Promise<void> }} params
+ * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
  * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => void }}
  */
 function useDownloadingStories({
   visibleStories,
   selectedStories,
   clearSelectedStories,
-  downloadStory,
 }) {
   const [downloadingStories, setDownloadingStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
@@ -603,18 +613,10 @@ function App({ initialStories, onStory }) {
     toggleAllStories,
     clearSelectedStories,
   } = useSelectedStories({ visibleStories });
-
-  const downloadStory = useCallback(async (/** @type {Story} */ story) => {
-    for await (const { storyId, url, filename } of fetchStoryFiles(story)) {
-      await new Promise((r) => setTimeout(r, 200));
-      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
-    }
-  }, []);
   const { downloadingStories, downloadStories } = useDownloadingStories({
     visibleStories,
     selectedStories,
     clearSelectedStories,
-    downloadStory,
   });
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
