@@ -141,8 +141,30 @@ describe("downloadFile", () => {
     const [tabId, message] =
       mockChrome.tabs.sendMessage.mock.calls[0].arguments;
     assert.strictEqual(tabId, 123);
-    assert.strictEqual(message.type, "FPDL_DOWNLOAD_COMPLETE");
+    assert.strictEqual(message.type, "FPDL_DOWNLOAD_RESULT");
     assert.strictEqual(message.storyId, "story1");
+    assert.strictEqual(message.status, "success");
+  });
+
+  it("should notify on download interrupted", () => {
+    let nextDownloadId = 1;
+    downloadMock.mock.mockImplementation((options, callback) => {
+      callback(nextDownloadId++);
+    });
+
+    downloadFile("story1", "https://example.com/file.jpg", "test.jpg", 123);
+
+    // Interrupt the download via onChanged event
+    simulateDownloadComplete(1, "interrupted");
+
+    // Should have sent a message to the tab with interrupted status
+    assert.strictEqual(mockChrome.tabs.sendMessage.mock.callCount(), 1);
+    const [tabId, message] =
+      mockChrome.tabs.sendMessage.mock.calls[0].arguments;
+    assert.strictEqual(tabId, 123);
+    assert.strictEqual(message.type, "FPDL_DOWNLOAD_RESULT");
+    assert.strictEqual(message.storyId, "story1");
+    assert.strictEqual(message.status, "interrupted");
   });
 
   it("should retry download on failure", async () => {
@@ -187,6 +209,39 @@ describe("downloadFile", () => {
         call.arguments[0].includes("Download failed after 3 attempts"),
       ),
     );
+
+    console.error = originalConsoleError;
+  });
+
+  it("should notify max_retries after all attempts fail", async () => {
+    const consoleErrorMock = mock.fn();
+    const originalConsoleError = console.error;
+    console.error = consoleErrorMock;
+
+    /** @type {((downloadId: number | undefined) => void)[]} */
+    const callbacks = [];
+    downloadMock.mock.mockImplementation((options, callback) => {
+      callbacks.push(callback);
+    });
+
+    downloadFile("story1", "https://example.com/file.jpg", "test.jpg", 123);
+
+    // Simulate all 3 attempts failing
+    mockChrome.runtime.lastError = { message: "Network error" };
+    callbacks[0](undefined);
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    callbacks[1](undefined);
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    callbacks[2](undefined);
+
+    // Should have sent a max_retries message
+    assert.strictEqual(mockChrome.tabs.sendMessage.mock.callCount(), 1);
+    const [tabId, message] =
+      mockChrome.tabs.sendMessage.mock.calls[0].arguments;
+    assert.strictEqual(tabId, 123);
+    assert.strictEqual(message.type, "FPDL_DOWNLOAD_RESULT");
+    assert.strictEqual(message.storyId, "story1");
+    assert.strictEqual(message.status, "max_retries");
 
     console.error = originalConsoleError;
   });
