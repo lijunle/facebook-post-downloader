@@ -8,6 +8,7 @@ import { dirname, join } from "node:path";
  * @typedef {import('../extensions/types').StoryPost} StoryPost
  * @typedef {import('../extensions/types').StoryVideo} StoryVideo
  * @typedef {import('../extensions/types').Story} Story
+ * @typedef {import('../extensions/types').StoryFile} StoryFile
  */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -802,7 +803,7 @@ describe("downloadStory", () => {
     const story = stories.find((s) => getStoryPostId(s) === "1411731986983785");
     assert.ok(story, "Should find the story");
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -881,7 +882,7 @@ describe("downloadStory", () => {
       "Story should have 4 attachments",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -965,7 +966,7 @@ describe("downloadStory", () => {
       "Story should have 4 attachments",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1095,7 +1096,7 @@ describe("downloadStory", () => {
       return [];
     };
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1265,7 +1266,7 @@ describe("downloadStory", () => {
       return [];
     };
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1321,7 +1322,7 @@ describe("downloadStory", () => {
     const story = stories.find((s) => getStoryPostId(s) === "2282323118944469");
     assert.ok(story, "Should find the story");
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1386,7 +1387,7 @@ describe("downloadStory", () => {
       "Attached story should have 1 attachment",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1456,7 +1457,7 @@ describe("downloadStory", () => {
       "Attached story should have 1 attachment",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1518,7 +1519,7 @@ describe("downloadStory", () => {
       "Story should have 1 video attachment",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(story)) {
       downloads.push(download);
@@ -1604,7 +1605,7 @@ describe("downloadStory", () => {
       "StoryVideo should have 1 attachment",
     );
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
     for await (const download of fetchStoryFiles(storyVideo)) {
       downloads.push(download);
@@ -1683,7 +1684,7 @@ describe("downloadStory", () => {
     );
     assert.ok(storyWatch, "Should find the StoryWatch");
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
 
     for await (const download of fetchStoryFiles(storyWatch)) {
@@ -1725,7 +1726,7 @@ describe("downloadStory", () => {
     );
     assert.ok(shortsStory, "Should find the shorts video story");
 
-    /** @type {Array<{ storyId: string, url: string, filename: string }>} */
+    /** @type {StoryFile[]} */
     const downloads = [];
 
     for await (const download of fetchStoryFiles(shortsStory)) {

@@ -6,16 +6,13 @@
  * @typedef {import("./types").AppMessage} AppMessage
  * @typedef {import("./types").ChromeMessageToggle} ChromeMessageToggle
  * @typedef {import("./types").ChromeMessageDownloadResult} ChromeMessageDownloadResult
+ * @typedef {import("./types").StoryFile} StoryFile
  */
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
-/**
- * @typedef {{ storyId: string, url: string, filename: string, tabId: number | undefined }} DownloadItem
- */
-
-/** @type {Map<number, DownloadItem>} */
+/** @type {Map<number, StoryFile & { tabId: number | undefined }>} */
 const activeDownloadItems = new Map();
 
 /**
@@ -39,7 +36,7 @@ export function resetActiveDownloads() {
  * @param {number} [attempt=1] - Current attempt number.
  */
 export function downloadFile(storyId, url, filename, tabId, attempt = 1) {
-  /** @type {DownloadItem} */
+  /** @type {StoryFile & { tabId: number | undefined }} */
   const item = { storyId, url, filename, tabId };
   chrome.downloads.download(
     {

@@ -13,6 +13,7 @@ import { graphqlListener, sendGraphqlRequest } from "./graphql.js";
  * @typedef {import('./types').MediaPhotoUrl} MediaPhotoUrl
  * @typedef {import('./types').User} User
  * @typedef {import('./types').Group} Group
+ * @typedef {import('./types').StoryFile} StoryFile
  */
 
 const PHOTO_ROOT_QUERY = "CometPhotoRootContentQuery";
@@ -435,13 +436,9 @@ function renderStory(story, attachments, quoted_story) {
 }
 
 /**
- * @typedef {{ storyId: string, url: string, filename: string }} DownloadFile
- */
-
-/**
  * Fetch story files for download.
  * @param {Story} story
- * @yields {DownloadFile}
+ * @yields {StoryFile}
  */
 export async function* fetchStoryFiles(story) {
   const folder = buildFolderName(story);
