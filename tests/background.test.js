@@ -5,9 +5,14 @@ import assert from "node:assert";
 const downloadMock = mock.fn();
 /** @type {Function[]} */
 const onMessageListeners = [];
+/** @type {Function[]} */
+const onChangedListeners = [];
 const mockChrome = {
   downloads: {
     download: downloadMock,
+    onChanged: {
+      addListener: (/** @type {Function} */ fn) => onChangedListeners.push(fn),
+    },
   },
   runtime: {
     /** @type {{ message: string } | null} */
@@ -27,23 +32,78 @@ const mockChrome = {
 };
 globalThis.chrome = mockChrome;
 
-const { queueDownload, resetQueue } =
+/**
+ * Simulate a download state change event.
+ * @param {number} downloadId
+ * @param {"complete" | "interrupted"} state
+ */
+function simulateDownloadComplete(downloadId, state = "complete") {
+  for (const listener of onChangedListeners) {
+    listener({ id: downloadId, state: { current: state } });
+  }
+}
+
+const { downloadFile, resetQueue, updateBadge } =
   await import("../extensions/background.js");
 
-describe("queueDownload", () => {
+describe("updateBadge", () => {
+  beforeEach(() => {
+    mockChrome.action.setBadgeText.mock.resetCalls();
+    mockChrome.action.setBadgeBackgroundColor.mock.resetCalls();
+  });
+
+  it("should set badge text with count when count > 0", () => {
+    updateBadge(5, 123);
+
+    assert.strictEqual(mockChrome.action.setBadgeText.mock.callCount(), 1);
+    const [textArgs] = mockChrome.action.setBadgeText.mock.calls[0].arguments;
+    assert.strictEqual(textArgs.text, "5");
+    assert.strictEqual(textArgs.tabId, 123);
+
+    assert.strictEqual(
+      mockChrome.action.setBadgeBackgroundColor.mock.callCount(),
+      1,
+    );
+    const [colorArgs] =
+      mockChrome.action.setBadgeBackgroundColor.mock.calls[0].arguments;
+    assert.strictEqual(colorArgs.color, "#4267B2");
+    assert.strictEqual(colorArgs.tabId, 123);
+  });
+
+  it("should set empty badge text when count is 0", () => {
+    updateBadge(0, 123);
+
+    assert.strictEqual(mockChrome.action.setBadgeText.mock.callCount(), 1);
+    const [textArgs] = mockChrome.action.setBadgeText.mock.calls[0].arguments;
+    assert.strictEqual(textArgs.text, "");
+    assert.strictEqual(textArgs.tabId, 123);
+  });
+
+  it("should not set badge when tabId is undefined", () => {
+    updateBadge(5, undefined);
+
+    assert.strictEqual(mockChrome.action.setBadgeText.mock.callCount(), 0);
+    assert.strictEqual(
+      mockChrome.action.setBadgeBackgroundColor.mock.callCount(),
+      0,
+    );
+  });
+});
+
+describe("downloadFile", () => {
   beforeEach(() => {
     downloadMock.mock.resetCalls();
     mockChrome.runtime.lastError = null;
     resetQueue();
   });
 
-  it("should queue a download message and start download", () => {
+  it("should start a download immediately", () => {
     // Simulate successful download
     downloadMock.mock.mockImplementation((options, callback) => {
       callback(12345); // downloadId
     });
 
-    queueDownload(
+    downloadFile(
       "story1",
       "https://example.com/file.jpg",
       "test.jpg",
@@ -58,58 +118,27 @@ describe("queueDownload", () => {
     assert.strictEqual(options.saveAs, false);
   });
 
-  it("should limit concurrent downloads to MAX_CONCURRENT_DOWNLOADS", () => {
-    // Never call the callback to keep downloads "in progress"
-    downloadMock.mock.mockImplementation(() => {});
-
-    // Queue 7 downloads
-    for (let i = 0; i < 7; i++) {
-      queueDownload(
-        `story${i}`,
-        `https://example.com/file${i}.jpg`,
-        `test${i}.jpg`,
-        undefined,
-      );
-    }
-
-    // Only 5 should have started (MAX_CONCURRENT_DOWNLOADS = 5)
-    assert.strictEqual(downloadMock.mock.callCount(), 5);
-  });
-
-  it("should process queued downloads when a download completes", () => {
-    /** @type {((downloadId: number) => void)[]} */
-    const callbacks = [];
+  it("should notify on download complete", () => {
+    let nextDownloadId = 1;
     downloadMock.mock.mockImplementation((options, callback) => {
-      callbacks.push(callback);
+      callback(nextDownloadId++);
     });
 
-    // Queue 7 downloads
-    for (let i = 0; i < 7; i++) {
-      queueDownload(
-        `story${i}`,
-        `https://example.com/file${i}.jpg`,
-        `test${i}.jpg`,
-        undefined,
-      );
-    }
+    downloadFile("story1", "https://example.com/file.jpg", "test.jpg", 123);
 
-    // Initially 5 downloads started
-    assert.strictEqual(downloadMock.mock.callCount(), 5);
+    // Complete the download via onChanged event
+    simulateDownloadComplete(1);
 
-    // Complete the first download
-    callbacks[0](12345);
-
-    // Now 6 downloads should have been initiated
-    assert.strictEqual(downloadMock.mock.callCount(), 6);
-
-    // Complete another download
-    callbacks[1](12346);
-
-    // Now all 7 downloads should have been initiated
-    assert.strictEqual(downloadMock.mock.callCount(), 7);
+    // Should have sent a message to the tab
+    assert.strictEqual(mockChrome.tabs.sendMessage.mock.callCount(), 1);
+    const [tabId, message] =
+      mockChrome.tabs.sendMessage.mock.calls[0].arguments;
+    assert.strictEqual(tabId, 123);
+    assert.strictEqual(message.type, "FPDL_DOWNLOAD_COMPLETE");
+    assert.strictEqual(message.storyId, "story1");
   });
 
-  it("should retry download on failure and process queue after max retries", async () => {
+  it("should retry download on failure", async () => {
     const consoleErrorMock = mock.fn();
     const originalConsoleError = console.error;
     console.error = consoleErrorMock;
@@ -120,36 +149,30 @@ describe("queueDownload", () => {
       callbacks.push(callback);
     });
 
-    // Queue 6 downloads (5 will start immediately, 1 will be queued)
-    for (let i = 0; i < 6; i++) {
-      queueDownload(
-        `story${i}`,
-        `https://example.com/file${i}.jpg`,
-        `test${i}.jpg`,
-        undefined,
-      );
-    }
+    downloadFile(
+      "story1",
+      "https://example.com/file.jpg",
+      "test.jpg",
+      undefined,
+    );
 
-    assert.strictEqual(downloadMock.mock.callCount(), 5);
+    assert.strictEqual(downloadMock.mock.callCount(), 1);
 
     // Simulate first download failing (undefined downloadId)
     mockChrome.runtime.lastError = { message: "Network error" };
     callbacks[0](undefined);
 
-    // Should retry, so call count increases
+    // Should retry, so call count increases after delay
     await new Promise((resolve) => setTimeout(resolve, 1100));
-    assert.strictEqual(downloadMock.mock.callCount(), 6);
+    assert.strictEqual(downloadMock.mock.callCount(), 2);
 
     // Fail second attempt
-    callbacks[5](undefined);
+    callbacks[1](undefined);
     await new Promise((resolve) => setTimeout(resolve, 1100));
-    assert.strictEqual(downloadMock.mock.callCount(), 7);
+    assert.strictEqual(downloadMock.mock.callCount(), 3);
 
     // Fail third attempt (max retries reached)
-    callbacks[6](undefined);
-
-    // After max retries, queue should process next item
-    assert.strictEqual(downloadMock.mock.callCount(), 8);
+    callbacks[2](undefined);
 
     // Verify error was logged
     assert.ok(
