@@ -5,7 +5,7 @@
 /**
  * @typedef {import("./types").AppMessage} AppMessage
  * @typedef {import("./types").ChromeMessageToggle} ChromeMessageToggle
- * @typedef {import("./types").ChromeMessageDownloadComplete} ChromeMessageDownloadComplete
+ * @typedef {import("./types").ChromeMessageDownloadResult} ChromeMessageDownloadResult
  */
 
 const MAX_RETRIES = 3;
@@ -77,12 +77,13 @@ chrome.downloads.onChanged.addListener((delta) => {
     if (item) {
       activeDownloadItems.delete(delta.id);
       if (item.tabId) {
-        /** @type {ChromeMessageDownloadComplete} */
+        /** @type {ChromeMessageDownloadResult} */
         const message = {
-          type: "FPDL_DOWNLOAD_COMPLETE",
+          type: "FPDL_DOWNLOAD_RESULT",
           storyId: item.storyId,
           url: item.url,
           filename: item.filename,
+          status: "success",
         };
         chrome.tabs.sendMessage(item.tabId, message);
       }

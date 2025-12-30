@@ -53,14 +53,15 @@
           { __fpdl: true, type: "FPDL_TOGGLE" },
           window.location.origin,
         );
-      } else if (message.type === "FPDL_DOWNLOAD_COMPLETE") {
+      } else if (message.type === "FPDL_DOWNLOAD_RESULT") {
         window.postMessage(
           {
             __fpdl: true,
-            type: "FPDL_DOWNLOAD_COMPLETE",
+            type: "FPDL_DOWNLOAD_RESULT",
             storyId: message.storyId,
             url: message.url,
             filename: message.filename,
+            status: message.status,
           },
           window.location.origin,
         );

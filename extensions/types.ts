@@ -16,14 +16,15 @@ export type ChromeMessageToggle = {
   type: "FPDL_TOGGLE";
 };
 
-export type ChromeMessageDownloadComplete = {
-  type: "FPDL_DOWNLOAD_COMPLETE";
+export type ChromeMessageDownloadResult = {
+  type: "FPDL_DOWNLOAD_RESULT";
   storyId: string;
   url: string;
   filename: string;
+  status: "success" | "max_retries" | "interrupted";
 };
 
-export type ChromeMessage = ChromeMessageToggle | ChromeMessageDownloadComplete;
+export type ChromeMessage = ChromeMessageToggle | ChromeMessageDownloadResult;
 
 export type GraphqlEvent = {
   url: string;

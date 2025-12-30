@@ -141,8 +141,9 @@ describe("downloadFile", () => {
     const [tabId, message] =
       mockChrome.tabs.sendMessage.mock.calls[0].arguments;
     assert.strictEqual(tabId, 123);
-    assert.strictEqual(message.type, "FPDL_DOWNLOAD_COMPLETE");
+    assert.strictEqual(message.type, "FPDL_DOWNLOAD_RESULT");
     assert.strictEqual(message.storyId, "story1");
+    assert.strictEqual(message.status, "success");
   });
 
   it("should retry download on failure", async () => {

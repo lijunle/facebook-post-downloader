@@ -518,7 +518,7 @@ function useDownloadingStories({
   const isProcessingRef = React.useRef(false);
 
   useChromeMessage(
-    "FPDL_DOWNLOAD_COMPLETE",
+    "FPDL_DOWNLOAD_RESULT",
     useCallback((message) => {
       setDownloadingStories((prev) => ({
         ...prev,
