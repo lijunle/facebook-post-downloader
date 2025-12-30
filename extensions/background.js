@@ -8,7 +8,7 @@ import "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationi
  */
 
 /**
- * @type {import("@microsoft/applicationinsights-web")}}
+ * @type {import("@microsoft/applicationinsights-web")}
  */
 // @ts-ignore
 const ApplicationInsightsModule = globalThis.Microsoft.ApplicationInsights;

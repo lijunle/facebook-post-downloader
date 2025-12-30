@@ -19,7 +19,9 @@ const MockApplicationInsights = /** @type {any} */ (
 mock.module(
   "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js",
   {
-    namedExports: {},
+    namedExports: {
+      ApplicationInsights: MockApplicationInsights,
+    },
   },
 );
 
