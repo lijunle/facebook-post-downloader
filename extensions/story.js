@@ -439,12 +439,12 @@ function renderStory(story, attachments, quoted_story) {
 }
 
 /**
- * Download all attachments for a story.
+ * Fetch story files for download.
  * @param {Story} story
  * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
  * @returns {Promise<void>}
  */
-export async function downloadStory(story, onDownloadFile) {
+export async function fetchStoryFiles(story, onDownloadFile) {
   const folder = buildFolderName(story);
   const storyId = getStoryId(story);
 

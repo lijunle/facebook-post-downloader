@@ -38,7 +38,7 @@ const {
   getCreateTime,
   getAttachmentCount,
   getDownloadCount,
-  downloadStory,
+  fetchStoryFiles,
   getStoryUrl,
   getStoryPostId,
   getStoryActor,
@@ -804,7 +804,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -883,7 +883,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -967,7 +967,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1097,7 +1097,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1267,7 +1267,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1323,7 +1323,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1388,7 +1388,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1458,7 +1458,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1520,7 +1520,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(story, (storyId, url, filename) => {
+    await fetchStoryFiles(story, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1606,7 +1606,7 @@ describe("downloadStory", () => {
 
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
-    await downloadStory(storyVideo, (storyId, url, filename) => {
+    await fetchStoryFiles(storyVideo, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1686,7 +1686,7 @@ describe("downloadStory", () => {
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
 
-    await downloadStory(storyWatch, (storyId, url, filename) => {
+    await fetchStoryFiles(storyWatch, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 
@@ -1728,7 +1728,7 @@ describe("downloadStory", () => {
     /** @type {Array<{ storyId: string, url: string, filename: string }>} */
     const downloads = [];
 
-    await downloadStory(shortsStory, (storyId, url, filename) => {
+    await fetchStoryFiles(shortsStory, (storyId, url, filename) => {
       downloads.push({ storyId, url, filename });
     });
 

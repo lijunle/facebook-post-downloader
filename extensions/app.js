@@ -1,6 +1,6 @@
 import {
   storyListener,
-  downloadStory,
+  fetchStoryFiles,
   getAttachmentCount,
   getDownloadCount,
   getCreateTime,
@@ -503,13 +503,14 @@ function useVisibleStories({ stories }) {
 
 /**
  * Hook to manage story download state and download logic.
- * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
+ * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void, downloadStory: (story: Story) => Promise<void> }} params
  * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => void }}
  */
 function useDownloadingStories({
   visibleStories,
   selectedStories,
   clearSelectedStories,
+  downloadStory,
 }) {
   const [downloadingStories, setDownloadingStories] = useState(
     /** @type {{ [storyId: string]: number }} */ ({}),
@@ -538,9 +539,7 @@ function useDownloadingStories({
       if (!story) break;
 
       try {
-        await downloadStory(story, (storyId, url, filename) =>
-          sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
-        );
+        await downloadStory(story);
       } catch (err) {
         console.error(
           "[fpdl] download failed for story",
@@ -604,17 +603,22 @@ function App({ initialStories, onStory }) {
     toggleAllStories,
     clearSelectedStories,
   } = useSelectedStories({ visibleStories });
+
+  const downloadStory = useCallback(async (/** @type {Story} */ story) => {
+    await fetchStoryFiles(story, (storyId, url, filename) =>
+      sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
+    );
+  }, []);
   const { downloadingStories, downloadStories } = useDownloadingStories({
     visibleStories,
     selectedStories,
     clearSelectedStories,
+    downloadStory,
   });
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
-  useDownloadButtonInjection(stories, (storyId, url, filename) =>
-    sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename }),
-  );
+  useDownloadButtonInjection(stories, downloadStory);
 
   if (!open) return null;
 

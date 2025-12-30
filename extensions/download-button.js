@@ -1,9 +1,4 @@
-import {
-  downloadStory,
-  getStoryUrl,
-  getStoryId,
-  getStoryPostId,
-} from "./story.js";
+import { getStoryUrl, getStoryId, getStoryPostId } from "./story.js";
 import { React } from "./react.js";
 
 /**
@@ -46,10 +41,10 @@ function getValueFromReactFiber(element, accessor) {
 /**
  * Create a download button element styled to match Facebook's action buttons.
  * @param {Story} story
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  * @returns {HTMLButtonElement}
  */
-function createDownloadButton(story, onDownloadFile) {
+function createDownloadButton(story, downloadStory) {
   const btn = document.createElement("button");
   btn.className = "fpdl-download-btn";
   btn.setAttribute("aria-label", "Download Facebook post");
@@ -73,7 +68,7 @@ function createDownloadButton(story, onDownloadFile) {
     btn.style.cursor = "wait";
 
     try {
-      await downloadStory(story, onDownloadFile);
+      await downloadStory(story);
     } catch (err) {
       console.warn("[fpdl] download failed", err);
     } finally {
@@ -144,9 +139,9 @@ function findStoryForButton(actionBtn, stories) {
  * Inject download buttons into regular post feed posts.
  * Targets the "Actions for this post" overflow button.
  * @param {Story[]} stories
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  */
-function injectPostFeedButtons(stories, onDownloadFile) {
+function injectPostFeedButtons(stories, downloadStory) {
   const actionButtons = document.querySelectorAll(
     '[aria-label="Actions for this post"]',
   );
@@ -162,7 +157,7 @@ function injectPostFeedButtons(stories, onDownloadFile) {
     const story = findStoryForButton(actionBtn, stories);
     if (!story) continue;
 
-    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    const downloadBtn = createDownloadButton(story, downloadStory);
     buttonRow.insertBefore(downloadBtn, overflowContainer);
   }
 }
@@ -171,9 +166,9 @@ function injectPostFeedButtons(stories, onDownloadFile) {
  * Inject download buttons into video feed page posts.
  * Targets the "More" button in the video feed.
  * @param {Story[]} stories
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  */
-function injectVideoFeedButtons(stories, onDownloadFile) {
+function injectVideoFeedButtons(stories, downloadStory) {
   const actionButtons = document.querySelectorAll('[aria-label="More"]');
 
   for (const actionBtn of actionButtons) {
@@ -197,7 +192,7 @@ function injectVideoFeedButtons(stories, onDownloadFile) {
     const story = findStoryForButton(actionBtn, stories);
     if (!story) continue;
 
-    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    const downloadBtn = createDownloadButton(story, downloadStory);
     downloadBtn.classList.add("fpdl-download-btn--video");
     downloadBtn.setAttribute("data-video-id", videoId ?? "");
     buttonRow.insertBefore(downloadBtn, moreButtonWrapper);
@@ -208,9 +203,9 @@ function injectVideoFeedButtons(stories, onDownloadFile) {
  * Inject download buttons into Watch video page (facebook.com/watch/?v=...).
  * Targets the "More options for video" button.
  * @param {Story[]} stories
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  */
-function injectWatchVideoButtons(stories, onDownloadFile) {
+function injectWatchVideoButtons(stories, downloadStory) {
   const actionButtons = document.querySelectorAll(
     '[aria-label="More options for video"]',
   );
@@ -253,7 +248,7 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
 
     if (!story) continue;
 
-    const downloadBtn = createDownloadButton(story, onDownloadFile);
+    const downloadBtn = createDownloadButton(story, downloadStory);
     downloadBtn.classList.add("fpdl-download-btn--watch");
 
     // Wrap in a container to match the "More options for video" button's parent structure
@@ -269,12 +264,12 @@ function injectWatchVideoButtons(stories, onDownloadFile) {
 /**
  * Inject download buttons into all supported page types.
  * @param {Story[]} stories
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  */
-function injectDownloadButtons(stories, onDownloadFile) {
-  injectPostFeedButtons(stories, onDownloadFile);
-  injectVideoFeedButtons(stories, onDownloadFile);
-  injectWatchVideoButtons(stories, onDownloadFile);
+function injectDownloadButtons(stories, downloadStory) {
+  injectPostFeedButtons(stories, downloadStory);
+  injectVideoFeedButtons(stories, downloadStory);
+  injectWatchVideoButtons(stories, downloadStory);
 }
 
 /**
@@ -346,9 +341,9 @@ function injectDownloadButtonStyles() {
 /**
  * React hook to inject download buttons into posts.
  * @param {Story[]} stories
- * @param {(storyId: string, url: string, filename: string) => void} onDownloadFile
+ * @param {(story: Story) => Promise<void>} downloadStory
  */
-export function useDownloadButtonInjection(stories, onDownloadFile) {
+export function useDownloadButtonInjection(stories, downloadStory) {
   // Inject styles once
   useEffect(() => {
     injectDownloadButtonStyles();
@@ -357,7 +352,7 @@ export function useDownloadButtonInjection(stories, onDownloadFile) {
   // Set up observer and inject buttons
   useEffect(() => {
     const { call: inject, cancel } = debounce(
-      () => injectDownloadButtons(stories, onDownloadFile),
+      () => injectDownloadButtons(stories, downloadStory),
       100,
     );
 
@@ -370,5 +365,5 @@ export function useDownloadButtonInjection(stories, onDownloadFile) {
       cancel();
       observer.disconnect();
     };
-  }, [stories, onDownloadFile]);
+  }, [stories, downloadStory]);
 }
