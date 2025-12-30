@@ -10,7 +10,16 @@ export type AppMessageStoryCount = {
   count: number;
 };
 
-export type AppMessage = AppMessageDownload | AppMessageStoryCount;
+export type AppMessageTrackEvent = {
+  type: "FPDL_TRACK_EVENT";
+  name: string;
+  properties?: Record<string, string | number | boolean>;
+};
+
+export type AppMessage =
+  | AppMessageDownload
+  | AppMessageStoryCount
+  | AppMessageTrackEvent;
 
 export type ChromeMessageToggle = {
   type: "FPDL_TOGGLE";

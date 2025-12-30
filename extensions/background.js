@@ -140,6 +140,11 @@ chrome.runtime.onMessage.addListener(
       updateBadge(msg.count, sender.tab?.id);
     } else if (msg.type === "FPDL_DOWNLOAD") {
       downloadFile(msg.storyId, msg.url, msg.filename, sender.tab?.id);
+    } else if (msg.type === "FPDL_TRACK_EVENT") {
+      appInsights.trackEvent({
+        name: msg.name,
+        properties: msg.properties,
+      });
     }
   },
 );
