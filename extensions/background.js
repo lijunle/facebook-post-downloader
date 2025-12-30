@@ -63,6 +63,17 @@ export function downloadFile(storyId, url, filename, tabId, attempt = 1) {
           console.error(
             `Download failed after ${MAX_RETRIES} attempts: ${item.filename}`,
           );
+          if (item.tabId) {
+            /** @type {ChromeMessageDownloadResult} */
+            const message = {
+              type: "FPDL_DOWNLOAD_RESULT",
+              storyId: item.storyId,
+              url: item.url,
+              filename: item.filename,
+              status: "max_retries",
+            };
+            chrome.tabs.sendMessage(item.tabId, message);
+          }
         }
       } else {
         activeDownloadItems.set(downloadId, item);
@@ -72,21 +83,29 @@ export function downloadFile(storyId, url, filename, tabId, attempt = 1) {
 }
 
 chrome.downloads.onChanged.addListener((delta) => {
+  const item = activeDownloadItems.get(delta.id);
+  if (!item) return;
+
+  /** @type {"success" | "interrupted" | undefined} */
+  let status;
   if (delta.state?.current === "complete") {
-    const item = activeDownloadItems.get(delta.id);
-    if (item) {
-      activeDownloadItems.delete(delta.id);
-      if (item.tabId) {
-        /** @type {ChromeMessageDownloadResult} */
-        const message = {
-          type: "FPDL_DOWNLOAD_RESULT",
-          storyId: item.storyId,
-          url: item.url,
-          filename: item.filename,
-          status: "success",
-        };
-        chrome.tabs.sendMessage(item.tabId, message);
-      }
+    status = "success";
+  } else if (delta.state?.current === "interrupted") {
+    status = "interrupted";
+  }
+
+  if (status) {
+    activeDownloadItems.delete(delta.id);
+    if (item.tabId) {
+      /** @type {ChromeMessageDownloadResult} */
+      const message = {
+        type: "FPDL_DOWNLOAD_RESULT",
+        storyId: item.storyId,
+        url: item.url,
+        filename: item.filename,
+        status,
+      };
+      chrome.tabs.sendMessage(item.tabId, message);
     }
   }
 });
