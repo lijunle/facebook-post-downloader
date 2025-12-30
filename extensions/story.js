@@ -278,7 +278,6 @@ async function* fetchAttachments(story) {
       currentId = nav.nextId;
 
       while (currentId && downloadedCount < totalCount) {
-        await new Promise((r) => setTimeout(r, 200));
         nav = await fetchMediaNav(currentId, mediasetToken);
         if (!nav.currMedia) break;
         downloadedCount++;

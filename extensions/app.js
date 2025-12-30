@@ -606,6 +606,7 @@ function App({ initialStories, onStory }) {
 
   const downloadStory = useCallback(async (/** @type {Story} */ story) => {
     for await (const { storyId, url, filename } of fetchStoryFiles(story)) {
+      await new Promise((r) => setTimeout(r, 200));
       sendAppMessage({ type: "FPDL_DOWNLOAD", storyId, url, filename });
     }
   }, []);
