@@ -13,7 +13,16 @@ import "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationi
 // @ts-ignore
 const ApplicationInsightsModule = globalThis.Microsoft.ApplicationInsights;
 
-console.log(ApplicationInsightsModule.ApplicationInsights);
+// Initialize Application Insights
+const appInsights = new ApplicationInsightsModule.ApplicationInsights({
+  config: {
+    connectionString:
+      "InstrumentationKey=0b8a6a27-3b94-4411-aa58-bc5ff386cd7d;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=a4e17229-ea4c-42c3-b219-cee1fdb2e9b9",
+    enableAutoRouteTracking: false,
+    enableAjaxErrorStatusText: true,
+  },
+});
+appInsights.loadAppInsights();
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -140,5 +149,8 @@ chrome.action.onClicked.addListener((tab) => {
     /** @type {ChromeMessageToggle} */
     const message = { type: "FPDL_TOGGLE" };
     chrome.tabs.sendMessage(tab.id, message);
+    appInsights.trackEvent({
+      name: "ToggleClicked",
+    });
   }
 });

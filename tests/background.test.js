@@ -1,6 +1,34 @@
 import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
 
+// Mock Application Insights before importing the module
+const mockTrackEvent = mock.fn();
+const mockLoadAppInsights = mock.fn();
+
+/** @type {new (config: any) => { loadAppInsights: () => void, trackEvent: (event: any) => void }} */
+const MockApplicationInsights = /** @type {any} */ (
+  function (/** @type {any} */ _config) {
+    return {
+      loadAppInsights: mockLoadAppInsights,
+      trackEvent: mockTrackEvent,
+    };
+  }
+);
+
+// Mock the Application Insights module import
+mock.module(
+  "../node_modules/@microsoft/applicationinsights-web/dist/es5/applicationinsights-web.min.js",
+  {
+    namedExports: {},
+  },
+);
+
+globalThis.Microsoft = {
+  ApplicationInsights: {
+    ApplicationInsights: MockApplicationInsights,
+  },
+};
+
 // Mock chrome API before importing the module
 const downloadMock = mock.fn();
 /** @type {Function[]} */
