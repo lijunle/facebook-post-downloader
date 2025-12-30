@@ -52,6 +52,15 @@ function sendAppMessage(message) {
 }
 
 /**
+ * Track an event.
+ * @param {string} name
+ * @param {Record<string, string | number | boolean>} [properties]
+ */
+function trackEvent(name, properties) {
+  sendAppMessage({ type: "FPDL_TRACK_EVENT", name, properties });
+}
+
+/**
  * Download all files for a story.
  * @param {Story} story
  */
@@ -357,19 +366,22 @@ function HideButton({
   );
 
   const hideSelected = useCallback(() => {
+    trackEvent("SelectedStoriesHidden", { count: selectedStories.size });
     setHiddenStories((prev) => new Set([...prev, ...selectedStories]));
     clearSelectedStories();
   }, [selectedStories, setHiddenStories, clearSelectedStories]);
 
   const hideDownloaded = useCallback(() => {
+    trackEvent("DownloadedStoriesHidden", { count: downloadedStoryIds.length });
     setHiddenStories((prev) => new Set([...prev, ...downloadedStoryIds]));
     clearSelectedStories();
   }, [downloadedStoryIds, setHiddenStories, clearSelectedStories]);
 
   const unhide = useCallback(() => {
+    trackEvent("StoriesUnhidden", { count: hiddenStories.size });
     setHiddenStories(() => new Set());
     clearSelectedStories();
-  }, [setHiddenStories, clearSelectedStories]);
+  }, [hiddenStories.size, setHiddenStories, clearSelectedStories]);
 
   let label = null;
   let action = null;
@@ -411,6 +423,7 @@ function useDialogOpen({ clearSelectedStories }) {
   const closeDialog = useCallback(() => {
     setOpen(false);
     clearSelectedStories();
+    trackEvent("DialogClosed");
   }, [clearSelectedStories]);
 
   useChromeMessage(
@@ -420,7 +433,11 @@ function useDialogOpen({ clearSelectedStories }) {
         hasRendered.current = true;
         window.scrollBy(0, 1);
       }
-      setOpen((v) => !v);
+      setOpen((v) => {
+        const newOpen = !v;
+        trackEvent("DialogToggled", { open: newOpen });
+        return newOpen;
+      });
     }, []),
   );
 
@@ -450,37 +467,50 @@ function useStoryListener({ initialStories, onStory }) {
 
 /**
  * Hook to manage story selection state.
- * @param {{ visibleStories: Story[] }} params
+ * @param {{ stories: Story[], visibleStories: Story[] }} params
  * @returns {{ selectedStories: Set<string>, toggleStory: (story: Story) => void, toggleAllStories: () => void, clearSelectedStories: () => void }}
  */
-function useSelectedStories({ visibleStories }) {
+function useSelectedStories({ stories, visibleStories }) {
   const [selectedStories, setSelectedStories] = useState(
     /** @type {Set<string>} */ (new Set()),
   );
 
-  const toggleStory = useCallback((/** @type {Story} */ story) => {
-    const id = getStoryId(story);
-    setSelectedStories((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  const toggleStory = useCallback(
+    (/** @type {Story} */ story) => {
+      const id = getStoryId(story);
+      setSelectedStories((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+          trackEvent("StoryDeselected", { storiesCount: stories.length });
+        } else {
+          next.add(id);
+          trackEvent("StorySelected", { storiesCount: stories.length });
+        }
+        return next;
+      });
+    },
+    [stories.length],
+  );
 
   const toggleAllStories = useCallback(() => {
     setSelectedStories((prev) => {
       const allSelected = visibleStories.every((s) => prev.has(getStoryId(s)));
       if (allSelected) {
+        trackEvent("AllStoriesDeselected", {
+          visibleCount: visibleStories.length,
+          storiesCount: stories.length,
+        });
         return new Set();
       } else {
+        trackEvent("AllStoriesSelected", {
+          visibleCount: visibleStories.length,
+          storiesCount: stories.length,
+        });
         return new Set(visibleStories.map((s) => getStoryId(s)));
       }
     });
-  }, [visibleStories]);
+  }, [stories.length, visibleStories]);
 
   const clearSelectedStories = useCallback(() => {
     setSelectedStories(new Set());
@@ -514,10 +544,11 @@ function useVisibleStories({ stories }) {
 
 /**
  * Hook to manage story download state and download logic.
- * @param {{ visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
+ * @param {{ stories: Story[], visibleStories: Story[], selectedStories: Set<string>, clearSelectedStories: () => void }} params
  * @returns {{ downloadingStories: { [storyId: string]: number }, downloadStories: () => void }}
  */
 function useDownloadingStories({
+  stories,
   visibleStories,
   selectedStories,
   clearSelectedStories,
@@ -572,6 +603,12 @@ function useDownloadingStories({
     );
     if (storiesToDownload.length === 0) return;
 
+    trackEvent("DownloadClicked", {
+      downloadCount: storiesToDownload.length,
+      visibleCount: visibleStories.length,
+      storiesCount: stories.length,
+    });
+
     clearSelectedStories();
 
     // Mark stories as queued (0 downloads) for UI feedback
@@ -612,8 +649,9 @@ function App({ initialStories, onStory }) {
     toggleStory,
     toggleAllStories,
     clearSelectedStories,
-  } = useSelectedStories({ visibleStories });
+  } = useSelectedStories({ stories, visibleStories });
   const { downloadingStories, downloadStories } = useDownloadingStories({
+    stories,
     visibleStories,
     selectedStories,
     clearSelectedStories,
@@ -621,7 +659,13 @@ function App({ initialStories, onStory }) {
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
-  useDownloadButtonInjection(stories, downloadStory);
+  useDownloadButtonInjection(stories, async (story) => {
+    trackEvent("InjectedDownloadClicked", {
+      downloadingCount: Object.keys(downloadingStories).length,
+      storiesCount: stories.length,
+    });
+    await downloadStory(story);
+  });
 
   if (!open) return null;
 
@@ -662,6 +706,11 @@ function App({ initialStories, onStory }) {
           target: "_blank",
           rel: "noopener noreferrer",
           title: "Sponsor",
+          onClick: () =>
+            trackEvent("SponsorClicked", {
+              downloadingCount: Object.keys(downloadingStories).length,
+              storiesCount: stories.length,
+            }),
         },
         "♥",
       ),

@@ -154,8 +154,5 @@ chrome.action.onClicked.addListener((tab) => {
     /** @type {ChromeMessageToggle} */
     const message = { type: "FPDL_TOGGLE" };
     chrome.tabs.sendMessage(tab.id, message);
-    appInsights.trackEvent({
-      name: "ToggleClicked",
-    });
   }
 });
