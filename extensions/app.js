@@ -18,7 +18,7 @@ import { useDownloadButtonInjection } from "./download-button.js";
  * @typedef {import('./types').ChromeMessage} ChromeMessage
  */
 
-const { useState, useEffect, useCallback, useMemo } = React;
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
 /**
  * Hook to listen for Chrome extension messages of a specific type.
@@ -659,24 +659,27 @@ function App({ initialStories, onStory }) {
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
+  const downloadingCountRef = useRef({ downloadingCount: 0, storiesCount: 0 });
+  downloadingCountRef.current = {
+    downloadingCount: Object.keys(downloadingStories).length,
+    storiesCount: stories.length,
+  };
+
   useEffect(() => {
     const handleUnload = () => {
-      trackEvent("PageUnloaded", {
-        downloadingCount: Object.keys(downloadingStories).length,
-        storiesCount: stories.length,
-      });
+      trackEvent("PageUnloaded", downloadingCountRef.current);
     };
     window.addEventListener("beforeunload", handleUnload);
     return () => window.removeEventListener("beforeunload", handleUnload);
-  }, [downloadingStories, stories.length]);
+  }, []);
 
-  useDownloadButtonInjection(stories, async (story) => {
-    trackEvent("InjectedDownloadClicked", {
-      downloadingCount: Object.keys(downloadingStories).length,
-      storiesCount: stories.length,
-    });
-    await downloadStory(story);
-  });
+  useDownloadButtonInjection(
+    stories,
+    useCallback(async (story) => {
+      trackEvent("InjectedDownloadClicked", downloadingCountRef.current);
+      await downloadStory(story);
+    }, []),
+  );
 
   if (!open) return null;
 
@@ -718,10 +721,7 @@ function App({ initialStories, onStory }) {
           rel: "noopener noreferrer",
           title: "Sponsor",
           onClick: () =>
-            trackEvent("SponsorClicked", {
-              downloadingCount: Object.keys(downloadingStories).length,
-              storiesCount: stories.length,
-            }),
+            trackEvent("SponsorClicked", downloadingCountRef.current),
         },
         "♥",
       ),
