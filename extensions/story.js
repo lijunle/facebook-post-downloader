@@ -223,12 +223,11 @@ async function fetchMediaNav(currentId, mediasetToken) {
 }
 
 /**
- * Fetch attachments for a story, calling the callback for each attachment as it's retrieved.
+ * Fetch attachments for a story as an async generator.
  * @param {Story} story
- * @param {(media: Media) => void} onAttachment
- * @returns {Promise<void>}
+ * @yields {Media}
  */
-async function fetchAttachments(story, onAttachment) {
+async function* fetchAttachments(story) {
   if (story.attachments.length === 0) return;
 
   // For StoryPost, walk through the media set
@@ -244,14 +243,14 @@ async function fetchAttachments(story, onAttachment) {
       // Multiple media - use all_subattachments
       for (const node of attachment.all_subattachments.nodes) {
         if (node?.media) {
-          onAttachment(node.media);
+          yield node.media;
           downloadedCount++;
           currentId = node.media;
         }
       }
     } else if (attachment && "media" in attachment && attachment.media) {
       // Single media
-      onAttachment(attachment.media);
+      yield attachment.media;
       downloadedCount++;
       currentId = attachment.media;
     } else {
@@ -261,7 +260,7 @@ async function fetchAttachments(story, onAttachment) {
       if (Array.isArray(shortsAttachments) && shortsAttachments.length > 0) {
         for (const shortsNode of shortsAttachments) {
           if (shortsNode?.media) {
-            onAttachment(shortsNode.media);
+            yield shortsNode.media;
             downloadedCount++;
             currentId = shortsNode.media;
           }
@@ -282,7 +281,7 @@ async function fetchAttachments(story, onAttachment) {
         nav = await fetchMediaNav(currentId, mediasetToken);
         if (!nav.currMedia) break;
         downloadedCount++;
-        onAttachment(nav.currMedia);
+        yield nav.currMedia;
         currentId = nav.nextId;
       }
     }
@@ -290,9 +289,7 @@ async function fetchAttachments(story, onAttachment) {
 
   // For StoryVideo, directly use the media from the attachment
   if (isStoryVideo(story)) {
-    const media = story.attachments[0].media;
-    onAttachment(media);
-    return;
+    yield story.attachments[0].media;
   }
 
   // For StoryWatch, use cached video URL
@@ -306,9 +303,8 @@ async function fetchAttachments(story, onAttachment) {
         id: videoId,
         url: videoUrl,
       };
-      onAttachment(media);
+      yield media;
     }
-    return;
   }
 }
 
@@ -452,16 +448,16 @@ export async function fetchStoryFiles(story, onDownloadFile) {
   const downloadedAttachments = [];
   let mediaIndex = 0;
 
-  await fetchAttachments(story, (media) => {
+  for await (const media of fetchAttachments(story)) {
     const download = getDownloadUrl(media);
-    if (!download) return;
+    if (!download) continue;
 
     mediaIndex++;
     const indexPrefix = String(mediaIndex).padStart(4, "0");
     const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
     onDownloadFile(storyId, download.url, filename);
     downloadedAttachments.push({ media, filename });
-  });
+  }
 
   // Fetch attachments for attached_story if it exists
   /** @type {string | undefined} */
@@ -469,16 +465,16 @@ export async function fetchStoryFiles(story, onDownloadFile) {
   if (isStoryPost(story) && story.attached_story) {
     /** @type {Array<{ media: Media, filename: string }>} */
     const attachedStoryAttachments = [];
-    await fetchAttachments(story.attached_story, (media) => {
+    for await (const media of fetchAttachments(story.attached_story)) {
       const download = getDownloadUrl(media);
-      if (!download) return;
+      if (!download) continue;
 
       mediaIndex++;
       const indexPrefix = String(mediaIndex).padStart(4, "0");
       const filename = `${folder}/${indexPrefix}_${media.id}.${download.ext}`;
       onDownloadFile(storyId, download.url, filename);
       attachedStoryAttachments.push({ media, filename });
-    });
+    }
     quotedStory = renderStory(story.attached_story, attachedStoryAttachments);
   }
 
