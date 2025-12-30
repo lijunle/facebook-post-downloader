@@ -659,6 +659,17 @@ function App({ initialStories, onStory }) {
 
   const { open, closeDialog } = useDialogOpen({ clearSelectedStories });
 
+  useEffect(() => {
+    const handleUnload = () => {
+      trackEvent("PageUnloaded", {
+        downloadingCount: Object.keys(downloadingStories).length,
+        storiesCount: stories.length,
+      });
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [downloadingStories, stories.length]);
+
   useDownloadButtonInjection(stories, async (story) => {
     trackEvent("InjectedDownloadClicked", {
       downloadingCount: Object.keys(downloadingStories).length,
