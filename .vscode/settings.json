@@ -22,5 +22,11 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "cSpell.words": ["fpdl", "mediaset", "subattachments"]
+  "cSpell.words": [
+    "fpdl",
+    "mediaset",
+    "noopener",
+    "noreferrer",
+    "subattachments"
+  ]
 }
