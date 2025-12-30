@@ -21,7 +21,7 @@ const activeDownloadItems = new Map();
 /**
  * Resets the active downloads (for testing).
  */
-export function resetQueue() {
+export function resetActiveDownloads() {
   activeDownloadItems.clear();
 }
 

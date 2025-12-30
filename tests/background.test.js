@@ -43,7 +43,7 @@ function simulateDownloadComplete(downloadId, state = "complete") {
   }
 }
 
-const { downloadFile, resetQueue, updateBadge } =
+const { downloadFile, resetActiveDownloads, updateBadge } =
   await import("../extensions/background.js");
 
 describe("updateBadge", () => {
@@ -101,7 +101,7 @@ describe("downloadFile", () => {
     downloadMock.mock.resetCalls();
     mockChrome.tabs.sendMessage.mock.resetCalls();
     mockChrome.runtime.lastError = null;
-    resetQueue();
+    resetActiveDownloads();
   });
 
   it("should start a download immediately", () => {
