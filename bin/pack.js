@@ -27,14 +27,53 @@ const distDir = path.join(rootDir, "dist");
 const packageJsonPath = path.join(rootDir, "package.json");
 const manifestJsonPath = path.join(rootDir, "manifest.json");
 
-// Files and directories to include in the zip
-const filesToInclude = [
-  "README.md",
-  "manifest.json",
-  "images/logo.png",
-  "extensions/*.js",
-  "node_modules/umd-react/dist/*.production.min.js",
-];
+/**
+ * Extract files to include from manifest.json
+ * @returns {string[]} Array of file paths to include
+ */
+function getFilesToInclude() {
+  const manifest = JSON.parse(fs.readFileSync(manifestJsonPath, "utf8"));
+  const files = new Set(["README.md", "manifest.json"]);
+
+  // Add icons
+  if (manifest.icons) {
+    Object.values(manifest.icons).forEach((icon) => files.add(icon));
+  }
+
+  // Add action icons
+  if (manifest.action?.default_icon) {
+    Object.values(manifest.action.default_icon).forEach((icon) =>
+      files.add(icon),
+    );
+  }
+
+  // Add background service worker
+  if (manifest.background?.service_worker) {
+    files.add(manifest.background.service_worker);
+  }
+
+  // Add web accessible resources
+  if (manifest.web_accessible_resources) {
+    for (const entry of manifest.web_accessible_resources) {
+      if (entry.resources) {
+        entry.resources.forEach((/** @type {string} */ resource) =>
+          files.add(resource),
+        );
+      }
+    }
+  }
+
+  // Add content scripts
+  if (manifest.content_scripts) {
+    for (const entry of manifest.content_scripts) {
+      if (entry.js) {
+        entry.js.forEach((/** @type {string} */ script) => files.add(script));
+      }
+    }
+  }
+
+  return [...files];
+}
 
 /**
  * Determine the version to use for the extension.
@@ -136,10 +175,11 @@ async function pack() {
   // Pipe archive data to the file
   archive.pipe(output);
 
-  // Add files and patterns to the archive
-  for (const pattern of filesToInclude) {
-    console.log(`  Adding pattern: ${pattern}`);
-    archive.glob(pattern, { cwd: rootDir });
+  // Add files to the archive
+  const filesToInclude = getFilesToInclude();
+  for (const file of filesToInclude) {
+    console.log(`  Adding: ${file}`);
+    archive.file(path.join(rootDir, file), { name: file });
   }
 
   // Finalize the archive
